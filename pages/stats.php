@@ -34,6 +34,7 @@ $overview_data = $overview->getSummaryData();
 echo StatsDashboard::renderFilter($current_backend_page, $filter_date_helper);
 echo StatsDashboard::renderOverview($filter_date_helper, $overview_data);
 echo StatsDashboard::renderMainChartSection($filter_date_helper);
+echo StatsDashboard::renderAnalysisCards($filter_date_helper);
 echo StatsDashboard::renderLazyPlaceholders($filter_date_helper);
 echo StatsDashboard::renderPageConfigScript(StatsDashboard::buildPageConfig($main_chart_data, $data_heatmap));
 

@@ -314,6 +314,7 @@ $(document).on("rex:ready", function (event, container) {
         initPagesDomainFilter();
         initLazyBlocks();
         initLazyCollapses();
+        initAnalysisCards();
     }
 
     function initStatsTabHandling() {
@@ -468,6 +469,35 @@ $(document).on("rex:ready", function (event, container) {
                 container.dataset.state = 'error';
                 renderError(container);
             });
+    }
+
+    function initAnalysisCards() {
+        var cards = document.querySelectorAll('[data-statistics-focus-lazy]');
+        if (!cards.length) {
+            return;
+        }
+
+        cards.forEach(function (card) {
+            if (card.dataset.statisticsBound === 'true') {
+                return;
+            }
+
+            card.dataset.statisticsBound = 'true';
+            card.addEventListener('click', function () {
+                var targetId = card.getAttribute('data-statistics-focus-lazy');
+                if (!targetId) {
+                    return;
+                }
+
+                var target = document.getElementById(targetId);
+                if (!target) {
+                    return;
+                }
+
+                loadLazyBlock(target);
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
     }
 
     function initLazyBlocks() {

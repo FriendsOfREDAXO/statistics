@@ -23,3 +23,63 @@
 #rex-page-statistics-stats.modal-open {
     overflow: visible;
 }
+
+.statistics_week_kpis {
+    margin-top: 10px;
+}
+
+.statistics-kpi-panel .panel-body {
+    min-height: 86px;
+}
+
+.statistics_cards_row {
+    margin-bottom: 14px;
+}
+
+.statistics_cards_heading {
+    margin-top: 6px;
+    margin-bottom: 12px;
+}
+
+.statistics-analysis-card {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    border: 1px solid #d7dde3;
+    border-radius: 4px;
+    background: #ffffff;
+    padding: 12px;
+    margin-bottom: 12px;
+    text-align: left;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.statistics-analysis-card:hover,
+.statistics-analysis-card:focus {
+    border-color: #5ca2de;
+    box-shadow: 0 0 0 2px rgba(92, 162, 222, 0.15);
+    outline: none;
+}
+
+.statistics-analysis-card__icon {
+    width: 40px;
+    min-width: 40px;
+    text-align: center;
+    color: #5ca2de;
+    font-size: 24px;
+}
+
+.statistics-analysis-card__content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.statistics-analysis-card__title {
+    font-weight: 600;
+}
+
+.statistics-analysis-card__desc {
+    color: #66717d;
+    font-size: 12px;
+}
