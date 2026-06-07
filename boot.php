@@ -91,32 +91,15 @@ rex_extension::register('RESPONSE_SHUTDOWN', function () use ($statistics_has_ba
             $domain = 'undefined';
         }
 
-        // page url
+        // page url (raw URL including parameters for ignore checks)
         $url = $domain . rex::getRequest()->getRequestUri();
 
         // request response code
         $response_code = rex_response::getStatus();
 
-
-        if (rex::getRequest()->getRequestUri() != "/favicon.ico") {
-
-            if ($response_code == rex_response::HTTP_OK || !$addon->getConfig("statistics_rec_onlyok", false)) {
-                // visitduration, number pages visited, last visited page
-                $sql = rex_sql::factory();
-                $sql->setQuery("INSERT INTO " . rex::getTable('pagestats_sessionstats') . " (token, lastpage, lastvisit, visitduration, pagecount) VALUES (:token, :lastpage, NOW(), 0, 1) ON DUPLICATE KEY UPDATE lastpage = VALUES(lastpage), visitduration = visitduration + (NOW() - lastvisit), lastvisit = NOW(), pagecount = pagecount + 1", [":token" => $token, ":lastpage" => $url]);
-            }
-        }
-
-
         // get ip from visitor, set to 0.0.0.0 when ip can not be determined
         $clientAddress = rex::getRequest()->getClientIp();
         $clientAddress = $clientAddress ? $clientAddress : '0.0.0.0';
-
-
-        // optionally ignore url parameters
-        if ($addon->getConfig('statistics_ignore_url_params')) {
-            $url = Visit::removeUrlParameters($url);
-        }
 
         // user agent
         $userAgent = rex_server('HTTP_USER_AGENT', 'string', '');
@@ -151,10 +134,26 @@ rex_extension::register('RESPONSE_SHUTDOWN', function () use ($statistics_has_ba
 
                     if ($visit->shouldSaveVisit() && !$visit->DeviceDetector->isLibrary()) {
 
-                        // visits_per_url and pagestats_urlstatus must also be updated if response_code is != 200
-                        $visit->updateVisitsPerUrl();
+                        $recordOnlyOk = (bool) $addon->getConfig('statistics_rec_onlyok', false);
+                        $shouldRecordResponse = !$recordOnlyOk || $response_code === rex_response::HTTP_OK;
 
-                        if ($response_code == rex_response::HTTP_OK || !$addon->getConfig("statistics_rec_onlyok", false)) {
+                        if ($shouldRecordResponse) {
+                            // optionally ignore url parameters after ignore checks were done on the raw URL
+                            if ((bool) $addon->getConfig('statistics_ignore_url_params')) {
+                                $visit->setUrl(Visit::removeUrlParameters($visit->getUrl()));
+                            }
+
+                            // visitduration, number pages visited, last visited page
+                            if (rex::getRequest()->getRequestUri() !== '/favicon.ico') {
+                                $sql = rex_sql::factory();
+                                $sql->setQuery(
+                                    'INSERT INTO ' . rex::getTable('pagestats_sessionstats') . ' (token, lastpage, lastvisit, visitduration, pagecount) VALUES (:token, :lastpage, NOW(), 0, 1) ON DUPLICATE KEY UPDATE lastpage = VALUES(lastpage), visitduration = visitduration + (NOW() - lastvisit), lastvisit = NOW(), pagecount = pagecount + 1',
+                                    [':token' => $token, ':lastpage' => $visit->getUrl()]
+                                );
+                            }
+
+                            $visit->updateVisitsPerUrl();
+
                             // visitor is human
                             // check hash with save_visit, if true then save visit
 
@@ -175,8 +174,6 @@ rex_extension::register('RESPONSE_SHUTDOWN', function () use ($statistics_has_ba
                                 // save visitor
                                 $visit->persistVisitor();
                             }
-
-
                             $visit->persist();
                         }
                     }
