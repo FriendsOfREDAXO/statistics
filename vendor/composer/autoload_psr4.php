@@ -17,4 +17,5 @@ return array(
     'Jaybizzle\\CrawlerDetect\\' => array($vendorDir . '/jaybizzle/crawler-detect/src'),
     'GeoIp2\\' => array($vendorDir . '/geoip2/geoip2/src'),
     'DeviceDetector\\' => array($vendorDir . '/matomo/device-detector'),
+    'AndiLeni\\Statistics\\' => array($baseDir . '/lib'),
 );

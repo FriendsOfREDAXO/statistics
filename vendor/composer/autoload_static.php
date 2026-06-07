@@ -40,6 +40,10 @@ class ComposerStaticInitb29f579221a7652ba86cff44a1726a0f
         array (
             'DeviceDetector\\' => 15,
         ),
+        'A' => 
+        array (
+            'AndiLeni\\Statistics\\' => 20,
+        ),
     );
 
     public static $prefixDirsPsr4 = array (
@@ -86,6 +90,10 @@ class ComposerStaticInitb29f579221a7652ba86cff44a1726a0f
         'DeviceDetector\\' => 
         array (
             0 => __DIR__ . '/..' . '/matomo/device-detector',
+        ),
+        'AndiLeni\\Statistics\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/lib',
         ),
     );
 
