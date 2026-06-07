@@ -88,6 +88,14 @@ statistics_scroll_panel = Container
 statistics_scroll_none = Keines von beidem
 statistics_statistics_ignore_url_params = Ignoriere URL-Parameter
 statistics_statistics_ignore_url_params_note = URL-Parameter werden in der Statistik nicht geloggt. Z.b. www.example.com?data=1 wird als www.example.com gespeichert.
+statistics_details_for = Details für:
+statistics_all_domains = Alle Domains
+statistics_filter_all = Alle
+statistics_filter_only_200 = Nur 200er
+statistics_filter_only_not_200 = Nur nicht 200er
+statistics_ignore_success = Es wurden %s Einträge gelöscht.
+statistics_ignore_url_future = Die URL <code>%s</code> wird zukünftig ignoriert.
+statistics_deleted_campaign_entries = Es wurden %s Einträge der Kampagne <code>%s</code> gelöscht.
 perm_general_statistics[] = Benutzer darf das Addon "Statistiken" aufrufen.
 perm_options_statistics[settings] = Benutzer darf Einstellungen des Addons "Statistiken" ändern.
 statistics_default_datefilter_range = Standard Datumsbereich

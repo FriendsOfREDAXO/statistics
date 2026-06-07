@@ -29,14 +29,18 @@ $sum_per_page = $pages_helper->sumPerPage($httpstatus);
 
 // check if request is for ignoring a url
 // if yes, add url to addon settings and delete all database entries of this url 
-if ($request_url != '' && $ignore_page === true) {
+if ($request_url !== '' && $ignore_page === true) {
     $rows = $pages_helper->ignorePage($request_url);
-    echo rex_view::success('Es wurden ' . $rows . ' Einträge gelöscht. Die Url <code>' . $request_url . '</code> wird zukünftig ignoriert.');
+    echo rex_view::success(
+        sprintf($addon->i18n('statistics_ignore_success'), (string) $rows)
+        . ' '
+        . sprintf($addon->i18n('statistics_ignore_url_future'), htmlspecialchars($request_url, ENT_QUOTES))
+    );
 }
 
 
 // details for one url requested
-if ($request_url != '' && !$ignore_page) {
+if ($request_url !== '' && !$ignore_page) {
     // details section for single page
 
     $pagedetails = new PageDetails($request_url, $filter_date_helper);
@@ -47,7 +51,7 @@ if ($request_url != '' && !$ignore_page) {
     $content .= StatsChartConfig::renderScript('chart_details', StatsChartConfig::buildTimelineOption($sum_data['labels'], $sum_data['values']));
     $content .= $pagedetails->getList();
 
-    echo StatsSubpageRenderer::renderInfoSection('Details für:', $request_url, $content);
+    echo StatsSubpageRenderer::renderInfoSection($addon->i18n('statistics_details_for'), $request_url, $content);
 }
 
 
@@ -56,7 +60,7 @@ $sql = rex_sql::factory();
 $domains = $sql->getArray('SELECT distinct domain FROM ' . rex::getTable('pagestats_visits_per_day'));
 $domain_select = '
 <select id="stats_domain_select" class="form-control">
-<option value="">Alle Domains</option>
+<option value="">' . htmlspecialchars($addon->i18n('statistics_all_domains'), ENT_QUOTES) . '</option>
 ';
 foreach ($domains as $domain) {
     $domain_select .= '<option value="' . $domain['domain'] . '">' . $domain['domain'] . '</option>';
@@ -69,9 +73,9 @@ $oa = rex_context::fromGet()->getUrl(["httpstatus" => "any"]);
 $o2 = rex_context::fromGet()->getUrl(["httpstatus" => "200"]);
 $on2 = rex_context::fromGet()->getUrl(["httpstatus" => "not200"]);
 
-$http_filter_buttons = '<a class="btn btn-primary" href="' . $oa . '">Alle</a>
-<a class="btn btn-primary" href="' . $o2 . '">Nur 200er</a>
-<a class="btn btn-primary" href="' . $on2 . '">Nur nicht 200er</a>';
+$http_filter_buttons = '<a class="btn btn-primary" href="' . $oa . '">' . htmlspecialchars($addon->i18n('statistics_filter_all'), ENT_QUOTES) . '</a>
+<a class="btn btn-primary" href="' . $o2 . '">' . htmlspecialchars($addon->i18n('statistics_filter_only_200'), ENT_QUOTES) . '</a>
+<a class="btn btn-primary" href="' . $on2 . '">' . htmlspecialchars($addon->i18n('statistics_filter_only_not_200'), ENT_QUOTES) . '</a>';
 
 
 echo StatsSubpageRenderer::renderSection(

@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.2.1] - 07.06.2026
+
+-   Datumsbereich bleibt beim Wechsel zwischen Statistik-Tabs erhalten ([#88](https://github.com/FriendsOfREDAXO/statistics/issues/88))
+-   Weitere harte UI-Texte in Sprachdateien ausgelagert ([#109](https://github.com/FriendsOfREDAXO/statistics/issues/109))
+
 ## [3.2.0] - 29.03.2026
 
 -   Performance improvements with lazy loading

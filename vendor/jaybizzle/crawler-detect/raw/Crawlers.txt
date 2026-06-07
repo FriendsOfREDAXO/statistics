@@ -8,6 +8,7 @@
 ^COMODO DCV
 ^Corax
 ^DangDang
+^Dart\/[0-9]
 ^DavClnt
 ^DHSH
 ^docker\/[0-9]
@@ -37,6 +38,7 @@
 ^pnpm\/
 ^RMA\/
 ^Ruby|Ruby\/[0-9]
+^symbolicator\/
 ^Swurl 
 ^TLS tester 
 ^twine\/
@@ -46,6 +48,7 @@
 ^XRL\/[0-9]
 ^ZmEu
 008\/
+1Pilot
 13TABS
 192\.comAgent
 2GDPR\/
@@ -60,6 +63,7 @@ Aboundex
 aboutthedomain
 Accoona-AI-Agent
 acebookexternalhit\/
+acme\.sectigo\.com
 acoon
 acrylicapps\.com\/pulp
 Acunetix
@@ -79,6 +83,7 @@ AffiliateLabz\/
 affilimate-puppeteer
 agentslug
 AHC
+Ahrefs
 aihit
 aiohttp\/
 Airmail
@@ -92,6 +97,7 @@ allloadin
 AllSubmitter
 alyze\.info
 amagit
+amphp\/http-client
 Anarchie
 AndroidDownloadManager
 Anemone
@@ -139,7 +145,6 @@ axios\/
 a\.pr-cy\.ru
 B-l-i-t-z-B-O-T
 Backlink-Ceck
-backlink-check
 BacklinkHttpStatus
 BackStreet
 BackupLand
@@ -148,6 +153,7 @@ Bad-Neighborhood
 Badass
 baidu\.com
 Bandit
+Barracuda Sentinel \(EE\)
 basicstate
 BatchFTP
 Battleztar Bazinga
@@ -188,7 +194,6 @@ Braintree-Webhooks
 Branch Metrics API
 Branch-Passthrough
 Brandprotect
-BrandVerity
 Brandwatch
 Brodie\/
 Browsershots
@@ -202,6 +207,7 @@ Burf Search
 Butterfly\/
 BuzzSumo
 CAAM\/[0-9]
+caam dot crwlr at gmail dot com
 CakePHP
 Calculon
 Canary%20Mail
@@ -218,6 +224,7 @@ cg-eye
 changedetection
 ChangesMeter
 Charlotte
+ChatGPT-User
 chatterino-api-cache
 CheckHost
 checkprivacy
@@ -233,11 +240,14 @@ CISPA Web Analyser
 Citoid
 CJNetworkQuality
 Clarsentia
+Claude-User
+claude-web
 clips\.ua\.ac\.be
 Cloud mapping
 CloudEndure
 CloudFlare-AlwaysOnline
 Cloudflare-Healthchecks
+Cloudflare-SSLDetector
 Cloudinary
 cmcm\.com
 coccoc
@@ -258,6 +268,8 @@ Copyscape
 cortex\/
 Cosmos4j\.feedback
 Covario-IDS
+Cpanel-HTTP-Client
+cpp-httplib
 Craw\/
 Crescent
 Criteo
@@ -283,6 +295,7 @@ DataXu
 Daum(oa)?[ \/][0-9]
 dBpoweramp
 ddline
+DebugBear$
 deeris
 delve\.ai
 Demon
@@ -355,6 +368,7 @@ Express WebPictures
 Extreme Picture Finder
 EyeNetIE
 ezooms
+facebookcatalog
 facebookexternalhit
 facebookexternalua
 facebookplatform
@@ -366,6 +380,7 @@ Favicon downloader
 faviconarchive
 faviconkit
 FavOrg
+FediAct Service
 Feed Wrangler
 Feedable\/
 Feedbin
@@ -395,7 +410,6 @@ FlashGet
 FlipboardBrowserProxy
 FlipboardProxy
 FlipboardRSS
-Flock\/
 Florienzh\/
 fluffy
 Flunky
@@ -414,6 +428,8 @@ G-i-g-a-b-o-t
 g00g1e\.net
 ganarvisitas
 gdnplus\.com
+GeedoProductSearch
+GeedoShopProductFinder
 geek-tools
 Genieo
 GentleSource
@@ -429,6 +445,7 @@ Geziyor
 Ghost Inspector
 GigablastOpenSource
 GIS-LABS
+GitLab\/
 github-camo
 GitHub-Hookshot
 github\.com
@@ -455,11 +472,12 @@ Google Page Speed Insights
 Google PP Default
 Google Search Console
 Google Web Preview
-Google-Ads-Creatives-Assistant
-Google-Ads-Overview
+Google-Ads
 Google-Adwords
+Google-AMPHTML
 Google-Apps-Script
 Google-Calendar-Importer
+Google-Firebase
 Google-HotelAdsVerifier
 Google-HTTP-Java-Client
 Google-InspectionTool
@@ -474,8 +492,11 @@ Google-Structured-Data-Testing-Tool
 Google-Transparency-Report
 google-xrawler
 Google-Youtube-Links
+GoogleAssociationService
 GoogleDocs
 GoogleHC\/
+GoogleMessages
+GoogleOther
 GoogleProber
 GoogleProducer
 GoogleSites
@@ -509,12 +530,12 @@ Hardenize
 Hatena
 Havij
 HaxerMen
-HeadlessChrome
 HEADMasterSEO
 HeartRails_Capture
 help@dataminr\.com
 heritrix
 Hexometer
+HF-Research\/
 historious
 hkedcity
 hledejLevne\.cz
@@ -558,6 +579,7 @@ HubSpot
 HubSpot-Link-Resolver
 Humanlinks
 i2kconnect\/
+IAB-Tech-Lab
 Iblog
 ichiro
 Id-search
@@ -574,6 +596,7 @@ ImageEngine\/
 ImageVisu\/
 Imagga
 imagineeasy
+imgproxy\/[0-9]
 imgsizer
 InAGist
 inbound\.li parser
@@ -592,6 +615,7 @@ integromedb
 Intelliseek
 InterGET
 Internet Ninja
+InternetMeasurement
 InternetSeer
 internetVista monitor
 internetwache
@@ -648,10 +672,12 @@ Kml-Google
 knows\.is
 KOCMOHABT
 kouio
+krawler\.dk
 kube-probe
 kubectl
 kulturarw3
 KumKie
+l9tcpid\/
 Larbin
 Lavf\/
 leakix\.net
@@ -672,9 +698,11 @@ limber\.io
 Link Valet
 LinkAlarm\/
 LinkAnalyser
+link-check
 linkCheck
 linkdex
 LinkExaminer
+Linkfeed\.ru
 linkfluence
 linkpeek
 LinkPreview
@@ -692,6 +720,7 @@ LongURL API
 longurl-r-package
 looid\.com
 looksystems\.net
+lscache_runner
 ltx71
 lua-resty-http
 Lucee \(CFML Engine\)
@@ -704,11 +733,13 @@ LYT\.SR
 L\.webis
 mabontland
 MacOutlook\/
+MagentaNews\/
 Mag-Net
 MagpieRSS
 Mail::STS
 MailChimp
 Mail\.Ru
+Mailpit\/
 Majestic12
 makecontact\/
 Mandrill
@@ -720,6 +751,7 @@ Mass Downloader
 masscan\/
 Mata Hari
 mattermost
+MatchorySearch\/
 Mediametric
 Mediapartners-Google
 mediawords
@@ -737,6 +769,7 @@ Microsoft Outlook
 Microsoft Windows Network Diagnostics
 Microsoft-WebDAV-MiniRedir
 Microsoft\.Data\.Mashup
+MicrosoftPreview
 MIDown tool
 MIIxpc
 Mindjet
@@ -757,6 +790,7 @@ monitis
 Monitority\/
 Monit\/
 montastic
+MonSpark
 MonTools
 Moreover
 Morfeus Fucking Scanner
@@ -780,6 +814,7 @@ NameFo\.com
 Nameprotect
 nationalarchives
 Navroad
+nbertaupete95
 NearSite
 Needle
 Nessus
@@ -797,6 +832,7 @@ NetSystemsResearch
 nettle
 NetTrack
 Netvibes
+NetworkingExtension
 NetZIP
 Neustar WPM
 NeutrinoAPI
@@ -806,6 +842,7 @@ NewsGator
 newsme
 newspaper\/
 Nexgate Ruby Client
+Next\.js Middleware
 NG-Search
 nghttp2
 Nibbler
@@ -840,6 +877,7 @@ Octopus
 oegp
 Offline Explorer
 Offline Navigator
+odin\.com
 OgScrper
 okhttp
 omgili
@@ -908,6 +946,7 @@ pinterest\.com
 Pixray
 Pizilla
 Plagger\/
+PlayStore-Google
 Pleroma 
 Ploetz \+ Zeller
 Plukkie
@@ -934,6 +973,7 @@ Priceonomics Analysis Engine
 PrintFriendly
 PritTorrent
 Prlog
+probely\.com
 probethenet
 Project ?25499
 Project-Resonance
@@ -945,11 +985,13 @@ PRTG Network Monitor
 pshtt, https scanning
 PTST 
 PTST\/[0-9]+
+pulsetic\.com
 Pump
 Python-httplib2
 python-httpx
 python-requests
 Python-urllib
+Python-xmlrpc
 Qirina Hurdler
 QQDownload
 QrafterPro
@@ -993,6 +1035,7 @@ ROI Hunter
 RPT-HTTPClient
 RSSMix\/
 RSSOwl
+RuxitSynthetic
 RyowlEngine
 safe-agent-scanner
 SalesIntelligent
@@ -1038,7 +1081,9 @@ Seobility
 SEOCentro
 SeoCheck
 seocompany
+SEOGets
 SEOkicks
+SeoLik\.ru
 SEOlizer
 Seomoz
 SEOprofiler
@@ -1140,6 +1185,7 @@ SuperHTTP
 Surphace Scout
 Suzuran
 swcd 
+Swisscows Favicons
 Symfony BrowserKit
 Symfony2 BrowserKit
 Synapse\/
@@ -1209,6 +1255,7 @@ uclassify
 UdmSearch
 ultimate_sitemap_parser
 unchaos
+undici
 unirest-java
 UniversalFeedParser
 unshortenit
@@ -1234,6 +1281,7 @@ Vagabondo
 VB Project
 vBSEO
 VCI
+Verity
 via ggpht\.com GoogleImageProxy
 Virusdie
 visionutils
@@ -1262,6 +1310,7 @@ WbSrch\/
 WDT\.io
 Web Auto
 Web Collage
+Web Downloader\/[0-9]
 Web Enhancer
 Web Fetch
 Web Fuck
@@ -1385,6 +1434,7 @@ YP\.PL
 Zabbix
 Zade
 Zao
+Zapier
 Zauba
 Zemanta Aggregator
 Zend\\Http\\Client
@@ -1398,4 +1448,4 @@ Zombie\.js
 Zoom\.Mac
 ZoteroTranslationServer
 ZyBorg
-[a-z0-9\-_]*(bot|crawl|archiver|transcoder|spider|uptime|validator|fetcher|cron|checker|reader|extractor|monitoring|analyzer|scraper)
+[a-z0-9\-_]*(bot|crawl|headless|archiver|transcoder|spider|uptime|validator|fetcher|cron|checker|reader|extractor|monitoring|analyzer|scraper)

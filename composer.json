@@ -8,10 +8,13 @@
         "matomo/network": "^2.0"
     },
     "replace": {
+        "composer/ca-bundle": "*",
         "psr/log": "*",
         "psr/container": "*",
         "psr/http-message": "*",
         "ankitpokhrel/tus-php": "*",
+        "symfony/deprecation-contracts": "*",
+        "symfony/service-contracts": "*",
         "symfony/polyfill-ctype": "*",
         "symfony/polyfill-iconv": "*",
         "symfony/polyfill-intl-grapheme": "*",
