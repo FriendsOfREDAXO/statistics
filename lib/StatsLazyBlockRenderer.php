@@ -29,6 +29,10 @@ class StatsLazyBlockRenderer
             return $this->renderDeviceBlock();
         }
 
+        if ('device-hourly' === $blockId) {
+            return $this->renderDeviceSubBlock($blockId);
+        }
+
         if ('extended' === $blockId) {
             return $this->renderExtendedBlock();
         }
@@ -75,7 +79,6 @@ class StatsLazyBlockRenderer
         $brand = new Brand();
         $model = new Model();
         $weekday = new Weekday();
-        $hour = new Hour();
 
         $html = '';
         $charts = [];
@@ -108,9 +111,34 @@ class StatsLazyBlockRenderer
 
         $html .= $this->renderWeekdayHeatmapSection($this->addon->i18n('statistics_days'), $weekday->getData(), $weekday->getList());
 
-        $html .= $this->renderHourlyBarsSection($this->addon->i18n('statistics_hours'), $hour->getData(), $hour->getList());
+        $html .= $this->renderLazySectionCard(
+            $this->addon->i18n('statistics_hours'),
+            'Wird bei Bedarf geladen und nutzt mehr Platz für den Verlauf.',
+            'device-hourly'
+        );
 
         return ['html' => $html, 'charts' => $charts];
+    }
+
+    /**
+     * @return array{html: string, charts: array<int, array{id: string, option: array<string, mixed>}>}
+     */
+    private function renderDeviceSubBlock(string $blockId): array
+    {
+        if ('device-hourly' === $blockId) {
+            $hour = new Hour();
+
+            return [
+                'html' => $this->renderHourlyBarsSectionWide(
+                    $this->addon->i18n('statistics_hours'),
+                    $hour->getData(),
+                    $hour->getList()
+                ),
+                'charts' => [],
+            ];
+        }
+
+        throw new \InvalidArgumentException('Unknown device sub-block id: ' . $blockId);
     }
 
     /**
@@ -323,6 +351,48 @@ class StatsLazyBlockRenderer
         $bars .= '</div>';
 
         return $this->renderTwoColumnSection($title, $bars, $table);
+    }
+
+    /**
+     * @param array<int, int> $data
+     */
+    private function renderHourlyBarsSectionWide(string $title, array $data, string $table): string
+    {
+        $max = max($data);
+        $max = $max > 0 ? $max : 1;
+        $palette = $this->getChartPalette();
+        $tableCollapseId = 'statistics-hourly-table-' . md5((string) random_int(1000, 9999));
+
+        $bars = '<div style="padding:14px 14px 8px;border:1px solid #dfe7ef;border-radius:8px;background:#fff;">';
+        $bars .= '<div style="display:flex;align-items:flex-end;gap:6px;height:190px;overflow-x:auto;padding-bottom:10px;">';
+
+        for ($hour = 0; $hour < 24; ++$hour) {
+            $value = isset($data[$hour]) ? (int) $data[$hour] : 0;
+            $height = 12 + (int) round(($value / $max) * 158);
+            $color = $palette[$hour % count($palette)];
+
+            $bars .= '<div title="' . str_pad((string) $hour, 2, '0', STR_PAD_LEFT) . ':00 - ' . htmlspecialchars((string) $value, ENT_QUOTES) . '" style="flex:1 1 0;min-width:24px;max-width:56px;text-align:center;">';
+            $bars .= '<div style="height:' . $height . 'px;background:' . htmlspecialchars($color, ENT_QUOTES) . ';border-radius:5px 5px 0 0;"></div>';
+            $bars .= '<div style="font-size:11px;color:#6b7c93;margin-top:2px;">' . str_pad((string) $hour, 2, '0', STR_PAD_LEFT) . '</div>';
+            $bars .= '</div>';
+        }
+
+        $bars .= '</div>';
+        $bars .= '<div style="font-size:13px;color:#6b7c93;padding:4px 2px 0;">Stundenverteilung im Tagesverlauf</div>';
+        $bars .= '</div>';
+
+        $bars .= '<div style="margin-top:12px;">';
+        $bars .= '<button class="btn btn-default btn-xs" type="button" data-toggle="collapse" data-target="#' . htmlspecialchars($tableCollapseId, ENT_QUOTES) . '">';
+        $bars .= htmlspecialchars($this->addon->i18n('statistics_toggle_collapse_table'), ENT_QUOTES);
+        $bars .= '</button>';
+        $bars .= '<div id="' . htmlspecialchars($tableCollapseId, ENT_QUOTES) . '" class="collapse" style="margin-top:10px;">' . $table . '</div>';
+        $bars .= '</div>';
+
+        $fragment = new rex_fragment();
+        $fragment->setVar('title', $title);
+        $fragment->setVar('body', $bars, false);
+
+        return $fragment->parse('core/page/section.php');
     }
 
     /**

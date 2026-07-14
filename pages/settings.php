@@ -92,6 +92,59 @@ if (rex_request_method() == 'post') {
         $count += $sql->getRows();
 
         echo rex_view::success(sprintf($addon->i18n('statistics_deleted_noise'), (string) $count));
+    } elseif ($function == 'delete_old') {
+        $keepDays = rex_post('keep_days', 'int', 365);
+        if ($keepDays < 1) {
+            $keepDays = 1;
+        }
+
+        $cutoffDate = (new DateTimeImmutable('today'))->modify('-' . $keepDays . ' days')->format('Y-m-d');
+        $cutoffDatetime = $cutoffDate . ' 00:00:00';
+
+        $count = 0;
+
+        $sql = rex_sql::factory();
+        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_visits_per_day') . ' WHERE date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+        $count += $sql->getRows();
+
+        $sql = rex_sql::factory();
+        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_visitors_per_day') . ' WHERE date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+        $count += $sql->getRows();
+
+        $sql = rex_sql::factory();
+        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_visits_per_url') . ' WHERE date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+        $count += $sql->getRows();
+
+        $sql = rex_sql::factory();
+        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_referer') . ' WHERE date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+        $count += $sql->getRows();
+
+        $sql = rex_sql::factory();
+        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_media') . ' WHERE date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+        $count += $sql->getRows();
+
+        $sql = rex_sql::factory();
+        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_api') . ' WHERE date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+        $count += $sql->getRows();
+
+        $sql = rex_sql::factory();
+        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_hash') . ' WHERE datetime < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
+        $count += $sql->getRows();
+
+        $sql = rex_sql::factory();
+        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_sessionstats') . ' WHERE lastvisit < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
+        $count += $sql->getRows();
+
+        // Remove stale URL status records when no matching URL stats remain.
+        $sql = rex_sql::factory();
+        $sql->setQuery(
+            'DELETE us FROM ' . rex::getTable('pagestats_urlstatus') . ' us '
+            . 'LEFT JOIN ' . rex::getTable('pagestats_visits_per_url') . ' v ON v.url = us.url '
+            . 'WHERE v.url IS NULL'
+        );
+        $count += $sql->getRows();
+
+        echo rex_view::success(sprintf($addon->i18n('statistics_deleted_old'), (string) $count, (string) $keepDays));
     } elseif ($function == 'updateGeo2Ip') {
         $updated = Ip2Geo::updateDatabase();
         if ($updated) {
@@ -272,6 +325,13 @@ $content = '
 <form style="margin:5px" action="' . rex_url::currentBackendPage() . '" method="post">
 <input type="hidden" name="func" value="delete_noise">
 <button class="btn btn-warning" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_noise') . '">' . $addon->i18n('statistics_delete_noise') . '</button>
+</form>
+
+<form style="margin:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap" action="' . rex_url::currentBackendPage() . '" method="post">
+<input type="hidden" name="func" value="delete_old">
+<label for="statistics-keep-days" style="margin:0;">' . $addon->i18n('statistics_cleanup_keep_days') . '</label>
+<input id="statistics-keep-days" class="form-control" style="width:110px" type="number" min="1" step="1" name="keep_days" value="365">
+<button class="btn btn-warning" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_old') . '">' . $addon->i18n('statistics_delete_old') . '</button>
 </form>
 
 </div>
