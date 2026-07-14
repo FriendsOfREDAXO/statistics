@@ -83,3 +83,54 @@
     color: #66717d;
     font-size: 12px;
 }
+
+.statistics-ref-host-card,
+.statistics-ref-top-card {
+    display: block;
+    border: 1px solid #d7dde3;
+    border-radius: 6px;
+    background: #fff;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.statistics-ref-top-card:hover,
+.statistics-ref-top-card:focus {
+    border-color: #5ca2de;
+    box-shadow: 0 0 0 2px rgba(92, 162, 222, 0.12);
+    text-decoration: none;
+    outline: none;
+}
+
+.statistics-ref-host-title,
+.statistics-ref-top-url {
+    font-size: 13px;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #4f5f6f;
+}
+
+.statistics-ref-host-count,
+.statistics-ref-top-count {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-top: 2px;
+    margin-bottom: 6px;
+}
+
+.statistics-ref-meter {
+    height: 6px;
+    background: #eef2f6;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.statistics-ref-meter-bar {
+    height: 6px;
+    background: #5ca2de;
+}

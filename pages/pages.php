@@ -25,6 +25,18 @@ echo StatsSubpageRenderer::renderFilter($current_backend_page, $filter_date_help
 
 // sum per page, bar chart
 $sum_per_page = $pages_helper->sumPerPage($httpstatus);
+$chartLimit = 30;
+$chartBody = '';
+
+if ([] === $sum_per_page) {
+    $chartBody .= rex_view::info($addon->i18n('statistics_no_data'));
+} else {
+    $chartBody .= '<div class="alert alert-info" style="margin-bottom:10px;">';
+    $chartBody .= 'Top ' . htmlspecialchars((string) $chartLimit, ENT_QUOTES) . ' Seiten nach Aufrufen im gewählten Zeitraum.';
+    $chartBody .= '</div>';
+    $chartBody .= '<div id="chart_visits_per_page" style="height:640px; width:100%"></div>';
+    $chartBody .= StatsChartConfig::renderScript('chart_visits_per_page', StatsChartConfig::buildPagesStackedBarOption($sum_per_page, $chartLimit));
+}
 
 
 // check if request is for ignoring a url
@@ -80,7 +92,7 @@ $http_filter_buttons = '<a class="btn btn-primary" href="' . $oa . '">' . htmlsp
 
 echo StatsSubpageRenderer::renderSection(
     $addon->i18n('statistics_sum_per_page'),
-    $http_filter_buttons . '<div id="chart_visits_per_page" style="height:500px; width:auto"></div>' . StatsChartConfig::renderScript('chart_visits_per_page', StatsChartConfig::buildPageOverviewOption($sum_per_page)) . $domain_select . $pages_helper->getList($httpstatus)
+    $http_filter_buttons . $chartBody . $domain_select . $pages_helper->getList($httpstatus)
 );
 
 ?>

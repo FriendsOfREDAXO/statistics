@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.2.4] - 14.07.2026
+
+-   Statistiken-Startseite für Safari und große Datenmengen weiter entlastet: Initialisierung von Charts und DataTables wird stärker gestaffelt und lazy geladen
+-   Analysebereich auf konsequentes On-Demand-Laden umgestellt: Verhaltensdaten (Seiten pro Sitzung, Besuchsdauer, Ausstiegsseiten, Länder) werden erst beim Öffnen des jeweiligen Panels geladen
+-   Bereich "Aufrufe nach Uhrzeiten" auf On-Demand umgestellt und Darstellung verbreitert, damit der Chart die verfügbare Breite besser nutzt
+-   ECharts-Einbindung priorisiert: Wenn das AddOn `echarts` installiert ist, wird dessen Vendor-Asset bevorzugt verwendet (lokaler Fallback bleibt erhalten)
+-   Tracking robuster gegen Probe-/Spam-Aufrufe gemacht: typische WordPress- und Scanner-Requests (z. B. `wp-login.php`, `xmlrpc.php`, `apple-touch-icon`) werden bereits beim Erfassen ignoriert
+-   Neue Wartungsaktionen in den Einstellungen ergänzt: gezielte Bereinigung von Störanfragen sowie Löschung alter Statistikdaten per Aufbewahrungsdauer (Tage)
+-   Analyse-Karten-Textausgabe korrigiert, damit "Geräte & Browser" korrekt gerendert wird (kein sichtbares `&amp;`)
+
 ## [3.2.3] - 07.06.2026
 
 -   Dashboard-Overview erweitert um KPI-Leiste für die letzten 7 Tage (Besuche, Besucher, Top-Artikel, Seiten pro Sitzung)
