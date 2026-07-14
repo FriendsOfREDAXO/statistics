@@ -96,6 +96,58 @@ if (rex_request_method() == 'post') {
         return [implode(' OR ', $parts), $params];
     };
 
+    $runDeleteWithRetry = static function (string $query, array $params = []): int {
+        $maxRetries = 3;
+
+        for ($attempt = 1; $attempt <= $maxRetries; ++$attempt) {
+            try {
+                $sql = rex_sql::factory();
+                $sql->setQuery($query, $params);
+
+                return (int) $sql->getRows();
+            } catch (rex_sql_exception $exception) {
+                $message = $exception->getMessage();
+                $isLockTimeout = false !== strpos($message, '1205') || false !== strpos(strtolower($message), 'lock wait timeout');
+
+                if (!$isLockTimeout || $attempt >= $maxRetries) {
+                    throw $exception;
+                }
+
+                usleep(250000);
+            }
+        }
+
+        return 0;
+    };
+
+    $deleteChunked = static function (string $table, string $condition, array $params = [], int $chunkSize = 5000) use ($runDeleteWithRetry): int {
+        $total = 0;
+
+        do {
+            $affected = $runDeleteWithRetry(
+                'DELETE FROM ' . $table . ' WHERE ' . $condition . ' LIMIT ' . (int) $chunkSize,
+                $params
+            );
+            $total += $affected;
+        } while ($affected >= $chunkSize);
+
+        return $total;
+    };
+
+    $deleteJoinChunked = static function (string $queryPrefix, string $condition, array $params = [], int $chunkSize = 5000) use ($runDeleteWithRetry): int {
+        $total = 0;
+
+        do {
+            $affected = $runDeleteWithRetry(
+                $queryPrefix . ' WHERE ' . $condition . ' LIMIT ' . (int) $chunkSize,
+                $params
+            );
+            $total += $affected;
+        } while ($affected >= $chunkSize);
+
+        return $total;
+    };
+
     if ($function == 'delete_hash') {
         $sql = rex_sql::factory();
         $sql->setQuery('delete from ' . rex::getTable('pagestats_hash'));
@@ -138,76 +190,51 @@ if (rex_request_method() == 'post') {
         $sql->setQuery('delete from ' . rex::getTable('pagestats_api'));
         echo rex_view::success('Es wurden ' . $sql->getRows() . ' Einträge aus der Tabelle api gelöscht.');
     } elseif ($function == 'delete_noise') {
-        $count = 0;
+        try {
+            $count = 0;
 
-        [$whereUrl, $paramsUrl] = $buildLikeWhere('url', $noiseLikePatterns);
-        $sql = rex_sql::factory();
-        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_visits_per_url') . ' WHERE ' . $whereUrl, $paramsUrl);
-        $count += $sql->getRows();
+            [$whereUrl, $paramsUrl] = $buildLikeWhere('url', $noiseLikePatterns);
+            $count += $deleteChunked(rex::getTable('pagestats_visits_per_url'), $whereUrl, $paramsUrl);
+            $count += $deleteChunked(rex::getTable('pagestats_urlstatus'), $whereUrl, $paramsUrl);
 
-        $sql = rex_sql::factory();
-        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_urlstatus') . ' WHERE ' . $whereUrl, $paramsUrl);
-        $count += $sql->getRows();
+            [$whereLastpage, $paramsLastpage] = $buildLikeWhere('lastpage', $noiseLikePatterns);
+            $count += $deleteChunked(rex::getTable('pagestats_sessionstats'), $whereLastpage, $paramsLastpage);
 
-        [$whereLastpage, $paramsLastpage] = $buildLikeWhere('lastpage', $noiseLikePatterns);
-        $sql = rex_sql::factory();
-        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_sessionstats') . ' WHERE ' . $whereLastpage, $paramsLastpage);
-        $count += $sql->getRows();
-
-        echo rex_view::success(sprintf($addon->i18n('statistics_deleted_noise'), (string) $count));
-    } elseif ($function == 'delete_old') {
-        $keepDays = rex_post('keep_days', 'int', 365);
-        if ($keepDays < 1) {
-            $keepDays = 1;
+            echo rex_view::success(sprintf($addon->i18n('statistics_deleted_noise'), (string) $count));
+        } catch (rex_sql_exception $exception) {
+            echo rex_view::error($addon->i18n('statistics_cleanup_lock_timeout'));
         }
+    } elseif ($function == 'delete_old') {
+        try {
+            $keepDays = rex_post('keep_days', 'int', 365);
+            if ($keepDays < 1) {
+                $keepDays = 1;
+            }
 
-        $cutoffDate = (new DateTimeImmutable('today'))->modify('-' . $keepDays . ' days')->format('Y-m-d');
-        $cutoffDatetime = $cutoffDate . ' 00:00:00';
+            $cutoffDate = (new DateTimeImmutable('today'))->modify('-' . $keepDays . ' days')->format('Y-m-d');
+            $cutoffDatetime = $cutoffDate . ' 00:00:00';
 
-        $count = 0;
+            $count = 0;
+            $count += $deleteChunked(rex::getTable('pagestats_visits_per_day'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+            $count += $deleteChunked(rex::getTable('pagestats_visitors_per_day'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+            $count += $deleteChunked(rex::getTable('pagestats_visits_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+            $count += $deleteChunked(rex::getTable('pagestats_referer'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+            $count += $deleteChunked(rex::getTable('pagestats_media'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+            $count += $deleteChunked(rex::getTable('pagestats_api'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+            $count += $deleteChunked(rex::getTable('pagestats_hash'), 'datetime < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
+            $count += $deleteChunked(rex::getTable('pagestats_sessionstats'), 'lastvisit < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
 
-        $sql = rex_sql::factory();
-        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_visits_per_day') . ' WHERE date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-        $count += $sql->getRows();
+            // Remove stale URL status records when no matching URL stats remain.
+            $count += $deleteJoinChunked(
+                'DELETE us FROM ' . rex::getTable('pagestats_urlstatus') . ' us '
+                . 'LEFT JOIN ' . rex::getTable('pagestats_visits_per_url') . ' v ON v.url = us.url',
+                'v.url IS NULL'
+            );
 
-        $sql = rex_sql::factory();
-        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_visitors_per_day') . ' WHERE date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-        $count += $sql->getRows();
-
-        $sql = rex_sql::factory();
-        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_visits_per_url') . ' WHERE date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-        $count += $sql->getRows();
-
-        $sql = rex_sql::factory();
-        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_referer') . ' WHERE date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-        $count += $sql->getRows();
-
-        $sql = rex_sql::factory();
-        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_media') . ' WHERE date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-        $count += $sql->getRows();
-
-        $sql = rex_sql::factory();
-        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_api') . ' WHERE date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-        $count += $sql->getRows();
-
-        $sql = rex_sql::factory();
-        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_hash') . ' WHERE datetime < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
-        $count += $sql->getRows();
-
-        $sql = rex_sql::factory();
-        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_sessionstats') . ' WHERE lastvisit < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
-        $count += $sql->getRows();
-
-        // Remove stale URL status records when no matching URL stats remain.
-        $sql = rex_sql::factory();
-        $sql->setQuery(
-            'DELETE us FROM ' . rex::getTable('pagestats_urlstatus') . ' us '
-            . 'LEFT JOIN ' . rex::getTable('pagestats_visits_per_url') . ' v ON v.url = us.url '
-            . 'WHERE v.url IS NULL'
-        );
-        $count += $sql->getRows();
-
-        echo rex_view::success(sprintf($addon->i18n('statistics_deleted_old'), (string) $count, (string) $keepDays));
+            echo rex_view::success(sprintf($addon->i18n('statistics_deleted_old'), (string) $count, (string) $keepDays));
+        } catch (rex_sql_exception $exception) {
+            echo rex_view::error($addon->i18n('statistics_cleanup_lock_timeout'));
+        }
     } elseif ($function == 'updateGeo2Ip') {
         $updated = Ip2Geo::updateDatabase();
         if ($updated) {

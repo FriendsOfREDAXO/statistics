@@ -81,6 +81,7 @@ statistics_deleted_referer = Einträge aus der Tabelle bot gelöscht.
 statistics_deleted_media = Einträge aus der Tabelle referer gelöscht.
 statistics_deleted_noise = Es wurden %s Störanfragen gelöscht.
 statistics_deleted_old = Es wurden %s alte Einträge gelöscht (älter als %s Tage).
+statistics_cleanup_lock_timeout = Die Bereinigung konnte wegen aktiver Datenbank-Sperren nicht vollständig abgeschlossen werden. Bitte erneut ausführen oder den Zeitraum verkleinern.
 statistics_help = Hilfe
 statistics_visits_today = Besuche heute
 statistics_visits_total = Besuche insgesamt

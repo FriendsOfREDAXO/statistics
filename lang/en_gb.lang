@@ -83,6 +83,7 @@ statistics_deleted_referer = entries deleted from table bot.
 statistics_deleted_media = entries deleted from table referer.
 statistics_deleted_noise = %s noise requests were deleted.
 statistics_deleted_old = %s old entries were deleted (older than %s days).
+statistics_cleanup_lock_timeout = Cleanup could not be completed due to active database locks. Please run it again or reduce the period.
 statistics_help = Help
 statistics_visits_today = Visits today
 statistics_visits_total = Visits total
