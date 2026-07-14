@@ -37,7 +37,13 @@ $extractCampaignData = static function (string $url) use ($trackedParams, $addon
 
     $parseTarget = $trimmed;
     if (!preg_match('~^[a-z][a-z0-9+.-]*://~i', $parseTarget)) {
-        $parseTarget = 'https://' . ltrim($parseTarget, '/');
+        if (str_starts_with($parseTarget, '//')) {
+            $parseTarget = 'https:' . $parseTarget;
+        } elseif (str_starts_with($parseTarget, '/')) {
+            $parseTarget = 'https://example.invalid' . $parseTarget;
+        } else {
+            $parseTarget = 'https://' . $parseTarget;
+        }
     }
 
     $path = parse_url($parseTarget, PHP_URL_PATH);
