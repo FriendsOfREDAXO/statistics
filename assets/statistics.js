@@ -146,6 +146,34 @@ $(document).on("rex:ready", function (event, container) {
     }
 
     function buildDailyChartOption(pageConfig) {
+        var enhancedSeries = (pageConfig.mainChartData.series || []).map(function (entry) {
+            var next = Object.assign({}, entry);
+            var name = String(next.name || '');
+            var isTotal = name.indexOf('Gesamt') !== -1;
+
+            next.type = 'line';
+            next.smooth = true;
+            next.showSymbol = false;
+            next.sampling = 'lttb';
+
+            if (!isTotal && name.indexOf('Aufrufe ') === 0) {
+                next.stack = 'Aufrufe';
+                next.areaStyle = { opacity: 0.1 };
+            }
+
+            if (!isTotal && name.indexOf('Besucher ') === 0) {
+                next.stack = 'Besucher';
+                next.areaStyle = { opacity: 0.08 };
+            }
+
+            if (isTotal) {
+                next.lineStyle = { width: 3 };
+                next.z = 10;
+            }
+
+            return next;
+        });
+
         return {
             title: {},
             tooltip: {
@@ -170,10 +198,11 @@ $(document).on("rex:ready", function (event, container) {
             },
             xAxis: {
                 data: pageConfig.mainChartData.xaxis,
-                type: 'category'
+                type: 'category',
+                boundaryGap: false
             },
             yAxis: {},
-            series: pageConfig.mainChartData.series
+            series: enhancedSeries
         };
     }
 
