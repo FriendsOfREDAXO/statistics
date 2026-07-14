@@ -33,6 +33,10 @@ class StatsLazyBlockRenderer
             return $this->renderExtendedBlock();
         }
 
+        if (in_array($blockId, ['extended-pagecount', 'extended-visitduration', 'extended-lastpage', 'extended-country'], true)) {
+            return $this->renderExtendedSubBlock($blockId);
+        }
+
         if ('bots' === $blockId) {
             return $this->renderBotsBlock();
         }
@@ -114,68 +118,145 @@ class StatsLazyBlockRenderer
      */
     private function renderExtendedBlock(): array
     {
-        $pagecount = new Pagecount();
-        $visitduration = new VisitDuration();
-        $lastpage = new Lastpage();
-        $country = new Country();
-
         $html = '';
-        $charts = [];
 
-        $pagecountData = $pagecount->getChartData();
-        $pageCountLabels = [];
-        $pageCountValues = [];
-        foreach ($pagecountData['values'] as $index => $pagesVisited) {
-            $pageCountLabels[] = (string) $pagesVisited . ' Seiten';
-            $pageCountValues[] = isset($pagecountData['labels'][$index]) ? (int) $pagecountData['labels'][$index] : 0;
-        }
-        $html .= $this->renderInsightTableSection(
+        $html .= $this->renderLazySectionCard(
             'Anzahl besuchter Seiten in einer Sitzung',
-            'Verteilung der Seiten pro Sitzung',
-            $pageCountLabels,
-            $pageCountValues,
-            $pagecount->getList(),
-            '{b}: <b>{c} Sitzungen</b>'
+            'Wird bei Bedarf geladen, um den Browser zu entlasten.',
+            'extended-pagecount'
         );
-
-        $visitdurationData = $visitduration->getChartData();
-        $visitDurationLabels = [];
-        $visitDurationValues = [];
-        foreach ($visitdurationData['values'] as $index => $timespan) {
-            $visitDurationLabels[] = (string) $timespan;
-            $visitDurationValues[] = isset($visitdurationData['labels'][$index]) ? (int) $visitdurationData['labels'][$index] : 0;
-        }
-        $html .= $this->renderInsightTableSection(
+        $html .= $this->renderLazySectionCard(
             'Besuchsdauer',
-            'Verteilung der Sitzungsdauer',
-            $visitDurationLabels,
-            $visitDurationValues,
-            $visitduration->getList(),
-            '{b}: <b>{c} Sitzungen</b>'
+            'Wird bei Bedarf geladen, um den Browser zu entlasten.',
+            'extended-visitduration'
         );
-
-        $lastpageData = $lastpage->getChartData();
-
-        $html .= $this->renderInsightTableSection(
+        $html .= $this->renderLazySectionCard(
             'Ausstiegsseiten',
-            'Top-Ausstiegsseiten im gewählten Zeitraum',
-            $lastpageData['labels'],
-            $lastpageData['values'],
-            $lastpage->getList(),
-            '{b} <br> Anzahl: <b>{c}</b>'
+            'Wird bei Bedarf geladen, um den Browser zu entlasten.',
+            'extended-lastpage'
         );
-
-        $countryData = $country->getChartData();
-        $html .= $this->renderInsightTableSection(
+        $html .= $this->renderLazySectionCard(
             'Länder',
-            'Geografische Verteilung auf einen Blick',
-            $countryData['labels'],
-            $countryData['values'],
-            $country->getList(),
-            '{b} <br> Anzahl: <b>{c}</b>'
+            'Wird bei Bedarf geladen, um den Browser zu entlasten.',
+            'extended-country'
         );
 
-        return ['html' => $html, 'charts' => $charts];
+        return ['html' => $html, 'charts' => []];
+    }
+
+    /**
+     * @return array{html: string, charts: array<int, array{id: string, option: array<string, mixed>}>}
+     */
+    private function renderExtendedSubBlock(string $blockId): array
+    {
+        if ('extended-pagecount' === $blockId) {
+            $pagecount = new Pagecount();
+            $pagecountData = $pagecount->getChartData();
+            $labels = [];
+            $values = [];
+            foreach ($pagecountData['values'] as $index => $pagesVisited) {
+                $labels[] = (string) $pagesVisited . ' Seiten';
+                $values[] = isset($pagecountData['labels'][$index]) ? (int) $pagecountData['labels'][$index] : 0;
+            }
+
+            return [
+                'html' => $this->renderInsightTableSection(
+                    'Anzahl besuchter Seiten in einer Sitzung',
+                    'Verteilung der Seiten pro Sitzung',
+                    $labels,
+                    $values,
+                    $pagecount->getList(),
+                    '{b}: <b>{c} Sitzungen</b>'
+                ),
+                'charts' => [],
+            ];
+        }
+
+        if ('extended-visitduration' === $blockId) {
+            $visitduration = new VisitDuration();
+            $visitdurationData = $visitduration->getChartData();
+            $labels = [];
+            $values = [];
+            foreach ($visitdurationData['values'] as $index => $timespan) {
+                $labels[] = (string) $timespan;
+                $values[] = isset($visitdurationData['labels'][$index]) ? (int) $visitdurationData['labels'][$index] : 0;
+            }
+
+            return [
+                'html' => $this->renderInsightTableSection(
+                    'Besuchsdauer',
+                    'Verteilung der Sitzungsdauer',
+                    $labels,
+                    $values,
+                    $visitduration->getList(),
+                    '{b}: <b>{c} Sitzungen</b>'
+                ),
+                'charts' => [],
+            ];
+        }
+
+        if ('extended-lastpage' === $blockId) {
+            $lastpage = new Lastpage();
+            $lastpageData = $lastpage->getChartData();
+
+            return [
+                'html' => $this->renderInsightTableSection(
+                    'Ausstiegsseiten',
+                    'Top-Ausstiegsseiten im gewählten Zeitraum',
+                    $lastpageData['labels'],
+                    $lastpageData['values'],
+                    $lastpage->getList(),
+                    '{b} <br> Anzahl: <b>{c}</b>'
+                ),
+                'charts' => [],
+            ];
+        }
+
+        if ('extended-country' === $blockId) {
+            $country = new Country();
+            $countryData = $country->getChartData();
+
+            return [
+                'html' => $this->renderInsightTableSection(
+                    'Länder',
+                    'Geografische Verteilung auf einen Blick',
+                    $countryData['labels'],
+                    $countryData['values'],
+                    $country->getList(),
+                    '{b} <br> Anzahl: <b>{c}</b>'
+                ),
+                'charts' => [],
+            ];
+        }
+
+        throw new \InvalidArgumentException('Unknown extended sub-block id: ' . $blockId);
+    }
+
+    private function renderLazySectionCard(string $title, string $description, string $lazyBlockId): string
+    {
+        $collapseId = 'statistics-collapse-' . md5($lazyBlockId . '-' . (string) random_int(1000, 9999));
+
+        $body = '<div class="panel panel-default">'
+            . '<div class="panel-heading">'
+                . '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">'
+                    . '<strong>' . htmlspecialchars($title, ENT_QUOTES) . '</strong>'
+                    . '<button class="btn btn-primary btn-xs" type="button" data-toggle="collapse" data-target="#' . htmlspecialchars($collapseId, ENT_QUOTES) . '">' . htmlspecialchars($this->addon->i18n('statistics_toggle_collapse_table'), ENT_QUOTES) . '</button>'
+                . '</div>'
+                . '<div style="margin-top:6px;color:#708090;">' . htmlspecialchars($description, ENT_QUOTES) . '</div>'
+            . '</div>'
+            . '<div id="' . htmlspecialchars($collapseId, ENT_QUOTES) . '" class="collapse">'
+                . '<div class="panel-body">'
+                    . '<div data-statistics-lazy-collapse data-block-id="' . htmlspecialchars($lazyBlockId, ENT_QUOTES) . '" data-date-start="' . htmlspecialchars($this->filter_date_helper->date_start->format('Y-m-d'), ENT_QUOTES) . '" data-date-end="' . htmlspecialchars($this->filter_date_helper->date_end->format('Y-m-d'), ENT_QUOTES) . '" data-state="idle"></div>'
+                . '</div>'
+            . '</div>'
+        . '</div>';
+
+        $fragment = new rex_fragment();
+        $fragment->setVar('class', 'default', false);
+        $fragment->setVar('title', $title, false);
+        $fragment->setVar('body', $body, false);
+
+        return $fragment->parse('core/page/section.php');
     }
 
     /**

@@ -627,6 +627,7 @@ $(document).on("rex:ready", function (event, container) {
             .then(function (payload) {
                 container.innerHTML = payload.html || '';
                 window.statisticsInitTables(container);
+                initLazyCollapses(container);
                 initCharts(payload.charts || []);
                 container.dataset.state = 'loaded';
             })
@@ -712,13 +713,24 @@ $(document).on("rex:ready", function (event, container) {
             });
     }
 
-    function initLazyCollapses() {
+    function initLazyCollapses(root) {
         if (typeof $ === 'undefined') {
             return;
         }
 
-        $('[data-statistics-lazy-collapse]').each(function () {
+        var $root = root ? $(root) : $(document);
+        var $lazyTargets = $root.find('[data-statistics-lazy-collapse]');
+        if ($root.is && $root.is('[data-statistics-lazy-collapse]')) {
+            $lazyTargets = $lazyTargets.add($root);
+        }
+
+        $lazyTargets.each(function () {
             var lazyContainer = this;
+            if (lazyContainer.dataset.statisticsCollapseBound === 'true') {
+                return;
+            }
+
+            lazyContainer.dataset.statisticsCollapseBound = 'true';
             var collapse = $(lazyContainer).closest('.collapse');
 
             collapse.on('show.bs.collapse', function () {
