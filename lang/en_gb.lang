@@ -33,6 +33,7 @@ statistics_confirm_ignore_delete = This entry will be deleted from the database 
 statistics_sum_per_page = Sum per page:
 statistics_all_referer = All referers:
 statistics_visit_duration = Session duration:
+statistics_visit_duration_zero_seconds_note = Note: 0 seconds usually means a single page view without further interaction. This can indicate an immediate bounce, but also a single-page visit without a second page change.
 statistics_duration_note = How long a visitor's session should last (in minutes). Visits within this time are counted only once.
 statistics_duration_validate = Please enter an integer value for the session duration.
 statistics_chart_padding = Chart bottom-padding:

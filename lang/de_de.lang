@@ -31,6 +31,7 @@ statistics_confirm_ignore_delete = Dieser Eintrag wird aus der Datenbank gelösc
 statistics_sum_per_page = Summe pro Seite:
 statistics_all_referer = Alle Referer:
 statistics_visit_duration = Sitzungsdauer:
+statistics_visit_duration_zero_seconds_note = Hinweis: 0 Sekunden bedeutet meist nur einen einzelnen Seitenaufruf ohne weitere Interaktion. Das kann ein sofortiger Absprung sein, aber auch ein Einzelaufruf ohne zweiten Seitenwechsel.
 statistics_duration_note = Wie lange eine Sitzung des Besuchers dauern soll (in Minuten). Besuche innerhalb dieser Zeit werden nur einmal gezählt.
 statistics_duration_validate = Bitte für die Sitzungsdauer einen ganzzahligen Wert eingeben
 statistics_chart_padding = Chart bottom-padding:

@@ -40,10 +40,15 @@ class VisitDuration
 
         $rows = $this->getRows();
 
+        $note = '<div class="alert alert-warning" style="margin-bottom:10px;">'
+            . htmlspecialchars($addon->i18n('statistics_visit_duration_zero_seconds_note'), ENT_QUOTES)
+            . '</div>';
+
         if ([] === $rows) {
-            $table = rex_view::info($addon->i18n('statistics_no_data'));
+            $table = $note . rex_view::info($addon->i18n('statistics_no_data'));
         } else {
-            $table = '<table class="dt_order_second statistics_table table table-striped table-hover">';
+            $table = $note;
+            $table .= '<table class="dt_order_second statistics_table table table-striped table-hover">';
             $table .= '<thead><tr><th>Dauer in Sekunden</th><th>Anzahl</th></tr></thead><tbody>';
 
             foreach ($rows as $row) {
