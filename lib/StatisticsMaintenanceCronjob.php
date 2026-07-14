@@ -20,11 +20,7 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
             $deleted += $this->deleteChunked(rex::getTable('pagestats_sessionstats'), 'lastvisit < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
             $deleted += $this->deleteChunked(rex::getTable('pagestats_hash'), 'datetime < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
 
-            $deleted += $this->deleteJoinChunked(
-                'DELETE us FROM ' . rex::getTable('pagestats_urlstatus') . ' us '
-                . 'LEFT JOIN ' . rex::getTable('pagestats_visits_per_url') . ' v ON v.url = us.url',
-                'v.url IS NULL'
-            );
+            $deleted += $this->deleteOrphanUrlStatusChunked();
 
             $optimized = 0;
             if ($optimizeTables) {
@@ -116,14 +112,21 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
         return $total;
     }
 
-    private function deleteJoinChunked(string $queryPrefix, string $condition, array $params = [], int $chunkSize = 5000): int
+    private function deleteOrphanUrlStatusChunked(int $chunkSize = 5000): int
     {
         $total = 0;
 
         do {
             $affected = $this->runDeleteWithRetry(
-                $queryPrefix . ' WHERE ' . $condition . ' LIMIT ' . (int) $chunkSize,
-                $params
+                'DELETE FROM ' . rex::getTable('pagestats_urlstatus')
+                . ' WHERE url IN ('
+                . 'SELECT stale.url FROM ('
+                . 'SELECT us.url FROM ' . rex::getTable('pagestats_urlstatus') . ' us '
+                . 'LEFT JOIN ' . rex::getTable('pagestats_visits_per_url') . ' v ON v.url = us.url '
+                . 'WHERE v.url IS NULL '
+                . 'LIMIT ' . (int) $chunkSize
+                . ') stale'
+                . ')'
             );
             $total += $affected;
         } while ($affected >= $chunkSize);

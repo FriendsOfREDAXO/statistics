@@ -156,13 +156,20 @@ if (rex_request_method() == 'post') {
         ];
     };
 
-    $deleteJoinChunked = static function (string $queryPrefix, string $condition, array $params = [], int $chunkSize = 5000) use ($runDeleteWithRetry): int {
+    $deleteOrphanUrlStatusChunked = static function (int $chunkSize = 5000) use ($runDeleteWithRetry): int {
         $total = 0;
 
         do {
             $affected = $runDeleteWithRetry(
-                $queryPrefix . ' WHERE ' . $condition . ' LIMIT ' . (int) $chunkSize,
-                $params
+                'DELETE FROM ' . rex::getTable('pagestats_urlstatus')
+                . ' WHERE url IN ('
+                . 'SELECT stale.url FROM ('
+                . 'SELECT us.url FROM ' . rex::getTable('pagestats_urlstatus') . ' us '
+                . 'LEFT JOIN ' . rex::getTable('pagestats_visits_per_url') . ' v ON v.url = us.url '
+                . 'WHERE v.url IS NULL '
+                . 'LIMIT ' . (int) $chunkSize
+                . ') stale'
+                . ')'
             );
             $total += $affected;
         } while ($affected >= $chunkSize);
@@ -268,11 +275,7 @@ if (rex_request_method() == 'post') {
             $count += $deleteChunked(rex::getTable('pagestats_sessionstats'), 'lastvisit < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
 
             // Remove stale URL status records when no matching URL stats remain.
-            $count += $deleteJoinChunked(
-                'DELETE us FROM ' . rex::getTable('pagestats_urlstatus') . ' us '
-                . 'LEFT JOIN ' . rex::getTable('pagestats_visits_per_url') . ' v ON v.url = us.url',
-                'v.url IS NULL'
-            );
+            $count += $deleteOrphanUrlStatusChunked();
 
             echo rex_view::success(sprintf($addon->i18n('statistics_deleted_old'), (string) $count, (string) $keepDays));
         } catch (rex_sql_exception $exception) {
@@ -307,11 +310,7 @@ if (rex_request_method() == 'post') {
             $count += $deleteChunked(rex::getTable('pagestats_hash'), 'datetime < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
 
             // Remove stale URL status records without matching URL rows.
-            $count += $deleteJoinChunked(
-                'DELETE us FROM ' . rex::getTable('pagestats_urlstatus') . ' us '
-                . 'LEFT JOIN ' . rex::getTable('pagestats_visits_per_url') . ' v ON v.url = us.url',
-                'v.url IS NULL'
-            );
+            $count += $deleteOrphanUrlStatusChunked();
 
             echo rex_view::success(sprintf($addon->i18n('statistics_deleted_raw_old'), (string) $count, (string) $keepDaysRaw));
         } catch (rex_sql_exception $exception) {

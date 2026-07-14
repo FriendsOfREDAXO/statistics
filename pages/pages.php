@@ -16,6 +16,8 @@ $search_string = htmlspecialchars_decode(rex_request('search_string', 'string', 
 $request_date_start = htmlspecialchars_decode(rex_request('date_start', 'string', ''));
 $request_date_end = htmlspecialchars_decode(rex_request('date_end', 'string', ''));
 $httpstatus = rex_request('httpstatus', 'string', 'any');
+$toggle_favorite = rex_request('toggle_favorite', 'boolean', false);
+$only_favorites = rex_request('only_favorites', 'boolean', false);
 
 
 $filter_date_helper = new DateFilter($request_date_start, $request_date_end, 'pagestats_visits_per_url');
@@ -49,6 +51,12 @@ if ($request_url !== '' && $ignore_page === true) {
         . ' '
         . sprintf($addon->i18n('statistics_ignore_url_future'), htmlspecialchars($request_url, ENT_QUOTES))
     );
+}
+
+if ($request_url !== '' && $toggle_favorite === true) {
+    $isFavoriteNow = $pages_helper->toggleFavoriteUrl($request_url);
+    $messageKey = $isFavoriteNow ? 'statistics_favorite_toggle_add' : 'statistics_favorite_toggle_remove';
+    echo rex_view::success($addon->i18n($messageKey) . ': <code>' . htmlspecialchars($request_url, ENT_QUOTES) . '</code>');
 }
 
 
@@ -87,19 +95,24 @@ $baseParams = [
     'date_start' => $filter_date_helper->date_start->format('Y-m-d'),
     'date_end' => $filter_date_helper->date_end->format('Y-m-d'),
     'url' => '',
+    'only_favorites' => $only_favorites ? 1 : 0,
 ];
 $oa = rex_url::backendController(array_merge($baseParams, ['httpstatus' => 'any']), false);
 $o2 = rex_url::backendController(array_merge($baseParams, ['httpstatus' => '200']), false);
 $on2 = rex_url::backendController(array_merge($baseParams, ['httpstatus' => 'not200']), false);
+$of = rex_url::backendController(array_merge($baseParams, ['httpstatus' => $httpstatus, 'only_favorites' => 1]), false);
+$oaf = rex_url::backendController(array_merge($baseParams, ['httpstatus' => $httpstatus, 'only_favorites' => 0]), false);
 
 $http_filter_buttons = '<a class="btn btn-primary" href="' . $oa . '">' . htmlspecialchars($addon->i18n('statistics_filter_all'), ENT_QUOTES) . '</a>
 <a class="btn btn-primary" href="' . $o2 . '">' . htmlspecialchars($addon->i18n('statistics_filter_only_200'), ENT_QUOTES) . '</a>
-<a class="btn btn-primary" href="' . $on2 . '">' . htmlspecialchars($addon->i18n('statistics_filter_only_not_200'), ENT_QUOTES) . '</a>';
+<a class="btn btn-primary" href="' . $on2 . '">' . htmlspecialchars($addon->i18n('statistics_filter_only_not_200'), ENT_QUOTES) . '</a>
+<a class="btn btn-primary" href="' . $of . '">' . htmlspecialchars($addon->i18n('statistics_filter_only_favorites'), ENT_QUOTES) . '</a>
+<a class="btn btn-default" href="' . $oaf . '">' . htmlspecialchars($addon->i18n('statistics_filter_all'), ENT_QUOTES) . '</a>';
 
 
 echo StatsSubpageRenderer::renderSection(
     $addon->i18n('statistics_sum_per_page'),
-    $http_filter_buttons . $chartBody . $domain_select . $pages_helper->getList($httpstatus, $tableLimit)
+    $http_filter_buttons . $chartBody . $domain_select . $pages_helper->getList($httpstatus, $tableLimit, $only_favorites)
 );
 
 ?>
