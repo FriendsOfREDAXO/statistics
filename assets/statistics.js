@@ -1,30 +1,32 @@
 $(document).on("rex:ready", function (event, container) {
-    statistics_datefilter_start = document.getElementById("statistics_datefilter_start");
-    statistics_df_lsd = document.getElementById("statistics_df_lsd");
-    statistics_df_ltd = document.getElementById("statistics_df_ltd");
-    statistics_df_ty = document.getElementById("statistics_df_ty");
-    statistics_df_wt = document.getElementById("statistics_df_wt");
-    statistics_df_form = document.getElementById("statistics_df_form");
+    var statistics_datefilter_start = document.getElementById("statistics_datefilter_start");
+    var statistics_df_lsd = document.getElementById("statistics_df_lsd");
+    var statistics_df_ltd = document.getElementById("statistics_df_ltd");
+    var statistics_df_ty = document.getElementById("statistics_df_ty");
+    var statistics_df_wt = document.getElementById("statistics_df_wt");
+    var statistics_df_form = document.getElementById("statistics_df_form");
 
     // if input field exists add event listeners
-    if (statistics_datefilter_start != null) {
+    if (statistics_datefilter_start != null && statistics_df_form && statistics_df_form.dataset.statisticsDatefilterBound !== 'true') {
+        statistics_df_form.dataset.statisticsDatefilterBound = 'true';
+
         statistics_df_lsd.addEventListener("click", function () {
-            last_seven_days = get_past_date(7);
+            var last_seven_days = get_past_date(7);
             statistics_datefilter_start.value = last_seven_days;
             statistics_df_form.submit();
         });
         statistics_df_ltd.addEventListener("click", function () {
-            last_thirty_days = get_past_date(30);
+            var last_thirty_days = get_past_date(30);
             statistics_datefilter_start.value = last_thirty_days;
             statistics_df_form.submit();
         });
         statistics_df_ty.addEventListener("click", function () {
-            last_year = get_past_date(365);
+            var last_year = get_past_date(365);
             statistics_datefilter_start.value = last_year;
             statistics_df_form.submit();
         });
         statistics_df_wt.addEventListener("click", function () {
-            whole_time = statistics_df_wt.getAttribute("data-start");
+            var whole_time = statistics_df_wt.getAttribute("data-start");
             statistics_datefilter_start.value = whole_time;
             statistics_df_form.submit();
         });
@@ -33,19 +35,40 @@ $(document).on("rex:ready", function (event, container) {
     function get_past_date(minusDays) {
         var date = new Date();
         date.setDate(date.getDate() - minusDays);
-        day = ("0" + date.getDate()).slice(-2);
-        month = ("0" + (date.getMonth() + 1)).slice(-2);
-        year = date.getFullYear();
-        str = year + "-" + month + "-" + day;
+        var day = ("0" + date.getDate()).slice(-2);
+        var month = ("0" + (date.getMonth() + 1)).slice(-2);
+        var year = date.getFullYear();
+        var str = year + "-" + month + "-" + day;
 
         return str;
     }
 });
 
 (function () {
-    var statisticsCharts = [];
+    var statisticsCharts = {};
     var statisticsPageConfigCache = null;
     var statisticsDashboardInitialized = false;
+    var statisticsResizeScheduled = false;
+    var statisticsTabsBound = false;
+
+    function isSafariBrowser() {
+        var ua = (window.navigator && window.navigator.userAgent) || '';
+        return /Safari\//.test(ua) && !/Chrome\//.test(ua) && !/Chromium\//.test(ua) && !/CriOS\//.test(ua) && !/Edg\//.test(ua);
+    }
+
+    function normalizeChartOption(option) {
+        if (!option || typeof option !== 'object') {
+            return option;
+        }
+
+        if (isSafariBrowser()) {
+            option.animation = false;
+            option.animationDuration = 0;
+            option.animationDurationUpdate = 0;
+        }
+
+        return option;
+    }
 
     function getPageConfig() {
         if (statisticsPageConfigCache !== null) {
@@ -110,9 +133,22 @@ $(document).on("rex:ready", function (event, container) {
         };
     }
 
-    function rememberChart(chart) {
-        statisticsCharts.push(chart);
+    function rememberChart(elementId, chart) {
+        if (!elementId || !chart) {
+            return chart;
+        }
+
+        statisticsCharts[elementId] = chart;
         return chart;
+    }
+
+    function cleanupDisposedCharts() {
+        Object.keys(statisticsCharts).forEach(function (id) {
+            var chart = statisticsCharts[id];
+            if (!chart || chart.isDisposed()) {
+                delete statisticsCharts[id];
+            }
+        });
     }
 
     function createOrReplaceChart(elementId, option) {
@@ -125,14 +161,24 @@ $(document).on("rex:ready", function (event, container) {
             return null;
         }
 
+        var normalizedOption = normalizeChartOption(option);
         var existing = echarts.getInstanceByDom(element);
         if (existing) {
-            existing.dispose();
+            existing.setOption(normalizedOption, {
+                notMerge: true,
+                lazyUpdate: true,
+                silent: true
+            });
+            return rememberChart(elementId, existing);
         }
 
         var chart = echarts.init(element, getTheme());
-        chart.setOption(option);
-        return rememberChart(chart);
+        chart.setOption(normalizedOption, {
+            notMerge: true,
+            lazyUpdate: true,
+            silent: true
+        });
+        return rememberChart(elementId, chart);
     }
 
     function scheduleChartResize(elementId) {
@@ -347,9 +393,11 @@ $(document).on("rex:ready", function (event, container) {
     }
 
     function initStatsTabHandling() {
-        if (typeof $ === 'undefined') {
+        if (typeof $ === 'undefined' || statisticsTabsBound) {
             return;
         }
+
+        statisticsTabsBound = true;
 
         $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
             window.statisticsResizeChartById('chart_visits_daily');
@@ -436,14 +484,27 @@ $(document).on("rex:ready", function (event, container) {
             }
 
             var existing = echarts.getInstanceByDom(element);
+            var normalizedOption = normalizeChartOption(chartConfig.option);
             if (existing) {
-                existing.dispose();
+                existing.setOption(normalizedOption, {
+                    notMerge: true,
+                    lazyUpdate: true,
+                    silent: true
+                });
+                rememberChart(chartConfig.id, existing);
+                return;
             }
 
             var chart = echarts.init(element, theme);
-            chart.setOption(chartConfig.option);
-            rememberChart(chart);
+            chart.setOption(normalizedOption, {
+                notMerge: true,
+                lazyUpdate: true,
+                silent: true
+            });
+            rememberChart(chartConfig.id, chart);
         });
+
+        cleanupDisposedCharts();
     }
 
     function fetchLazyPayload(blockId, dateStart, dateEnd) {
@@ -646,10 +707,21 @@ $(document).on("rex:ready", function (event, container) {
     };
 
     window.addEventListener('resize', function () {
-        statisticsCharts.forEach(function (chart) {
-            if (chart && !chart.isDisposed()) {
-                chart.resize();
-            }
+        if (statisticsResizeScheduled) {
+            return;
+        }
+
+        statisticsResizeScheduled = true;
+        window.requestAnimationFrame(function () {
+            statisticsResizeScheduled = false;
+            cleanupDisposedCharts();
+
+            Object.keys(statisticsCharts).forEach(function (id) {
+                var chart = statisticsCharts[id];
+                if (chart && !chart.isDisposed()) {
+                    chart.resize();
+                }
+            });
         });
     });
 
@@ -658,11 +730,6 @@ $(document).on("rex:ready", function (event, container) {
     } else {
         bootstrapStatisticsDashboard();
     }
-
-    window.addEventListener('load', initStatisticsPageCharts);
-    window.addEventListener('load', function () {
-        initConfiguredCharts(document);
-    });
 
     $(document).on('rex:ready', function () {
         bootstrapStatisticsDashboard();

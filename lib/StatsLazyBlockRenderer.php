@@ -79,14 +79,19 @@ class StatsLazyBlockRenderer
         $html .= $this->renderVerticalSection($this->addon->i18n('statistics_browser'), 'chart_browser', $browser->getList());
         $charts[] = ['id' => 'chart_browser', 'option' => $this->buildTopCategoriesBarOption($browser->getData(), '{b}: <b>{c}</b>')];
 
-        $html .= $this->renderVerticalSection($this->addon->i18n('statistics_devicetype'), 'chart_browsertype', $browsertype->getList());
-        $charts[] = ['id' => 'chart_browsertype', 'option' => $this->buildTopCategoriesBarOption($browsertype->getData(), '{b}: <b>{c}</b>', 6)];
-
-        $html .= $this->renderVerticalSection($this->addon->i18n('statistics_os'), 'chart_os', $os->getList());
-        $charts[] = ['id' => 'chart_os', 'option' => $this->buildTopCategoriesBarOption($os->getData(), '{b}: <b>{c}</b>')];
-
-        $html .= $this->renderVerticalSection($this->addon->i18n('statistics_brand'), 'chart_brand', $brand->getList());
-        $charts[] = ['id' => 'chart_brand', 'option' => $this->buildTopCategoriesBarOption($brand->getData(), '{b}: <b>{c}</b>')];
+        $deviceAndBrandTable = '<h5><b>' . htmlspecialchars($this->addon->i18n('statistics_devicetype'), ENT_QUOTES) . '</b></h5>'
+            . $browsertype->getList()
+            . '<hr>'
+            . '<h5><b>' . htmlspecialchars($this->addon->i18n('statistics_brand'), ENT_QUOTES) . '</b></h5>'
+            . $brand->getList()
+            . '<hr>'
+            . '<h5><b>' . htmlspecialchars($this->addon->i18n('statistics_os'), ENT_QUOTES) . '</b></h5>'
+            . $os->getList();
+        $html .= $this->renderVerticalSection('Gerätetyp, Hersteller & Betriebssystem', 'chart_device_brand_stack', $deviceAndBrandTable);
+        $charts[] = [
+            'id' => 'chart_device_brand_stack',
+            'option' => $this->buildDeviceBrandOsStackedOption($browsertype->getData(), $brand->getData(), $os->getData(), 7, 7),
+        ];
 
         // Keep model as table-only to reduce chart density and browser load.
         $html .= $this->renderTableOnlySection($this->addon->i18n('statistics_model'), $model->getList());
@@ -297,6 +302,8 @@ class StatsLazyBlockRenderer
             $values = array_map(static fn ($value): int => (int) $value, array_column($top, 'value'));
         }
 
+        $coloredValues = $this->buildBarDataWithPalette($values);
+
         return [
             'title' => (object) [],
             'tooltip' => [
@@ -318,7 +325,7 @@ class StatsLazyBlockRenderer
             'series' => [[
                 'name' => 'Anzahl',
                 'type' => 'bar',
-                'data' => $values,
+                'data' => $coloredValues,
                 'label' => [
                     'show' => true,
                     'position' => 'right',
@@ -348,6 +355,169 @@ class StatsLazyBlockRenderer
                 'yAxisIndex' => 0,
                 'filterMode' => 'none',
             ]],
+        ];
+    }
+
+    /**
+     * @param array<int, array{name: string, value: int}> $deviceTypeData
+     * @param array<int, array{name: string, value: int}> $brandData
+     * @return array<string, mixed>
+     */
+    private function buildDeviceBrandOsStackedOption(array $deviceTypeData, array $brandData, array $osData, int $brandLimit = 7, int $osLimit = 7): array
+    {
+        $deviceTop = $this->reduceToTopAndOther($deviceTypeData, 6);
+        $brandTop = $this->reduceToTopAndOther($brandData, $brandLimit);
+        $osTop = $this->reduceToTopAndOther($osData, $osLimit);
+
+        $seriesMap = [];
+
+        foreach ($deviceTop as $row) {
+            $name = (string) $row['name'];
+            $seriesMap[$name] = [
+                'name' => $name,
+                'type' => 'bar',
+                'stack' => 'gesamt',
+                'emphasis' => ['focus' => 'series'],
+                'data' => [(int) $row['value'], 0],
+            ];
+        }
+
+        foreach ($brandTop as $row) {
+            $name = (string) $row['name'];
+            if (!isset($seriesMap[$name])) {
+                $seriesMap[$name] = [
+                    'name' => $name,
+                    'type' => 'bar',
+                    'stack' => 'gesamt',
+                    'emphasis' => ['focus' => 'series'],
+                    'data' => [0, (int) $row['value'], 0],
+                ];
+                continue;
+            }
+
+            $seriesMap[$name]['data'][1] = (int) $row['value'];
+        }
+
+        foreach ($osTop as $row) {
+            $name = (string) $row['name'];
+            if (!isset($seriesMap[$name])) {
+                $seriesMap[$name] = [
+                    'name' => $name,
+                    'type' => 'bar',
+                    'stack' => 'gesamt',
+                    'emphasis' => ['focus' => 'series'],
+                    'data' => [0, 0, (int) $row['value']],
+                ];
+                continue;
+            }
+
+            $seriesMap[$name]['data'][2] = (int) $row['value'];
+        }
+
+        $series = array_values($seriesMap);
+        $palette = $this->getChartPalette();
+        foreach ($series as $index => &$entry) {
+            $entry['itemStyle'] = [
+                'color' => $palette[$index % count($palette)],
+                'borderRadius' => [4, 4, 4, 4],
+            ];
+        }
+        unset($entry);
+
+        return [
+            'title' => (object) [],
+            'tooltip' => [
+                'trigger' => 'axis',
+                'axisPointer' => ['type' => 'shadow'],
+            ],
+            'legend' => [
+                'type' => 'scroll',
+                'top' => 0,
+            ],
+            'grid' => [
+                'left' => '3%',
+                'right' => '4%',
+                'bottom' => '3%',
+                'top' => '16%',
+                'containLabel' => true,
+            ],
+            'xAxis' => [
+                'type' => 'value',
+            ],
+            'yAxis' => [
+                'type' => 'category',
+                'data' => [$this->addon->i18n('statistics_devicetype'), $this->addon->i18n('statistics_brand'), $this->addon->i18n('statistics_os')],
+                'axisTick' => ['show' => false],
+            ],
+            'toolbox' => $this->buildBarToolbox(),
+            'series' => $series,
+        ];
+    }
+
+    /**
+     * @param array<int, array{name: string, value: int}> $rows
+     * @return array<int, array{name: string, value: int}>
+     */
+    private function reduceToTopAndOther(array $rows, int $limit): array
+    {
+        if ([] === $rows) {
+            return [];
+        }
+
+        $top = array_slice($rows, 0, $limit);
+        $other = array_slice($rows, $limit);
+
+        if ([] !== $other) {
+            $otherSum = array_reduce(
+                $other,
+                static fn (int $carry, array $row): int => $carry + (int) $row['value'],
+                0
+            );
+            $top[] = ['name' => 'Andere', 'value' => $otherSum];
+        }
+
+        return $top;
+    }
+
+    /**
+     * @param array<int, int> $values
+     * @return array<int, array{value: int, itemStyle: array{color: string}}>
+     */
+    private function buildBarDataWithPalette(array $values): array
+    {
+        $palette = $this->getChartPalette();
+        $rows = [];
+
+        foreach ($values as $index => $value) {
+            $rows[] = [
+                'value' => (int) $value,
+                'itemStyle' => [
+                    'color' => $palette[$index % count($palette)],
+                ],
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function getChartPalette(): array
+    {
+        return [
+            '#1f77b4',
+            '#4e79a7',
+            '#59a14f',
+            '#9c755f',
+            '#edc948',
+            '#f28e2b',
+            '#e15759',
+            '#76b7b2',
+            '#b07aa1',
+            '#ff9da7',
+            '#86bcb6',
+            '#a0cbe8',
         ];
     }
 
