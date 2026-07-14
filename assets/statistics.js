@@ -53,6 +53,8 @@ $(document).on("rex:ready", function (event, container) {
     var statisticsChartInitQueue = [];
     var statisticsChartQueueData = {};
     var statisticsChartQueueRunning = false;
+    var statisticsTableInitQueue = [];
+    var statisticsTableQueueRunning = false;
 
     function isSafariBrowser() {
         var ua = (window.navigator && window.navigator.userAgent) || '';
@@ -245,6 +247,54 @@ $(document).on("rex:ready", function (event, container) {
         }
 
         runChartQueue();
+    }
+
+    function runTableQueue() {
+        if (statisticsTableQueueRunning) {
+            return;
+        }
+
+        statisticsTableQueueRunning = true;
+
+        scheduleChartQueueTick(function () {
+            var next = statisticsTableInitQueue.shift();
+            if (!next || !next.element) {
+                statisticsTableQueueRunning = false;
+                return;
+            }
+
+            var element = next.element;
+            element.dataset.statisticsTableQueued = 'false';
+
+            if (typeof $ !== 'undefined' && $.fn && $.fn.DataTable && !$.fn.dataTable.isDataTable(element)) {
+                $(element).DataTable(buildTableOptions(next.orderIndex, true, element));
+            }
+
+            initPagesDomainFilter();
+
+            statisticsTableQueueRunning = false;
+            if (statisticsTableInitQueue.length > 0) {
+                runTableQueue();
+            }
+        });
+    }
+
+    function queueTableInit(element, orderIndex) {
+        if (!element || typeof $ === 'undefined' || !$.fn || !$.fn.DataTable) {
+            return;
+        }
+
+        if ($.fn.dataTable.isDataTable(element)) {
+            return;
+        }
+
+        if (element.dataset.statisticsTableQueued === 'true') {
+            return;
+        }
+
+        element.dataset.statisticsTableQueued = 'true';
+        statisticsTableInitQueue.push({ element: element, orderIndex: orderIndex });
+        runTableQueue();
     }
 
     function scheduleChartResize(elementId) {
@@ -504,27 +554,19 @@ $(document).on("rex:ready", function (event, container) {
         }
 
         $(root).find('.dt_order_second').each(function () {
-            if (!$.fn.dataTable.isDataTable(this)) {
-                $(this).DataTable(buildTableOptions(1, true, this));
-            }
+            queueTableInit(this, 1);
         });
 
         $(root).find('.dt_order_first').each(function () {
-            if (!$.fn.dataTable.isDataTable(this)) {
-                $(this).DataTable(buildTableOptions(0, true, this));
-            }
+            queueTableInit(this, 0);
         });
 
         $(root).find('.dt_order_default').each(function () {
-            if (!$.fn.dataTable.isDataTable(this)) {
-                $(this).DataTable(buildTableOptions(null, true, this));
-            }
+            queueTableInit(this, null);
         });
 
         $(root).find('.dt_bots').each(function () {
-            if (!$.fn.dataTable.isDataTable(this)) {
-                $(this).DataTable(buildTableOptions(1, true, this));
-            }
+            queueTableInit(this, 1);
         });
     };
 

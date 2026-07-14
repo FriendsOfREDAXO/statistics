@@ -102,11 +102,9 @@ class StatsLazyBlockRenderer
         // Keep model as table-only to reduce chart density and browser load.
         $html .= $this->renderTableOnlySection($this->addon->i18n('statistics_model'), $model->getList());
 
-        $html .= $this->renderVerticalSection($this->addon->i18n('statistics_days'), 'chart_weekday', $weekday->getList());
-        $charts[] = ['id' => 'chart_weekday', 'option' => $this->buildWeekdayOption($weekday->getData())];
+        $html .= $this->renderWeekdayHeatmapSection($this->addon->i18n('statistics_days'), $weekday->getData(), $weekday->getList());
 
-        $html .= $this->renderVerticalSection($this->addon->i18n('statistics_hours'), 'chart_hour', $hour->getList());
-        $charts[] = ['id' => 'chart_hour', 'option' => $this->buildHourOption($hour->getData())];
+        $html .= $this->renderHourlyBarsSection($this->addon->i18n('statistics_hours'), $hour->getData(), $hour->getList());
 
         return ['html' => $html, 'charts' => $charts];
     }
@@ -124,25 +122,37 @@ class StatsLazyBlockRenderer
         $html = '';
         $charts = [];
 
-        $html .= $this->renderVerticalSection(
-            'Anzahl besuchter Seiten in einer Sitzung',
-            'chart_pagecount',
-            $pagecount->getList(),
-            'pc_modal',
-            '<p>Zeigt an, wie viele Seiten in einer Sitzung besucht wurden.</p>'
-        );
         $pagecountData = $pagecount->getChartData();
-        $charts[] = ['id' => 'chart_pagecount', 'option' => $this->buildGenericBarOption($pagecountData['values'], $pagecountData['labels'], '{b} Seiten besucht: <b>{c} mal</b>')];
-
-        $html .= $this->renderVerticalSection(
-            'Besuchsdauer',
-            'chart_visitduration',
-            $visitduration->getList(),
-            'bd_modal',
-            "<p>Zeigt an, wie viel Zeit auf der Webseite verbracht wurde. Ein Wert von genau '0 Sekunden' sagt aus, dass der Besucher nur eine einzige Seite besucht hat.</p> Hinweis: <p>Die Besuchsdauer wird nur annähernd genau erfasst. D.h. konkret, die Besuchszeit der letzten vom Besucher aufgerufenen Seite kann nicht erfasst werden. Die Zeit berechnet sich somit aus der Dauer aller Aufrufe ausgenommen des letzten.</p>"
+        $pageCountLabels = [];
+        $pageCountValues = [];
+        foreach ($pagecountData['values'] as $index => $pagesVisited) {
+            $pageCountLabels[] = (string) $pagesVisited . ' Seiten';
+            $pageCountValues[] = isset($pagecountData['labels'][$index]) ? (int) $pagecountData['labels'][$index] : 0;
+        }
+        $html .= $this->renderInsightTableSection(
+            'Anzahl besuchter Seiten in einer Sitzung',
+            'Verteilung der Seiten pro Sitzung',
+            $pageCountLabels,
+            $pageCountValues,
+            $pagecount->getList(),
+            '{b}: <b>{c} Sitzungen</b>'
         );
+
         $visitdurationData = $visitduration->getChartData();
-        $charts[] = ['id' => 'chart_visitduration', 'option' => $this->buildGenericBarOption($visitdurationData['values'], $visitdurationData['labels'], '{b} <br> <b>{c} mal</b>')];
+        $visitDurationLabels = [];
+        $visitDurationValues = [];
+        foreach ($visitdurationData['values'] as $index => $timespan) {
+            $visitDurationLabels[] = (string) $timespan;
+            $visitDurationValues[] = isset($visitdurationData['labels'][$index]) ? (int) $visitdurationData['labels'][$index] : 0;
+        }
+        $html .= $this->renderInsightTableSection(
+            'Besuchsdauer',
+            'Verteilung der Sitzungsdauer',
+            $visitDurationLabels,
+            $visitDurationValues,
+            $visitduration->getList(),
+            '{b}: <b>{c} Sitzungen</b>'
+        );
 
         $lastpageData = $lastpage->getChartData();
 
@@ -166,6 +176,72 @@ class StatsLazyBlockRenderer
         );
 
         return ['html' => $html, 'charts' => $charts];
+    }
+
+    /**
+     * @param array<int, int> $data
+     */
+    private function renderWeekdayHeatmapSection(string $title, array $data, string $table): string
+    {
+        $labels = [
+            $this->addon->i18n('statistics_monday'),
+            $this->addon->i18n('statistics_tuesday'),
+            $this->addon->i18n('statistics_wednesday'),
+            $this->addon->i18n('statistics_thursday'),
+            $this->addon->i18n('statistics_friday'),
+            $this->addon->i18n('statistics_saturday'),
+            $this->addon->i18n('statistics_sunday'),
+        ];
+
+        $max = max($data);
+        $max = $max > 0 ? $max : 1;
+
+        $cards = '<div class="row">';
+        foreach ($labels as $index => $label) {
+            $value = isset($data[$index]) ? (int) $data[$index] : 0;
+            $ratio = $value / $max;
+            $lightness = 95 - (int) round($ratio * 45);
+            $bg = 'hsl(205, 72%, ' . $lightness . '%)';
+
+            $cards .= '<div class="col-xs-6 col-sm-4 col-md-3" style="margin-bottom:10px;">';
+            $cards .= '<div style="border:1px solid #d9e2ec;border-radius:8px;padding:10px;background:' . $bg . ';">';
+            $cards .= '<div style="font-size:12px;opacity:.85;">' . htmlspecialchars($label, ENT_QUOTES) . '</div>';
+            $cards .= '<div style="font-size:20px;font-weight:700;line-height:1.2;">' . htmlspecialchars((string) $value, ENT_QUOTES) . '</div>';
+            $cards .= '</div></div>';
+        }
+        $cards .= '</div>';
+
+        return $this->renderTwoColumnSection($title, $cards, $table);
+    }
+
+    /**
+     * @param array<int, int> $data
+     */
+    private function renderHourlyBarsSection(string $title, array $data, string $table): string
+    {
+        $max = max($data);
+        $max = $max > 0 ? $max : 1;
+        $palette = $this->getChartPalette();
+
+        $bars = '<div style="padding:8px 8px 2px;border:1px solid #dfe7ef;border-radius:8px;background:#fff;">';
+        $bars .= '<div style="display:flex;align-items:flex-end;gap:4px;height:130px;overflow-x:auto;padding-bottom:8px;">';
+
+        for ($hour = 0; $hour < 24; ++$hour) {
+            $value = isset($data[$hour]) ? (int) $data[$hour] : 0;
+            $height = 8 + (int) round(($value / $max) * 108);
+            $color = $palette[$hour % count($palette)];
+
+            $bars .= '<div title="' . str_pad((string) $hour, 2, '0', STR_PAD_LEFT) . ':00 - ' . htmlspecialchars((string) $value, ENT_QUOTES) . '" style="min-width:18px;text-align:center;">';
+            $bars .= '<div style="height:' . $height . 'px;background:' . htmlspecialchars($color, ENT_QUOTES) . ';border-radius:4px 4px 0 0;"></div>';
+            $bars .= '<div style="font-size:10px;color:#6b7c93;">' . str_pad((string) $hour, 2, '0', STR_PAD_LEFT) . '</div>';
+            $bars .= '</div>';
+        }
+
+        $bars .= '</div>';
+        $bars .= '<div style="font-size:12px;color:#6b7c93;padding:4px 2px 0;">Stundenverteilung im Tagesverlauf</div>';
+        $bars .= '</div>';
+
+        return $this->renderTwoColumnSection($title, $bars, $table);
     }
 
     /**

@@ -8,6 +8,30 @@ $addon = rex_addon::get('statistics');
 // post request which handles deletion of stats data
 if (rex_request_method() == 'post') {
     $function = rex_post('func', 'string', '');
+    $noiseLikePatterns = [
+        '%/wp-login.php%',
+        '%/wp-admin%',
+        '%/wp-includes/%',
+        '%/wp-content/%',
+        '%/xmlrpc.php%',
+        '%/wlwmanifest.xml%',
+        '%apple-touch-icon.png%',
+        '%apple-touch-icon-precomposed.png%',
+        '%/.well-known/security.txt%',
+    ];
+
+    $buildLikeWhere = static function (string $column, array $patterns): array {
+        $parts = [];
+        $params = [];
+
+        foreach (array_values($patterns) as $index => $pattern) {
+            $paramKey = ':pattern' . $index;
+            $parts[] = 'LOWER(' . $column . ') LIKE ' . $paramKey;
+            $params[$paramKey] = strtolower((string) $pattern);
+        }
+
+        return [implode(' OR ', $parts), $params];
+    };
 
     if ($function == 'delete_hash') {
         $sql = rex_sql::factory();
@@ -50,6 +74,24 @@ if (rex_request_method() == 'post') {
         $sql = rex_sql::factory();
         $sql->setQuery('delete from ' . rex::getTable('pagestats_api'));
         echo rex_view::success('Es wurden ' . $sql->getRows() . ' Einträge aus der Tabelle api gelöscht.');
+    } elseif ($function == 'delete_noise') {
+        $count = 0;
+
+        [$whereUrl, $paramsUrl] = $buildLikeWhere('url', $noiseLikePatterns);
+        $sql = rex_sql::factory();
+        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_visits_per_url') . ' WHERE ' . $whereUrl, $paramsUrl);
+        $count += $sql->getRows();
+
+        $sql = rex_sql::factory();
+        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_urlstatus') . ' WHERE ' . $whereUrl, $paramsUrl);
+        $count += $sql->getRows();
+
+        [$whereLastpage, $paramsLastpage] = $buildLikeWhere('lastpage', $noiseLikePatterns);
+        $sql = rex_sql::factory();
+        $sql->setQuery('DELETE FROM ' . rex::getTable('pagestats_sessionstats') . ' WHERE ' . $whereLastpage, $paramsLastpage);
+        $count += $sql->getRows();
+
+        echo rex_view::success(sprintf($addon->i18n('statistics_deleted_noise'), (string) $count));
     } elseif ($function == 'updateGeo2Ip') {
         $updated = Ip2Geo::updateDatabase();
         if ($updated) {
@@ -225,6 +267,11 @@ $content = '
 <form style="margin:5px" action="' . rex_url::currentBackendPage() . '" method="post">
 <input type="hidden" name="func" value="delete_campaigns">
 <button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_api_delete_api_confirm') . '">' . $addon->i18n('statistics_api_delete_api') . '</button>
+</form>
+
+<form style="margin:5px" action="' . rex_url::currentBackendPage() . '" method="post">
+<input type="hidden" name="func" value="delete_noise">
+<button class="btn btn-warning" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_noise') . '">' . $addon->i18n('statistics_delete_noise') . '</button>
 </form>
 
 </div>
