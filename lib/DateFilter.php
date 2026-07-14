@@ -4,6 +4,8 @@ namespace AndiLeni\Statistics;
 
 use rex;
 use rex_addon;
+use rex_addon_interface;
+use rex_request;
 use rex_sql;
 use rex_view;
 use InvalidArgumentException;
@@ -22,8 +24,10 @@ class DateFilter
 
     public DateTimeImmutable $whole_time_start;
 
+    /** @var non-empty-string */
     private string $table;
-    private rex_addon $addon;
+    private rex_addon_interface $addon;
+    private const SESSION_KEY = 'statistics_datefilter';
 
 
     /**
@@ -38,37 +42,62 @@ class DateFilter
      */
     function __construct(string $date_start, string $date_end, string $table)
     {
+        if ('' === $table) {
+            throw new InvalidArgumentException('Table name must not be empty.');
+        }
+
+        /** @var non-empty-string $table */
         $this->table = $table;
         $this->addon = rex_addon::get('statistics');
 
-        if ($date_start == '') {
+        $hasRequestDateRange = '' !== $date_start && '' !== $date_end;
 
-            // prefered date range
-            $date_range = $this->addon->getConfig('statistics_default_datefilter_range');
-
-            if ($date_range == 'last7days') {
-                $date = new DateTimeImmutable();
-                $date = $date->modify("-7 day");
-                $this->date_start = $date;
-            } elseif ($date_range == 'last30days') {
-                $date = new DateTimeImmutable();
-                $date = $date->modify("-30 day");
-                $this->date_start = $date;
-            } elseif ($date_range == 'thisYear') {
-                $date = new DateTimeImmutable();
-                $date = $date->modify("-365 day");
-                $this->date_start = $date;
-            } else {
-                $this->date_start = $this->getMinDateFromTable();
-            }
-            // design decision, uncomment this line to default show only timespan where data was collected
-            // $this->date_end = $this->getMaxDateFromTable();
-
-            $this->date_end = new DateTimeImmutable();
-            // $this->date_end->modify('+1 day');
-        } else {
+        if ($hasRequestDateRange) {
             $this->date_start = new DateTimeImmutable($date_start);
             $this->date_end = new DateTimeImmutable($date_end);
+
+            rex_request::setSession(self::SESSION_KEY, [
+                'date_start' => $this->date_start->format('Y-m-d'),
+                'date_end' => $this->date_end->format('Y-m-d'),
+            ]);
+        } else {
+            $sessionDateRange = rex_request::session(self::SESSION_KEY);
+            $hasSessionDateRange = is_array($sessionDateRange)
+                && isset($sessionDateRange['date_start'], $sessionDateRange['date_end'])
+                && is_string($sessionDateRange['date_start'])
+                && is_string($sessionDateRange['date_end'])
+                && '' !== $sessionDateRange['date_start']
+                && '' !== $sessionDateRange['date_end'];
+
+            if ($hasSessionDateRange) {
+                $this->date_start = new DateTimeImmutable($sessionDateRange['date_start']);
+                $this->date_end = new DateTimeImmutable($sessionDateRange['date_end']);
+            } else {
+
+                // prefered date range
+                $date_range = $this->addon->getConfig('statistics_default_datefilter_range');
+
+                if ($date_range === 'last7days') {
+                    $date = new DateTimeImmutable();
+                    $date = $date->modify('-7 day');
+                    $this->date_start = $date;
+                } elseif ($date_range === 'last30days') {
+                    $date = new DateTimeImmutable();
+                    $date = $date->modify('-30 day');
+                    $this->date_start = $date;
+                } elseif ($date_range === 'thisYear') {
+                    $date = new DateTimeImmutable();
+                    $date = $date->modify('-365 day');
+                    $this->date_start = $date;
+                } else {
+                    $this->date_start = $this->getMinDateFromTable();
+                }
+                // design decision, uncomment this line to default show only timespan where data was collected
+                // $this->date_end = $this->getMaxDateFromTable();
+
+                $this->date_end = new DateTimeImmutable();
+                // $this->date_end->modify('+1 day');
+            }
         }
 
         // set total time range to use in datefilter fragment with javascript
@@ -90,16 +119,18 @@ class DateFilter
     private function getMinDateFromTable(): DateTimeImmutable
     {
         $sql = rex_sql::factory();
-        $min_date = $sql->setQuery('SELECT MIN(date) AS "date" from ' . rex::getTable($this->table));
-        $min_date = $min_date->getValue('date');
+        $result = $sql->setQuery('SELECT MIN(date) AS "date" from ' . rex::getTable($this->table));
+        $minDateRaw = $result->getValue('date');
 
-        if ($min_date === null) {
-            $min_date = new DateTimeImmutable("now");
-        } else {
-            $min_date = DateTimeImmutable::createFromFormat('Y-m-d', $min_date);
+        if (!is_string($minDateRaw) || '' === $minDateRaw) {
+            return new DateTimeImmutable('now');
         }
 
+        $minDate = DateTimeImmutable::createFromFormat('Y-m-d', $minDateRaw);
+        if (false === $minDate) {
+            return new DateTimeImmutable('now');
+        }
 
-        return $min_date;
+        return $minDate;
     }
 }

@@ -19,14 +19,14 @@ $filter_date_helper = new DateFilter($request_date_start, $request_date_end, 'pa
 echo StatsSubpageRenderer::renderFilter($current_backend_page, $filter_date_helper);
 
 
-if ($request_name != '' && $delete_entry === true) {
+if ($request_name !== '' && $delete_entry === true) {
     $sql = rex_sql::factory();
     $sql->setQuery('delete from ' . rex::getTable('pagestats_api') . ' where name = :name', ['name' => $request_name]);
-    echo rex_view::success('Es wurden ' . $sql->getRows() . ' Einträge der Kampagne <code>' . $request_name . '</code> gelöscht.');
+    echo rex_view::success(sprintf($addon->i18n('statistics_deleted_campaign_entries'), (string) $sql->getRows(), htmlspecialchars($request_name, ENT_QUOTES)));
 }
 
 // details section
-if ($request_name != '' && !$delete_entry) {
+if ($request_name !== '' && !$delete_entry) {
     // details section for single campaign
 
     $pagedetails = new EventDetails($request_name, $filter_date_helper);
@@ -36,7 +36,7 @@ if ($request_name != '' && !$delete_entry) {
     $content = '<div id="chart_details" style="height:500px; width:auto"></div>';
 
     echo StatsSubpageRenderer::renderInfoSection(
-        'Details für:',
+        $addon->i18n('statistics_details_for'),
         $request_name,
         $content . StatsChartConfig::renderScript('chart_details', StatsChartConfig::buildTimelineOption($sum_data['labels'], $sum_data['values']))
     );

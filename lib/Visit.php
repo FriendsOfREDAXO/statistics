@@ -526,6 +526,16 @@ class Visit
         return $this->DeviceDetector->isBot();
     }
 
+    public function setUrl(string $url): void
+    {
+        $this->url = $url;
+    }
+
+    public function getUrl(): string
+    {
+        return $this->url;
+    }
+
 
     /**
      * 

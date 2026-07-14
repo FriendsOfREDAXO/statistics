@@ -7,14 +7,12 @@ namespace Composer\Autoload;
 class ComposerStaticInitb29f579221a7652ba86cff44a1726a0f
 {
     public static $files = array (
-        '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
         '04c6c5c2f7095ccf6c481d3e53e1776f' => __DIR__ . '/..' . '/mustangostang/spyc/Spyc.php',
     );
 
     public static $prefixLengthsPsr4 = array (
         'S' => 
         array (
-            'Symfony\\Contracts\\Service\\' => 26,
             'Symfony\\Contracts\\Cache\\' => 24,
             'Symfony\\Component\\VarExporter\\' => 30,
             'Symfony\\Component\\Cache\\' => 24,
@@ -42,17 +40,13 @@ class ComposerStaticInitb29f579221a7652ba86cff44a1726a0f
         array (
             'DeviceDetector\\' => 15,
         ),
-        'C' => 
+        'A' => 
         array (
-            'Composer\\CaBundle\\' => 18,
+            'AndiLeni\\Statistics\\' => 20,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'Symfony\\Contracts\\Service\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/symfony/service-contracts',
-        ),
         'Symfony\\Contracts\\Cache\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/cache-contracts',
@@ -97,9 +91,9 @@ class ComposerStaticInitb29f579221a7652ba86cff44a1726a0f
         array (
             0 => __DIR__ . '/..' . '/matomo/device-detector',
         ),
-        'Composer\\CaBundle\\' => 
+        'AndiLeni\\Statistics\\' => 
         array (
-            0 => __DIR__ . '/..' . '/composer/ca-bundle/src',
+            0 => __DIR__ . '/../..' . '/lib',
         ),
     );
 

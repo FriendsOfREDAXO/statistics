@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.2.2] - 07.06.2026
+
+-   404/Non-200-Aufrufe werden bei aktivierter Option "Nur 200er Aufrufe erfassen" nicht mehr als Seitenaufrufe gespeichert ([#121](https://github.com/FriendsOfREDAXO/statistics/issues/121))
+-   search_it-Indexierungsaufrufe werden wieder zuverlässig ignoriert, auch wenn URL-Parameter aus Statistik-URLs entfernt werden ([#114](https://github.com/FriendsOfREDAXO/statistics/issues/114))
+
+## [3.2.1] - 07.06.2026
+
+-   Datumsbereich bleibt beim Wechsel zwischen Statistik-Tabs erhalten ([#88](https://github.com/FriendsOfREDAXO/statistics/issues/88))
+-   Weitere harte UI-Texte in Sprachdateien ausgelagert ([#109](https://github.com/FriendsOfREDAXO/statistics/issues/109))
+
 ## [3.2.0] - 29.03.2026
 
 -   Performance improvements with lazy loading
