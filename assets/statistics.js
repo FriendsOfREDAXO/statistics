@@ -1,30 +1,32 @@
 $(document).on("rex:ready", function (event, container) {
-    statistics_datefilter_start = document.getElementById("statistics_datefilter_start");
-    statistics_df_lsd = document.getElementById("statistics_df_lsd");
-    statistics_df_ltd = document.getElementById("statistics_df_ltd");
-    statistics_df_ty = document.getElementById("statistics_df_ty");
-    statistics_df_wt = document.getElementById("statistics_df_wt");
-    statistics_df_form = document.getElementById("statistics_df_form");
+    var statistics_datefilter_start = document.getElementById("statistics_datefilter_start");
+    var statistics_df_lsd = document.getElementById("statistics_df_lsd");
+    var statistics_df_ltd = document.getElementById("statistics_df_ltd");
+    var statistics_df_ty = document.getElementById("statistics_df_ty");
+    var statistics_df_wt = document.getElementById("statistics_df_wt");
+    var statistics_df_form = document.getElementById("statistics_df_form");
 
     // if input field exists add event listeners
-    if (statistics_datefilter_start != null) {
+    if (statistics_datefilter_start != null && statistics_df_form && statistics_df_form.dataset.statisticsDatefilterBound !== 'true') {
+        statistics_df_form.dataset.statisticsDatefilterBound = 'true';
+
         statistics_df_lsd.addEventListener("click", function () {
-            last_seven_days = get_past_date(7);
+            var last_seven_days = get_past_date(7);
             statistics_datefilter_start.value = last_seven_days;
             statistics_df_form.submit();
         });
         statistics_df_ltd.addEventListener("click", function () {
-            last_thirty_days = get_past_date(30);
+            var last_thirty_days = get_past_date(30);
             statistics_datefilter_start.value = last_thirty_days;
             statistics_df_form.submit();
         });
         statistics_df_ty.addEventListener("click", function () {
-            last_year = get_past_date(365);
+            var last_year = get_past_date(365);
             statistics_datefilter_start.value = last_year;
             statistics_df_form.submit();
         });
         statistics_df_wt.addEventListener("click", function () {
-            whole_time = statistics_df_wt.getAttribute("data-start");
+            var whole_time = statistics_df_wt.getAttribute("data-start");
             statistics_datefilter_start.value = whole_time;
             statistics_df_form.submit();
         });
@@ -33,19 +35,45 @@ $(document).on("rex:ready", function (event, container) {
     function get_past_date(minusDays) {
         var date = new Date();
         date.setDate(date.getDate() - minusDays);
-        day = ("0" + date.getDate()).slice(-2);
-        month = ("0" + (date.getMonth() + 1)).slice(-2);
-        year = date.getFullYear();
-        str = year + "-" + month + "-" + day;
+        var day = ("0" + date.getDate()).slice(-2);
+        var month = ("0" + (date.getMonth() + 1)).slice(-2);
+        var year = date.getFullYear();
+        var str = year + "-" + month + "-" + day;
 
         return str;
     }
 });
 
 (function () {
-    var statisticsCharts = [];
+    var statisticsCharts = {};
     var statisticsPageConfigCache = null;
     var statisticsDashboardInitialized = false;
+    var statisticsResizeScheduled = false;
+    var statisticsTabsBound = false;
+    var statisticsChartInitQueue = [];
+    var statisticsChartQueueData = {};
+    var statisticsChartQueueRunning = false;
+    var statisticsTableInitQueue = [];
+    var statisticsTableQueueRunning = false;
+
+    function isSafariBrowser() {
+        var ua = (window.navigator && window.navigator.userAgent) || '';
+        return /Safari\//.test(ua) && !/Chrome\//.test(ua) && !/Chromium\//.test(ua) && !/CriOS\//.test(ua) && !/Edg\//.test(ua);
+    }
+
+    function normalizeChartOption(option) {
+        if (!option || typeof option !== 'object') {
+            return option;
+        }
+
+        if (isSafariBrowser()) {
+            option.animation = false;
+            option.animationDuration = 0;
+            option.animationDurationUpdate = 0;
+        }
+
+        return option;
+    }
 
     function getPageConfig() {
         if (statisticsPageConfigCache !== null) {
@@ -110,9 +138,22 @@ $(document).on("rex:ready", function (event, container) {
         };
     }
 
-    function rememberChart(chart) {
-        statisticsCharts.push(chart);
+    function rememberChart(elementId, chart) {
+        if (!elementId || !chart) {
+            return chart;
+        }
+
+        statisticsCharts[elementId] = chart;
         return chart;
+    }
+
+    function cleanupDisposedCharts() {
+        Object.keys(statisticsCharts).forEach(function (id) {
+            var chart = statisticsCharts[id];
+            if (!chart || chart.isDisposed()) {
+                delete statisticsCharts[id];
+            }
+        });
     }
 
     function createOrReplaceChart(elementId, option) {
@@ -125,14 +166,135 @@ $(document).on("rex:ready", function (event, container) {
             return null;
         }
 
+        var normalizedOption = normalizeChartOption(option);
         var existing = echarts.getInstanceByDom(element);
         if (existing) {
-            existing.dispose();
+            existing.setOption(normalizedOption, {
+                notMerge: true,
+                lazyUpdate: true,
+                silent: true
+            });
+            return rememberChart(elementId, existing);
         }
 
         var chart = echarts.init(element, getTheme());
-        chart.setOption(option);
-        return rememberChart(chart);
+        chart.setOption(normalizedOption, {
+            notMerge: true,
+            lazyUpdate: true,
+            silent: true
+        });
+        return rememberChart(elementId, chart);
+    }
+
+    function getChartQueueDelay() {
+        return isSafariBrowser() ? 40 : 12;
+    }
+
+    function scheduleChartQueueTick(callback) {
+        if (window.requestIdleCallback) {
+            window.requestIdleCallback(callback, { timeout: 120 });
+            return;
+        }
+
+        window.setTimeout(callback, getChartQueueDelay());
+    }
+
+    function deferInitialCharts() {
+        var delay = isSafariBrowser() ? 220 : 80;
+
+        window.setTimeout(function () {
+            initStatisticsPageCharts();
+            initConfiguredCharts(document);
+        }, delay);
+    }
+
+    function runChartQueue() {
+        if (statisticsChartQueueRunning) {
+            return;
+        }
+
+        statisticsChartQueueRunning = true;
+
+        scheduleChartQueueTick(function () {
+            var nextId = statisticsChartInitQueue.shift();
+            if (!nextId) {
+                statisticsChartQueueRunning = false;
+                return;
+            }
+
+            var option = statisticsChartQueueData[nextId];
+            delete statisticsChartQueueData[nextId];
+
+            if (option && createOrReplaceChart(nextId, option)) {
+                scheduleChartResize(nextId);
+            }
+
+            statisticsChartQueueRunning = false;
+            if (statisticsChartInitQueue.length > 0) {
+                runChartQueue();
+            }
+        });
+    }
+
+    function queueChartInit(elementId, option) {
+        if (!elementId || !option) {
+            return;
+        }
+
+        statisticsChartQueueData[elementId] = option;
+        if (statisticsChartInitQueue.indexOf(elementId) === -1) {
+            statisticsChartInitQueue.push(elementId);
+        }
+
+        runChartQueue();
+    }
+
+    function runTableQueue() {
+        if (statisticsTableQueueRunning) {
+            return;
+        }
+
+        statisticsTableQueueRunning = true;
+
+        scheduleChartQueueTick(function () {
+            var next = statisticsTableInitQueue.shift();
+            if (!next || !next.element) {
+                statisticsTableQueueRunning = false;
+                return;
+            }
+
+            var element = next.element;
+            element.dataset.statisticsTableQueued = 'false';
+
+            if (typeof $ !== 'undefined' && $.fn && $.fn.DataTable && !$.fn.dataTable.isDataTable(element)) {
+                $(element).DataTable(buildTableOptions(next.orderIndex, true, element));
+            }
+
+            initPagesDomainFilter();
+
+            statisticsTableQueueRunning = false;
+            if (statisticsTableInitQueue.length > 0) {
+                runTableQueue();
+            }
+        });
+    }
+
+    function queueTableInit(element, orderIndex) {
+        if (!element || typeof $ === 'undefined' || !$.fn || !$.fn.DataTable) {
+            return;
+        }
+
+        if ($.fn.dataTable.isDataTable(element)) {
+            return;
+        }
+
+        if (element.dataset.statisticsTableQueued === 'true') {
+            return;
+        }
+
+        element.dataset.statisticsTableQueued = 'true';
+        statisticsTableInitQueue.push({ element: element, orderIndex: orderIndex });
+        runTableQueue();
     }
 
     function scheduleChartResize(elementId) {
@@ -146,6 +308,34 @@ $(document).on("rex:ready", function (event, container) {
     }
 
     function buildDailyChartOption(pageConfig) {
+        var enhancedSeries = (pageConfig.mainChartData.series || []).map(function (entry) {
+            var next = Object.assign({}, entry);
+            var name = String(next.name || '');
+            var isTotal = name.indexOf('Gesamt') !== -1;
+
+            next.type = 'line';
+            next.smooth = true;
+            next.showSymbol = false;
+            next.sampling = 'lttb';
+
+            if (!isTotal && name.indexOf('Aufrufe ') === 0) {
+                next.stack = 'Aufrufe';
+                next.areaStyle = { opacity: 0.1 };
+            }
+
+            if (!isTotal && name.indexOf('Besucher ') === 0) {
+                next.stack = 'Besucher';
+                next.areaStyle = { opacity: 0.08 };
+            }
+
+            if (isTotal) {
+                next.lineStyle = { width: 3 };
+                next.z = 10;
+            }
+
+            return next;
+        });
+
         return {
             title: {},
             tooltip: {
@@ -170,10 +360,11 @@ $(document).on("rex:ready", function (event, container) {
             },
             xAxis: {
                 data: pageConfig.mainChartData.xaxis,
-                type: 'category'
+                type: 'category',
+                boundaryGap: false
             },
             yAxis: {},
-            series: pageConfig.mainChartData.series
+            series: enhancedSeries
         };
     }
 
@@ -243,13 +434,8 @@ $(document).on("rex:ready", function (event, container) {
             return;
         }
 
-        if (createOrReplaceChart('chart_visits_daily', buildDailyChartOption(pageConfig))) {
-            scheduleChartResize('chart_visits_daily');
-        }
-
-        if (createOrReplaceChart('chart_visits_heatmap', buildHeatmapOption(pageConfig))) {
-            scheduleChartResize('chart_visits_heatmap');
-        }
+        queueChartInit('chart_visits_daily', buildDailyChartOption(pageConfig));
+        queueChartInit('chart_visits_heatmap', buildHeatmapOption(pageConfig));
     }
 
     function initConfiguredCharts(root) {
@@ -264,9 +450,7 @@ $(document).on("rex:ready", function (event, container) {
 
             try {
                 var option = JSON.parse(script.textContent || '{}');
-                if (createOrReplaceChart(targetId, option)) {
-                    scheduleChartResize(targetId);
-                }
+                queueChartInit(targetId, option);
             } catch (error) {
             }
         });
@@ -302,25 +486,26 @@ $(document).on("rex:ready", function (event, container) {
 
     function bootstrapStatisticsDashboard() {
         if (statisticsDashboardInitialized) {
-            initStatisticsPageCharts();
+            deferInitialCharts();
             return;
         }
 
         statisticsDashboardInitialized = true;
-        initStatisticsPageCharts();
-        initConfiguredCharts(document);
         initStatsTabHandling();
         window.statisticsInitTables(document);
         initPagesDomainFilter();
         initLazyBlocks();
         initLazyCollapses();
         initAnalysisCards();
+        deferInitialCharts();
     }
 
     function initStatsTabHandling() {
-        if (typeof $ === 'undefined') {
+        if (typeof $ === 'undefined' || statisticsTabsBound) {
             return;
         }
+
+        statisticsTabsBound = true;
 
         $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
             window.statisticsResizeChartById('chart_visits_daily');
@@ -369,52 +554,32 @@ $(document).on("rex:ready", function (event, container) {
         }
 
         $(root).find('.dt_order_second').each(function () {
-            if (!$.fn.dataTable.isDataTable(this)) {
-                $(this).DataTable(buildTableOptions(1, true, this));
-            }
+            queueTableInit(this, 1);
         });
 
         $(root).find('.dt_order_first').each(function () {
-            if (!$.fn.dataTable.isDataTable(this)) {
-                $(this).DataTable(buildTableOptions(0, true, this));
-            }
+            queueTableInit(this, 0);
         });
 
         $(root).find('.dt_order_default').each(function () {
-            if (!$.fn.dataTable.isDataTable(this)) {
-                $(this).DataTable(buildTableOptions(null, true, this));
-            }
+            queueTableInit(this, null);
         });
 
         $(root).find('.dt_bots').each(function () {
-            if (!$.fn.dataTable.isDataTable(this)) {
-                $(this).DataTable(buildTableOptions(1, true, this));
-            }
+            queueTableInit(this, 1);
         });
     };
 
     function initCharts(charts) {
-        if (typeof echarts === "undefined") {
+        if (typeof echarts === "undefined" || !charts || !charts.length) {
             return;
         }
 
-        var theme = getTheme();
-
         charts.forEach(function (chartConfig) {
-            var element = document.getElementById(chartConfig.id);
-            if (!element) {
-                return;
-            }
-
-            var existing = echarts.getInstanceByDom(element);
-            if (existing) {
-                existing.dispose();
-            }
-
-            var chart = echarts.init(element, theme);
-            chart.setOption(chartConfig.option);
-            rememberChart(chart);
+            queueChartInit(chartConfig.id, chartConfig.option);
         });
+
+        cleanupDisposedCharts();
     }
 
     function fetchLazyPayload(blockId, dateStart, dateEnd) {
@@ -462,6 +627,7 @@ $(document).on("rex:ready", function (event, container) {
             .then(function (payload) {
                 container.innerHTML = payload.html || '';
                 window.statisticsInitTables(container);
+                initLazyCollapses(container);
                 initCharts(payload.charts || []);
                 container.dataset.state = 'loaded';
             })
@@ -547,13 +713,24 @@ $(document).on("rex:ready", function (event, container) {
             });
     }
 
-    function initLazyCollapses() {
+    function initLazyCollapses(root) {
         if (typeof $ === 'undefined') {
             return;
         }
 
-        $('[data-statistics-lazy-collapse]').each(function () {
+        var $root = root ? $(root) : $(document);
+        var $lazyTargets = $root.find('[data-statistics-lazy-collapse]');
+        if ($root.is && $root.is('[data-statistics-lazy-collapse]')) {
+            $lazyTargets = $lazyTargets.add($root);
+        }
+
+        $lazyTargets.each(function () {
             var lazyContainer = this;
+            if (lazyContainer.dataset.statisticsCollapseBound === 'true') {
+                return;
+            }
+
+            lazyContainer.dataset.statisticsCollapseBound = 'true';
             var collapse = $(lazyContainer).closest('.collapse');
 
             collapse.on('show.bs.collapse', function () {
@@ -617,10 +794,21 @@ $(document).on("rex:ready", function (event, container) {
     };
 
     window.addEventListener('resize', function () {
-        statisticsCharts.forEach(function (chart) {
-            if (chart && !chart.isDisposed()) {
-                chart.resize();
-            }
+        if (statisticsResizeScheduled) {
+            return;
+        }
+
+        statisticsResizeScheduled = true;
+        window.requestAnimationFrame(function () {
+            statisticsResizeScheduled = false;
+            cleanupDisposedCharts();
+
+            Object.keys(statisticsCharts).forEach(function (id) {
+                var chart = statisticsCharts[id];
+                if (chart && !chart.isDisposed()) {
+                    chart.resize();
+                }
+            });
         });
     });
 
@@ -629,11 +817,6 @@ $(document).on("rex:ready", function (event, container) {
     } else {
         bootstrapStatisticsDashboard();
     }
-
-    window.addEventListener('load', initStatisticsPageCharts);
-    window.addEventListener('load', function () {
-        initConfiguredCharts(document);
-    });
 
     $(document).on('rex:ready', function () {
         bootstrapStatisticsDashboard();

@@ -24,7 +24,20 @@ $pages_helper = new Pages($filter_date_helper);
 echo StatsSubpageRenderer::renderFilter($current_backend_page, $filter_date_helper);
 
 // sum per page, bar chart
-$sum_per_page = $pages_helper->sumPerPage($httpstatus);
+$chartLimit = 30;
+$sum_per_page = $pages_helper->sumPerPage($httpstatus, $chartLimit);
+$tableLimit = 500;
+$chartBody = '';
+
+if ([] === $sum_per_page) {
+    $chartBody .= rex_view::info($addon->i18n('statistics_no_data'));
+} else {
+    $chartBody .= '<div class="alert alert-info" style="margin-bottom:10px;">';
+    $chartBody .= 'Top ' . htmlspecialchars((string) $chartLimit, ENT_QUOTES) . ' Seiten nach Aufrufen im gewählten Zeitraum.';
+    $chartBody .= '</div>';
+    $chartBody .= '<div id="chart_visits_per_page" style="height:640px; width:100%"></div>';
+    $chartBody .= StatsChartConfig::renderScript('chart_visits_per_page', StatsChartConfig::buildPagesStackedBarOption($sum_per_page, $chartLimit));
+}
 
 
 // check if request is for ignoring a url
@@ -69,9 +82,15 @@ $domain_select .= '</select>';
 
 
 // buttons to filter by http status
-$oa = rex_context::fromGet()->getUrl(["httpstatus" => "any"]);
-$o2 = rex_context::fromGet()->getUrl(["httpstatus" => "200"]);
-$on2 = rex_context::fromGet()->getUrl(["httpstatus" => "not200"]);
+$baseParams = [
+    'page' => 'statistics/pages',
+    'date_start' => $filter_date_helper->date_start->format('Y-m-d'),
+    'date_end' => $filter_date_helper->date_end->format('Y-m-d'),
+    'url' => '',
+];
+$oa = rex_url::backendController(array_merge($baseParams, ['httpstatus' => 'any']), false);
+$o2 = rex_url::backendController(array_merge($baseParams, ['httpstatus' => '200']), false);
+$on2 = rex_url::backendController(array_merge($baseParams, ['httpstatus' => 'not200']), false);
 
 $http_filter_buttons = '<a class="btn btn-primary" href="' . $oa . '">' . htmlspecialchars($addon->i18n('statistics_filter_all'), ENT_QUOTES) . '</a>
 <a class="btn btn-primary" href="' . $o2 . '">' . htmlspecialchars($addon->i18n('statistics_filter_only_200'), ENT_QUOTES) . '</a>
@@ -80,7 +99,7 @@ $http_filter_buttons = '<a class="btn btn-primary" href="' . $oa . '">' . htmlsp
 
 echo StatsSubpageRenderer::renderSection(
     $addon->i18n('statistics_sum_per_page'),
-    $http_filter_buttons . '<div id="chart_visits_per_page" style="height:500px; width:auto"></div>' . StatsChartConfig::renderScript('chart_visits_per_page', StatsChartConfig::buildPageOverviewOption($sum_per_page)) . $domain_select . $pages_helper->getList($httpstatus)
+    $http_filter_buttons . $chartBody . $domain_select . $pages_helper->getList($httpstatus, $tableLimit)
 );
 
 ?>

@@ -19,7 +19,12 @@ if (rex::isBackend()) {
     rex_view::addCssFile($addon->getAssetsUrl('datatables.min.css'));
     rex_view::addCssFile($addon->getAssetsUrl('statistics.css'));
 
-    rex_view::addJsFile($addon->getAssetsUrl('echarts.min.js'));
+    $echartsAddon = rex_addon::get('echarts');
+    if ($echartsAddon->isAvailable()) {
+        rex_view::addJsFile($echartsAddon->getAssetsUrl('echarts.min.js'));
+    } else {
+        rex_view::addJsFile($addon->getAssetsUrl('echarts.min.js'));
+    }
     rex_view::addJsFile($addon->getAssetsUrl('dark.js'));
     rex_view::addJsFile($addon->getAssetsUrl('shine.js'));
     rex_view::addJsFile($addon->getAssetsUrl('datatables.min.js'));

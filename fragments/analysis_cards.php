@@ -38,8 +38,8 @@ $cards = [
             >
                 <span class="statistics-analysis-card__icon"><i class="fa <?php echo htmlspecialchars($card['icon'], ENT_QUOTES); ?>" aria-hidden="true"></i></span>
                 <span class="statistics-analysis-card__content">
-                    <span class="statistics-analysis-card__title"><?php echo htmlspecialchars($card['title'], ENT_QUOTES); ?></span>
-                    <span class="statistics-analysis-card__desc"><?php echo htmlspecialchars($card['description'], ENT_QUOTES); ?></span>
+                    <span class="statistics-analysis-card__title"><?php echo $card['title']; ?></span>
+                    <span class="statistics-analysis-card__desc"><?php echo $card['description']; ?></span>
                 </span>
             </button>
         </div>

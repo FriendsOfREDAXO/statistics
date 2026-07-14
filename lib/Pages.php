@@ -4,7 +4,6 @@ namespace AndiLeni\Statistics;
 
 use rex;
 use rex_addon;
-use rex_context;
 use rex_sql;
 use rex_view;
 use InvalidArgumentException;
@@ -42,9 +41,9 @@ class Pages
      * @throws InvalidArgumentException 
      * @throws rex_sql_exception 
      */
-    public function sumPerPage(string $httpstatus): array
+    public function sumPerPage(string $httpstatus, int $limit = 30): array
     {
-        return $this->getPageRows($httpstatus);
+        return $this->getPageRows($httpstatus, $limit);
     }
 
 
@@ -89,14 +88,20 @@ class Pages
      * @throws InvalidArgumentException 
      * @throws rex_sql_exception 
      */
-    public function getList(string $httpstatus): string
+    public function getList(string $httpstatus, int $limit = 500): string
     {
-        $rows = $this->getPageRows($httpstatus);
+        $rows = $this->getPageRows($httpstatus, $limit);
 
         if ([] === $rows) {
             $table = rex_view::info($this->addon->i18n('statistics_no_data'));
         } else {
-            $table = '<table class="table-bordered dt_order_second statistics_table table-striped table-hover table" data-page-length="30">';
+            $table = '';
+
+            if ($limit > 0 && count($rows) >= $limit) {
+                $table .= rex_view::warning(sprintf($this->addon->i18n('statistics_pages_list_limited'), (string) $limit));
+            }
+
+            $table .= '<table class="table-bordered dt_order_second statistics_table table-striped table-hover table" data-page-length="30">';
             $table .= '<thead><tr>';
             $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_url'), ENT_QUOTES) . '</th>';
             $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_count'), ENT_QUOTES) . '</th>';
@@ -109,15 +114,21 @@ class Pages
                 $count = (string) $row['count'];
                 $status = (string) $row['status'];
 
-                $detailUrl = rex_context::fromGet()->getUrl([
+                $detailUrl = \rex_url::backendController([
+                    'page' => 'statistics/pages',
                     'url' => $url,
                     'date_start' => $this->filter_date_helper->date_start->format('Y-m-d'),
                     'date_end' => $this->filter_date_helper->date_end->format('Y-m-d'),
-                ]);
-                $ignoreUrl = rex_context::fromGet()->getUrl([
+                    'httpstatus' => $httpstatus,
+                ], false);
+                $ignoreUrl = \rex_url::backendController([
+                    'page' => 'statistics/pages',
                     'url' => $url,
                     'ignore_page' => true,
-                ]);
+                    'date_start' => $this->filter_date_helper->date_start->format('Y-m-d'),
+                    'date_end' => $this->filter_date_helper->date_end->format('Y-m-d'),
+                    'httpstatus' => $httpstatus,
+                ], false);
                 $confirm = htmlspecialchars($url . ':' . PHP_EOL . $this->addon->i18n('statistics_confirm_ignore_delete'), ENT_QUOTES);
 
                 $table .= '<tr>';
@@ -138,7 +149,7 @@ class Pages
      * @return array<int, array<string, mixed>>
      * @throws rex_sql_exception
      */
-    private function getPageRows(string $httpstatus): array
+    private function getPageRows(string $httpstatus, int $limit = 0): array
     {
         $sql = rex_sql::factory();
 
@@ -159,6 +170,10 @@ class Pages
         }
 
         $query .= 'ORDER BY agg.count DESC';
+
+        if ($limit > 0) {
+            $query .= ' LIMIT ' . (int) $limit;
+        }
 
         return $sql->getArray($query, [
             'start' => $this->filter_date_helper->date_start->format('Y-m-d'),
