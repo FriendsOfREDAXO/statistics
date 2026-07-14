@@ -10,14 +10,36 @@ if (rex_request_method() == 'post') {
     $function = rex_post('func', 'string', '');
     $noiseLikePatterns = [
         '%/wp-login.php%',
+        '%/wp-json%',
+        '%/wp-config%',
         '%/wp-admin%',
         '%/wp-includes/%',
         '%/wp-content/%',
         '%/xmlrpc.php%',
         '%/wlwmanifest.xml%',
+        '%/drupal%',
+        '%/joomla%',
+        '%/magento%',
+        '%/prestashop%',
+        '%/typo3%',
+        '%/shopware%',
+        '%/administrator%',
+        '%/admin/login%',
+        '%/admin/%',
+        '%/phpmyadmin%',
+        '%/pma%',
+        '%/.git/%',
+        '%/vendor/phpunit%',
         '%apple-touch-icon.png%',
         '%apple-touch-icon-precomposed.png%',
         '%/.well-known/security.txt%',
+        '%/.env%',
+        '%/.htaccess%',
+        '%.ini%',
+        '%.log%',
+        '%.bak%',
+        '%.old%',
+        '%.sql%',
     ];
 
     $buildLikeWhere = static function (string $column, array $patterns): array {
@@ -170,6 +192,14 @@ $field = $form->addTextAreaField('statistics_ignored_paths');
 $field->setLabel($addon->i18n('statistics_ignore_paths'));
 $field->setNotice($addon->i18n('statistics_paths_note'));
 
+$field = $form->addTextAreaField('statistics_ignored_path_contains');
+$field->setLabel($addon->i18n('statistics_ignore_path_contains'));
+$field->setNotice($addon->i18n('statistics_ignore_path_contains_note'));
+
+$field = $form->addTextAreaField('statistics_ignored_path_ends');
+$field->setLabel($addon->i18n('statistics_ignore_path_ends'));
+$field->setNotice($addon->i18n('statistics_ignore_path_ends_note'));
+
 
 $field3 = $form->addTextAreaField('statistics_ignored_ips');
 $field3->setLabel($addon->i18n('statistics_ignore_ips'));
@@ -179,6 +209,20 @@ $field3->setNotice($addon->i18n('statistics_ips_note'));
 $field3 = $form->addTextAreaField('pagestats_ignored_regex');
 $field3->setLabel($addon->i18n('pagestats_ignored_regex'));
 $field3->setNotice($addon->i18n('pagestats_ignored_regex_note'));
+
+$regexExamples = [];
+$regexExamples[] = '#/(wp-login\.php|xmlrpc\.php|wp-admin)(?:$|[/?])#i';
+$regexExamples[] = '#/(?:drupal|joomla|magento|prestashop|typo3)(?:$|[/?])#i';
+$regexExamples[] = '#/\.(?:env|sql|htaccess|ini|log|bak|old)(?:$|\?)#i';
+$regexExamples[] = '#/(?:phpmyadmin|pma|adminer)(?:$|[/?])#i';
+
+$form->addRawField(
+    rex_view::info(
+        '<strong>' . htmlspecialchars($addon->i18n('pagestats_ignored_regex_examples_heading'), ENT_QUOTES) . '</strong><br><pre style="margin-top:8px;white-space:pre-wrap;">'
+        . htmlspecialchars(implode(PHP_EOL, $regexExamples), ENT_QUOTES)
+        . '</pre>'
+    )
+);
 
 
 $field4 = $form->addRadioField('statistics_scroll_pagination');

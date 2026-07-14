@@ -43,6 +43,8 @@ requires:
 
 default_config:
     statistics_ignored_paths: ""
+    statistics_ignored_path_contains: ""
+    statistics_ignored_path_ends: ""
     statistics_ignored_ips: ""
     statistics_visit_duration: 30
     statistics_scroll_pagination: "none"
