@@ -14,6 +14,9 @@ page:
         pages:
             title: "translate:statistics_pages"
             icon: rex-icon fa-file-text-o
+        google_campaigns:
+            title: "translate:statistics_google_campaigns"
+            icon: rex-icon fa-bullseye
         referer:
             title: "translate:statistics_referer"
             icon: rex-icon fa-external-link
