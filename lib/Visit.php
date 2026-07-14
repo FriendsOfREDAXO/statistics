@@ -38,10 +38,29 @@ class Visit
         'rex-api-call',
     ];
 
+    const IGNORE_PATH_CONTAINS = [
+        '/wp-login.php',
+        '/wp-admin',
+        '/wp-includes/',
+        '/wp-content/',
+        '/xmlrpc.php',
+        '/wlwmanifest.xml',
+        '/wordpress',
+    ];
+
+    const IGNORE_PATH_STARTS = [
+        '/wp-',
+        '/wordpress',
+        '//',
+    ];
+
     const IGNORE_WHEN_ENDS = [
         '.css',
         '.js',
         'favicon.ico',
+        'apple-touch-icon.png',
+        'apple-touch-icon-precomposed.png',
+        '.well-known/security.txt',
         '.css.map',
         '.js.map',
     ];
@@ -152,6 +171,20 @@ class Visit
         $ignored_paths = $this->addon->getConfig('statistics_ignored_paths');
         $ignored_ips = $this->addon->getConfig('statistics_ignored_ips');
         $ignored_regex = $this->addon->getConfig('pagestats_ignored_regex');
+        $normalizedUrl = strtolower(trim($this->url));
+        $normalizedPath = $this->normalizePathFromUrl($this->url);
+
+        foreach (self::IGNORE_PATH_STARTS as $prefix) {
+            if (str_starts_with($normalizedPath, $prefix)) {
+                return true;
+            }
+        }
+
+        foreach (self::IGNORE_PATH_CONTAINS as $needle) {
+            if (str_contains($normalizedPath, $needle)) {
+                return true;
+            }
+        }
 
         /**
          * check bot ips
@@ -170,7 +203,7 @@ class Visit
         }
 
         // check own ignored ips
-        if (trim($ignored_ips != '')) {
+        if (trim((string) $ignored_ips) !== '') {
             $ignored_ips = explode("\n", str_replace("\r", "", $ignored_ips));
 
             foreach ($ignored_ips as $ip) {
@@ -180,35 +213,39 @@ class Visit
             }
         }
 
-        if (trim($ignored_paths != '')) {
+        if (trim((string) $ignored_paths) !== '') {
             $ignored_paths = explode("\n", str_replace("\r", "", $ignored_paths));
 
             foreach ($ignored_paths as $path) {
-                if (str_starts_with($this->url, $path)) {
+                $path = strtolower(trim((string) $path));
+                if ('' !== $path && (str_starts_with($normalizedUrl, $path) || str_starts_with($normalizedPath, $path))) {
                     return true;
                 }
             }
         }
 
         foreach (self::IGNORE_WHEN_ENDS as $el) {
-            if (str_ends_with($this->url, $el)) {
+            $el = strtolower($el);
+            if (str_ends_with($normalizedUrl, $el) || str_ends_with($normalizedPath, $el)) {
                 return true;
             }
         }
 
         foreach (self::IGNORE_WHEN_STARTS as $el) {
-            if (str_starts_with($this->url, $el)) {
+            $el = strtolower($el);
+            if (str_starts_with($normalizedUrl, $el) || str_starts_with($normalizedPath, $el)) {
                 return true;
             }
         }
 
         foreach (self::IGNORE_WHEN_CONTAINS as $el) {
-            if (str_contains($this->url, $el)) {
+            $el = strtolower($el);
+            if (str_contains($normalizedUrl, $el) || str_contains($normalizedPath, $el)) {
                 return true;
             }
         }
 
-        if (trim($ignored_regex != '')) {
+        if (trim((string) $ignored_regex) !== '') {
             $ignored_regex = explode("\n", str_replace("\r", "", $ignored_regex));
 
             foreach ($ignored_regex as $regex) {
@@ -227,6 +264,34 @@ class Visit
 
 
         return false;
+    }
+
+    private function normalizePathFromUrl(string $rawUrl): string
+    {
+        $rawUrl = trim($rawUrl);
+        if ('' === $rawUrl) {
+            return '/';
+        }
+
+        $path = '';
+        if (str_contains($rawUrl, '://')) {
+            $path = (string) parse_url($rawUrl, PHP_URL_PATH);
+        } else {
+            $firstSlashPosition = strpos($rawUrl, '/');
+            if (false !== $firstSlashPosition) {
+                $path = substr($rawUrl, $firstSlashPosition);
+            }
+        }
+
+        if ('' === $path) {
+            $path = '/';
+        }
+
+        if (!str_starts_with($path, '/')) {
+            $path = '/' . $path;
+        }
+
+        return strtolower($path);
     }
 
     public function isChromeDataSaverUsed(IP $ip)
