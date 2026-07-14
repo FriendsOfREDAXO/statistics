@@ -77,19 +77,19 @@ class StatsLazyBlockRenderer
         $charts = [];
 
         $html .= $this->renderVerticalSection($this->addon->i18n('statistics_browser'), 'chart_browser', $browser->getList());
-        $charts[] = ['id' => 'chart_browser', 'option' => $this->buildPieOption($browser->getData())];
+        $charts[] = ['id' => 'chart_browser', 'option' => $this->buildTopCategoriesBarOption($browser->getData(), '{b}: <b>{c}</b>')];
 
         $html .= $this->renderVerticalSection($this->addon->i18n('statistics_devicetype'), 'chart_browsertype', $browsertype->getList());
-        $charts[] = ['id' => 'chart_browsertype', 'option' => $this->buildPieOption($browsertype->getData())];
+        $charts[] = ['id' => 'chart_browsertype', 'option' => $this->buildTopCategoriesBarOption($browsertype->getData(), '{b}: <b>{c}</b>', 6)];
 
         $html .= $this->renderVerticalSection($this->addon->i18n('statistics_os'), 'chart_os', $os->getList());
-        $charts[] = ['id' => 'chart_os', 'option' => $this->buildPieOption($os->getData())];
+        $charts[] = ['id' => 'chart_os', 'option' => $this->buildTopCategoriesBarOption($os->getData(), '{b}: <b>{c}</b>')];
 
         $html .= $this->renderVerticalSection($this->addon->i18n('statistics_brand'), 'chart_brand', $brand->getList());
-        $charts[] = ['id' => 'chart_brand', 'option' => $this->buildPieOption($brand->getData())];
+        $charts[] = ['id' => 'chart_brand', 'option' => $this->buildTopCategoriesBarOption($brand->getData(), '{b}: <b>{c}</b>')];
 
-        $html .= $this->renderVerticalSection($this->addon->i18n('statistics_model'), 'chart_model', $model->getList());
-        $charts[] = ['id' => 'chart_model', 'option' => $this->buildPieOption($model->getData())];
+        // Keep model as table-only to reduce chart density and browser load.
+        $html .= $this->renderTableOnlySection($this->addon->i18n('statistics_model'), $model->getList());
 
         $html .= $this->renderVerticalSection($this->addon->i18n('statistics_days'), 'chart_weekday', $weekday->getList());
         $charts[] = ['id' => 'chart_weekday', 'option' => $this->buildWeekdayOption($weekday->getData())];
@@ -262,41 +262,72 @@ class StatsLazyBlockRenderer
         return $fragment->parse('data_vertical.php');
     }
 
+    private function renderTableOnlySection(string $title, string $table): string
+    {
+        $fragment = new rex_fragment();
+        $fragment->setVar('title', $title);
+        $fragment->setVar('body', $table, false);
+
+        return $fragment->parse('core/page/section.php');
+    }
+
     /**
      * @param array<int, array{name: string, value: int}> $data
      * @return array<string, mixed>
      */
-    private function buildPieOption(array $data): array
+    private function buildTopCategoriesBarOption(array $data, string $tooltipFormatter, int $limit = 10): array
     {
+        if ([] === $data) {
+            $labels = [];
+            $values = [];
+        } else {
+            $top = array_slice($data, 0, $limit);
+            $other = array_slice($data, $limit);
+
+            if ([] !== $other) {
+                $otherSum = array_reduce(
+                    $other,
+                    static fn (int $carry, array $row): int => $carry + (int) $row['value'],
+                    0
+                );
+                $top[] = ['name' => 'Andere', 'value' => $otherSum];
+            }
+
+            $labels = array_column($top, 'name');
+            $values = array_map(static fn ($value): int => (int) $value, array_column($top, 'value'));
+        }
+
         return [
             'title' => (object) [],
             'tooltip' => [
-                'trigger' => 'item',
-                'formatter' => '{b}: <b>{c}</b> ({d}%)',
+                'trigger' => 'axis',
+                'formatter' => $tooltipFormatter,
+                'axisPointer' => ['type' => 'shadow'],
             ],
-            'legend' => [
-                'show' => false,
-                'orient' => 'vertical',
-                'left' => 'left',
+            'grid' => [
+                'containLabel' => true,
+                'left' => '3%',
+                'right' => '4%',
+                'bottom' => '3%',
+                'top' => '4%',
             ],
-            'toolbox' => [
-                'show' => $this->showToolbox(),
-                'orient' => 'vertical',
-                'top' => '10%',
-                'feature' => [
-                    'dataView' => ['readOnly' => false],
-                    'saveAsImage' => (object) [],
-                ],
-            ],
+            'toolbox' => $this->buildBarToolbox(),
+            'xAxis' => [[
+                'type' => 'value',
+            ]],
             'series' => [[
-                'type' => 'pie',
-                'radius' => '85%',
-                'data' => $data,
-                'labelLine' => ['show' => false],
+                'name' => 'Anzahl',
+                'type' => 'bar',
+                'data' => $values,
                 'label' => [
                     'show' => true,
-                    'position' => 'inside',
-                    'formatter' => '{b}: {c} \n ({d}%)',
+                    'position' => 'right',
+                    'formatter' => '{c}',
+                ],
+                'barMaxWidth' => 28,
+                'showBackground' => true,
+                'itemStyle' => [
+                    'borderRadius' => [0, 8, 8, 0],
                 ],
                 'emphasis' => [
                     'itemStyle' => [
@@ -305,6 +336,17 @@ class StatsLazyBlockRenderer
                         'shadowColor' => 'rgba(0, 0, 0, 0.5)',
                     ],
                 ],
+            ]],
+            'yAxis' => [[
+                'type' => 'category',
+                'data' => $labels,
+                'inverse' => true,
+                'axisTick' => ['show' => false],
+            ]],
+            'dataZoom' => [[
+                'type' => 'inside',
+                'yAxisIndex' => 0,
+                'filterMode' => 'none',
             ]],
         ];
     }
@@ -464,6 +506,33 @@ class StatsLazyBlockRenderer
      */
     private function buildMainTimelineOption(array $data): array
     {
+        $series = array_map(function (array $entry): array {
+            $name = (string) ($entry['name'] ?? '');
+
+            $entry['type'] = 'line';
+            $entry['smooth'] = true;
+            $entry['showSymbol'] = false;
+            $entry['sampling'] = 'lttb';
+
+            $isTotal = false !== strpos($name, 'Gesamt');
+            if (!$isTotal && 0 === strpos($name, 'Aufrufe ')) {
+                $entry['stack'] = 'Aufrufe';
+                $entry['areaStyle'] = ['opacity' => 0.1];
+            }
+
+            if (!$isTotal && 0 === strpos($name, 'Besucher ')) {
+                $entry['stack'] = 'Besucher';
+                $entry['areaStyle'] = ['opacity' => 0.08];
+            }
+
+            if ($isTotal) {
+                $entry['lineStyle'] = ['width' => 3];
+                $entry['z'] = 10;
+            }
+
+            return $entry;
+        }, $data['series']);
+
         return [
             'title' => (object) [],
             'tooltip' => [
@@ -499,9 +568,10 @@ class StatsLazyBlockRenderer
             'xAxis' => [
                 'data' => $data['xaxis'],
                 'type' => 'category',
+                'boundaryGap' => false,
             ],
             'yAxis' => (object) [],
-            'series' => $data['series'],
+            'series' => $series,
         ];
     }
 
