@@ -156,6 +156,7 @@ statistics_api_delete_confirm = Wirklich alle Einträge für diese Kampagne lös
 statistics_overview_visits = Seitenaufrufe
 statistics_overview_visitors = Besucher
 statistics_overview_today = Heute
+statistics_overview_now = Stand jetzt
 statistics_overview_total = Insgesamt
 statistics_overview_week_visits = Besuche letzte 7 Tage
 statistics_overview_week_visitors = Besucher letzte 7 Tage

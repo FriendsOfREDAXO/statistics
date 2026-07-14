@@ -158,6 +158,7 @@ statistics_api_delete_confirm = Really delete all entries for this campaign?
 statistics_overview_visits = Page views
 statistics_overview_visitors = Visitors
 statistics_overview_today = Today
+statistics_overview_now = As of now
 statistics_overview_total = Total
 statistics_overview_week_visits = Visits last 7 days
 statistics_overview_week_visitors = Visitors last 7 days

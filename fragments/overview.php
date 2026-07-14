@@ -1,3 +1,13 @@
+<?php if ((string) $this->generated_at !== '') { ?>
+    <div class="row">
+        <div class="col-12">
+            <p class="text-muted" style="margin: 0 0 8px;">
+                <?php echo $this->i18n('statistics_overview_now'); ?>: <b><?php echo htmlspecialchars((string) $this->generated_at, ENT_QUOTES); ?></b>
+            </p>
+        </div>
+    </div>
+<?php } ?>
+
 <div class="row">
     <div class="col-12 col-md-4">
         <div class="panel panel-default">
