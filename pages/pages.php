@@ -81,9 +81,15 @@ $domain_select .= '</select>';
 
 
 // buttons to filter by http status
-$oa = rex_context::fromGet()->getUrl(["httpstatus" => "any"]);
-$o2 = rex_context::fromGet()->getUrl(["httpstatus" => "200"]);
-$on2 = rex_context::fromGet()->getUrl(["httpstatus" => "not200"]);
+$baseParams = [
+    'page' => 'statistics/pages',
+    'date_start' => $filter_date_helper->date_start->format('Y-m-d'),
+    'date_end' => $filter_date_helper->date_end->format('Y-m-d'),
+    'url' => '',
+];
+$oa = rex_url::backendController(array_merge($baseParams, ['httpstatus' => 'any']), false);
+$o2 = rex_url::backendController(array_merge($baseParams, ['httpstatus' => '200']), false);
+$on2 = rex_url::backendController(array_merge($baseParams, ['httpstatus' => 'not200']), false);
 
 $http_filter_buttons = '<a class="btn btn-primary" href="' . $oa . '">' . htmlspecialchars($addon->i18n('statistics_filter_all'), ENT_QUOTES) . '</a>
 <a class="btn btn-primary" href="' . $o2 . '">' . htmlspecialchars($addon->i18n('statistics_filter_only_200'), ENT_QUOTES) . '</a>

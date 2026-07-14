@@ -4,7 +4,6 @@ namespace AndiLeni\Statistics;
 
 use rex;
 use rex_addon;
-use rex_context;
 use rex_sql;
 use rex_view;
 use InvalidArgumentException;
@@ -109,15 +108,21 @@ class Pages
                 $count = (string) $row['count'];
                 $status = (string) $row['status'];
 
-                $detailUrl = rex_context::fromGet()->getUrl([
+                $detailUrl = \rex_url::backendController([
+                    'page' => 'statistics/pages',
                     'url' => $url,
                     'date_start' => $this->filter_date_helper->date_start->format('Y-m-d'),
                     'date_end' => $this->filter_date_helper->date_end->format('Y-m-d'),
-                ]);
-                $ignoreUrl = rex_context::fromGet()->getUrl([
+                    'httpstatus' => $httpstatus,
+                ], false);
+                $ignoreUrl = \rex_url::backendController([
+                    'page' => 'statistics/pages',
                     'url' => $url,
                     'ignore_page' => true,
-                ]);
+                    'date_start' => $this->filter_date_helper->date_start->format('Y-m-d'),
+                    'date_end' => $this->filter_date_helper->date_end->format('Y-m-d'),
+                    'httpstatus' => $httpstatus,
+                ], false);
                 $confirm = htmlspecialchars($url . ':' . PHP_EOL . $this->addon->i18n('statistics_confirm_ignore_delete'), ENT_QUOTES);
 
                 $table .= '<tr>';
