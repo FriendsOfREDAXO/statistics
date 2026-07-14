@@ -24,8 +24,9 @@ $pages_helper = new Pages($filter_date_helper);
 echo StatsSubpageRenderer::renderFilter($current_backend_page, $filter_date_helper);
 
 // sum per page, bar chart
-$sum_per_page = $pages_helper->sumPerPage($httpstatus);
 $chartLimit = 30;
+$sum_per_page = $pages_helper->sumPerPage($httpstatus, $chartLimit);
+$tableLimit = 500;
 $chartBody = '';
 
 if ([] === $sum_per_page) {
@@ -98,7 +99,7 @@ $http_filter_buttons = '<a class="btn btn-primary" href="' . $oa . '">' . htmlsp
 
 echo StatsSubpageRenderer::renderSection(
     $addon->i18n('statistics_sum_per_page'),
-    $http_filter_buttons . $chartBody . $domain_select . $pages_helper->getList($httpstatus)
+    $http_filter_buttons . $chartBody . $domain_select . $pages_helper->getList($httpstatus, $tableLimit)
 );
 
 ?>

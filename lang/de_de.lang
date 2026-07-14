@@ -170,3 +170,4 @@ statistics_referer_top_referers_heading = Top-Referer
 statistics_referer_kpi_total_calls = Referer-Aufrufe gesamt
 statistics_referer_kpi_unique_referers = Einzigartige Referer-URLs
 statistics_referer_kpi_unique_hosts = Einzigartige Hosts
+statistics_pages_list_limited = Aus Performance-Gründen werden nur die Top-%s Seiten angezeigt.
