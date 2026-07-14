@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.2.3] - 07.06.2026
+
+-   Dashboard-Overview erweitert um KPI-Leiste für die letzten 7 Tage (Besuche, Besucher, Top-Artikel, Seiten pro Sitzung)
+-   Neue klickbare Analyse-Karten auf der Statistik-Startseite, die vorhandene Lazy-Blöcke gezielt laden und anspringen
+-   Restliche harte Labels aus `fragments/overview.php` in Sprachdateien ausgelagert
+
 ## [3.2.2] - 07.06.2026
 
 -   404/Non-200-Aufrufe werden bei aktivierter Option "Nur 200er Aufrufe erfassen" nicht mehr als Seitenaufrufe gespeichert ([#121](https://github.com/FriendsOfREDAXO/statistics/issues/121))

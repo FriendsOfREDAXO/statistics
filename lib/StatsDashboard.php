@@ -34,8 +34,22 @@ class StatsDashboard
         $fragmentOverview->setVar('today_visitors', $overviewData['visitors_today']);
         $fragmentOverview->setVar('total_visits', $overviewData['visits_total']);
         $fragmentOverview->setVar('total_visitors', $overviewData['visitors_total']);
+        $fragmentOverview->setVar('visits_week', $overviewData['visits_week']);
+        $fragmentOverview->setVar('visitors_week', $overviewData['visitors_week']);
+        $fragmentOverview->setVar('top_article_path_week', $overviewData['top_article_path_week']);
+        $fragmentOverview->setVar('top_article_count_week', $overviewData['top_article_count_week']);
+        $fragmentOverview->setVar('pages_per_session_week', $overviewData['pages_per_session_week']);
 
         return $fragmentOverview->parse('overview.php');
+    }
+
+    public static function renderAnalysisCards(DateFilter $filterDateHelper): string
+    {
+        $fragment = new rex_fragment();
+        $fragment->setVar('date_start', $filterDateHelper->date_start->format('Y-m-d'));
+        $fragment->setVar('date_end', $filterDateHelper->date_end->format('Y-m-d'));
+
+        return $fragment->parse('analysis_cards.php');
     }
 
     public static function renderMainChartSection(DateFilter $filterDateHelper): string
@@ -83,9 +97,9 @@ class StatsDashboard
     }
 
     /**
-     * @return array<string, mixed>|null
+     * @return array<string, mixed>
      */
-    private static function getTableLanguage(): ?array
+    private static function getTableLanguage(): array
     {
         $language = (string) rex::getProperty('lang');
         $isGerman = 'de_de' === $language;
