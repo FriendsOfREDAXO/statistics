@@ -136,12 +136,14 @@ class Pages
      */
     public function getList(string $httpstatus, int $limit = 500, bool $onlyFavorites = false): string
     {
+        $visitorsPerUrlEnabled = (bool) $this->addon->getConfig('statistics_pages_visitors_enabled', false);
         $favoriteUrls = $this->getFavoriteUrls();
         $favoriteMap = array_fill_keys($favoriteUrls, true);
-        $rows = $this->getPageRows($httpstatus, $limit, $favoriteUrls, $onlyFavorites);
+        $rows = $this->getPageRows($httpstatus, $limit, $favoriteUrls, $onlyFavorites, $visitorsPerUrlEnabled);
 
+        $visitsNoteKey = $visitorsPerUrlEnabled ? 'statistics_pages_visits_note' : 'statistics_pages_visits_note_legacy';
         $visitsNote = '<div class="alert alert-info" style="margin-bottom:10px;">'
-            . htmlspecialchars($this->addon->i18n('statistics_pages_visits_note'), ENT_QUOTES)
+            . htmlspecialchars($this->addon->i18n($visitsNoteKey), ENT_QUOTES)
             . '</div>';
 
         if ([] === $rows) {
@@ -158,7 +160,9 @@ class Pages
             $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_favorite'), ENT_QUOTES) . '</th>';
             $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_url'), ENT_QUOTES) . '</th>';
             $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_pages_visits_column'), ENT_QUOTES) . '</th>';
-            $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_pages_visitors_column'), ENT_QUOTES) . '</th>';
+            if ($visitorsPerUrlEnabled) {
+                $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_pages_visitors_column'), ENT_QUOTES) . '</th>';
+            }
             $table .= '<th>Status</th>';
             $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_ignore'), ENT_QUOTES) . '</th>';
             $table .= '</tr></thead><tbody>';
@@ -166,7 +170,7 @@ class Pages
             foreach ($rows as $row) {
                 $url = (string) $row['url'];
                 $count = (string) $row['count'];
-                $visitors = (string) $row['visitors'];
+                $visitors = (string) ($row['visitors'] ?? '0');
                 $status = (string) $row['status'];
                 $isFavorite = isset($favoriteMap[$url]);
 
@@ -206,7 +210,9 @@ class Pages
                 $table .= '<td data-sort="' . ($isFavorite ? '0' : '1') . '"><a href="' . htmlspecialchars($toggleFavoriteUrl, ENT_QUOTES) . '" title="' . htmlspecialchars($favoriteTitle, ENT_QUOTES) . '" style="text-decoration:none;font-size:18px;line-height:1;">' . $star . '</a></td>';
                 $table .= '<td><a href="' . htmlspecialchars($detailUrl, ENT_QUOTES) . '">' . htmlspecialchars($url, ENT_QUOTES) . '</a></td>';
                 $table .= '<td data-sort="' . htmlspecialchars($count, ENT_QUOTES) . '">' . htmlspecialchars($count, ENT_QUOTES) . '</td>';
-                $table .= '<td data-sort="' . htmlspecialchars($visitors, ENT_QUOTES) . '">' . htmlspecialchars($visitors, ENT_QUOTES) . '</td>';
+                if ($visitorsPerUrlEnabled) {
+                    $table .= '<td data-sort="' . htmlspecialchars($visitors, ENT_QUOTES) . '">' . htmlspecialchars($visitors, ENT_QUOTES) . '</td>';
+                }
                 $table .= '<td>' . htmlspecialchars($status, ENT_QUOTES) . '</td>';
                 $table .= '<td><a href="' . htmlspecialchars($ignoreUrl, ENT_QUOTES) . '" data-confirm="' . $confirm . '">' . $this->addon->i18n('statistics_ignore_and_delete') . '</a></td>';
                 $table .= '</tr>';
@@ -222,23 +228,30 @@ class Pages
      * @return array<int, array<string, mixed>>
      * @throws rex_sql_exception
      */
-    private function getPageRows(string $httpstatus, int $limit = 0, array $favoriteUrls = [], bool $onlyFavorites = false): array
+    private function getPageRows(string $httpstatus, int $limit = 0, array $favoriteUrls = [], bool $onlyFavorites = false, bool $visitorsPerUrlEnabled = false): array
     {
         $sql = rex_sql::factory();
 
-        $query = 'SELECT agg.url, agg.count, IFNULL(vis.unique_visitors, 0) AS visitors, IFNULL(us.status, "-") AS status '
+        $query = 'SELECT agg.url, agg.count';
+        if ($visitorsPerUrlEnabled) {
+            $query .= ', IFNULL(vis.unique_visitors, 0) AS visitors';
+        }
+        $query .= ', IFNULL(us.status, "-") AS status '
             . 'FROM ('
             . ' SELECT url, IFNULL(SUM(count), 0) AS count'
             . ' FROM ' . rex::getTable('pagestats_visits_per_url')
             . ' WHERE date BETWEEN :start AND :end'
             . ' GROUP BY url'
-            . ') agg '
-            . 'LEFT JOIN ('
-            . ' SELECT url, IFNULL(SUM(count), 0) AS unique_visitors'
-            . ' FROM ' . rex::getTable('pagestats_visitors_per_url')
-            . ' WHERE date BETWEEN :start AND :end'
-            . ' GROUP BY url'
-            . ') vis ON vis.url = agg.url ';
+            . ') agg ';
+
+        if ($visitorsPerUrlEnabled) {
+            $query .= 'LEFT JOIN ('
+                . ' SELECT url, IFNULL(SUM(count), 0) AS unique_visitors'
+                . ' FROM ' . rex::getTable('pagestats_visitors_per_url')
+                . ' WHERE date BETWEEN :start AND :end'
+                . ' GROUP BY url'
+                . ') vis ON vis.url = agg.url ';
+        }
 
         if ('200' === $httpstatus) {
             $query .= 'INNER JOIN ' . rex::getTable('pagestats_urlstatus') . ' us ON agg.url = us.url AND us.status = "200 OK" ';

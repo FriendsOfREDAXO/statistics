@@ -478,9 +478,24 @@ $(document).on("rex:ready", function (event, container) {
 
         statsDomainSelect.dataset.statisticsBound = 'true';
         var statsTableAllPages = $(statsTableAllPagesElement).DataTable();
+        var storageKey = 'statistics.pages.domainFilter';
+
+        try {
+            var storedDomain = window.sessionStorage.getItem(storageKey);
+            if (storedDomain !== null) {
+                statsDomainSelect.value = storedDomain;
+                statsTableAllPages.search(storedDomain).draw();
+            }
+        } catch (error) {
+        }
 
         statsDomainSelect.addEventListener('change', function () {
             statsTableAllPages.search(this.value).draw();
+
+            try {
+                window.sessionStorage.setItem(storageKey, this.value);
+            } catch (error) {
+            }
         });
     }
 

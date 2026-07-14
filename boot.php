@@ -159,7 +159,7 @@ rex_extension::register('RESPONSE_SHUTDOWN', function () use ($statistics_has_ba
                             }
 
                             $visit->updateVisitsPerUrl();
-                            if (method_exists($visit, 'persistVisitorPerUrl')) {
+                            if ((bool) $addon->getConfig('statistics_pages_visitors_enabled', false) && method_exists($visit, 'persistVisitorPerUrl')) {
                                 $visit->{'persistVisitorPerUrl'}();
                             }
 

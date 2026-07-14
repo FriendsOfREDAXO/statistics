@@ -79,14 +79,16 @@ if ($request_url !== '' && !$ignore_page) {
 // list of all pages
 $sql = rex_sql::factory();
 $domains = $sql->getArray('SELECT distinct domain FROM ' . rex::getTable('pagestats_visits_per_day'));
-$domain_select = '
-<select id="stats_domain_select" class="form-control">
-<option value="">' . htmlspecialchars($addon->i18n('statistics_all_domains'), ENT_QUOTES) . '</option>
-';
+$domain_select = '<div class="statistics-pages-domain-filter">';
+$domain_select .= '<label for="stats_domain_select">' . htmlspecialchars($addon->i18n('statistics_domain_filter_label'), ENT_QUOTES) . '</label>';
+$domain_select .= '<select id="stats_domain_select" class="form-control">';
+$domain_select .= '<option value="">' . htmlspecialchars($addon->i18n('statistics_all_domains'), ENT_QUOTES) . '</option>';
 foreach ($domains as $domain) {
     $domain_select .= '<option value="' . $domain['domain'] . '">' . $domain['domain'] . '</option>';
 }
 $domain_select .= '</select>';
+$domain_select .= '<small>' . htmlspecialchars($addon->i18n('statistics_domain_filter_note'), ENT_QUOTES) . '</small>';
+$domain_select .= '</div>';
 
 
 // buttons to filter by http status
@@ -103,16 +105,21 @@ $on2 = rex_url::backendController(array_merge($baseParams, ['httpstatus' => 'not
 $of = rex_url::backendController(array_merge($baseParams, ['httpstatus' => $httpstatus, 'only_favorites' => 1]), false);
 $oaf = rex_url::backendController(array_merge($baseParams, ['httpstatus' => $httpstatus, 'only_favorites' => 0]), false);
 
-$http_filter_buttons = '<a class="btn btn-primary" href="' . $oa . '">' . htmlspecialchars($addon->i18n('statistics_filter_all'), ENT_QUOTES) . '</a>
+$http_filter_buttons = '<div class="statistics-pages-filter-bar">';
+$http_filter_buttons .= '<div class="btn-group" role="group" aria-label="HTTP Status Filter">';
+$http_filter_buttons .= '<a class="btn btn-primary" href="' . $oa . '">' . htmlspecialchars($addon->i18n('statistics_filter_all'), ENT_QUOTES) . '</a>
 <a class="btn btn-primary" href="' . $o2 . '">' . htmlspecialchars($addon->i18n('statistics_filter_only_200'), ENT_QUOTES) . '</a>
 <a class="btn btn-primary" href="' . $on2 . '">' . htmlspecialchars($addon->i18n('statistics_filter_only_not_200'), ENT_QUOTES) . '</a>
 <a class="btn btn-primary" href="' . $of . '">' . htmlspecialchars($addon->i18n('statistics_filter_only_favorites'), ENT_QUOTES) . '</a>
 <a class="btn btn-default" href="' . $oaf . '">' . htmlspecialchars($addon->i18n('statistics_filter_all'), ENT_QUOTES) . '</a>';
+$http_filter_buttons .= '</div>';
+$http_filter_buttons .= $domain_select;
+$http_filter_buttons .= '</div>';
 
 
 echo StatsSubpageRenderer::renderSection(
     $addon->i18n('statistics_sum_per_page'),
-    $http_filter_buttons . $chartBody . $domain_select . $pages_helper->getList($httpstatus, $tableLimit, $only_favorites)
+    $http_filter_buttons . $chartBody . $pages_helper->getList($httpstatus, $tableLimit, $only_favorites)
 );
 
 ?>

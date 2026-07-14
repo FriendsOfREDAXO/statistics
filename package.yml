@@ -49,6 +49,7 @@ default_config:
     statistics_ignored_path_contains: ""
     statistics_ignored_path_ends: ""
     statistics_favorite_urls: ""
+    statistics_pages_visitors_enabled: true
     statistics_ignored_ips: ""
     statistics_visit_duration: 30
     statistics_scroll_pagination: "none"

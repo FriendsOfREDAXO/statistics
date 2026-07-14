@@ -469,6 +469,12 @@ $field8->addOption($addon->i18n('statistics_yes'), 1);
 $field8->addOption($addon->i18n('statistics_no'), 0);
 $field8->setNotice('Aktivieren, um Seitenaufrufe durch eingeloggte User zu verwerfen.');
 
+$field8b = $form->addRadioField('statistics_pages_visitors_enabled');
+$field8b->setLabel($addon->i18n('statistics_pages_visitors_enabled'));
+$field8b->addOption($addon->i18n('statistics_yes'), 1);
+$field8b->addOption($addon->i18n('statistics_no'), 0);
+$field8b->setNotice($addon->i18n('statistics_pages_visitors_enabled_note'));
+
 
 $field = $form->addRadioField('statistics_rec_onlyok');
 $field->setLabel('Nur 200er Aufrufe erfassen');

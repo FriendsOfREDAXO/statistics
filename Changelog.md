@@ -6,6 +6,7 @@
 -   Kampagnenansicht redakteursfreundlich erweitert: klare Statusmeldung, KPI-Überblick, Filter „Nur Google Ads (mit Kampagnen-ID)“ und Direktlink zu Google Ads
 -   Seitenaufrufe um Favoriten-/Watchlist-Funktion erweitert: URLs können per Stern markiert, farblich hervorgehoben und priorisiert angezeigt werden (inkl. Filter „Nur Favoriten")
 -   Seitenaufrufe-Tabelle fachlich erweitert und präzisiert: getrennte Anzeige für Aufrufe (Visits) und Besucher je URL (eindeutige Sessions)
+-   Rollout-Verhalten für „Besucher je URL" präzisiert: bei Neuinstallation standardmäßig aktiv, bei bestehenden Installationen zunächst deaktiviert und per Einstellung aktivierbar
 -   Tracking-Filter deutlich erweitert: mehr Probe-/Scanner-/CMS-Requests und verdächtige Dateiendungen werden bereits beim Erfassen ignoriert
 -   Wartungsbereich ausgebaut und in „Statistikwartung“ überführt, inklusive Anzeige des aktuellen Speicherverbrauchs pro Statistik-Tabelle
 -   Neue Wartungswerkzeuge in den Einstellungen: gezielte Rohdaten-Bereinigung nach Aufbewahrungsdauer sowie Tabellen-Optimierung (`OPTIMIZE TABLE`) zur realen Speicherfreigabe

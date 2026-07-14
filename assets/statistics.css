@@ -16,6 +16,40 @@
     margin-bottom: 15px;
 }
 
+.statistics-pages-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+    padding: 10px;
+    border: 1px solid #d7dde3;
+    border-radius: 4px;
+    background: #f9fbfd;
+    margin-bottom: 12px;
+}
+
+.statistics-pages-domain-filter {
+    min-width: 280px;
+    max-width: 460px;
+    flex: 1 1 320px;
+}
+
+.statistics-pages-domain-filter label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.statistics-pages-domain-filter small {
+    display: block;
+    margin-top: 4px;
+    color: #66717d;
+}
+
+.statistics-pages-domain-filter #stats_domain_select {
+    margin-bottom: 0;
+}
+
 #chart_visits_per_page {
     margin-bottom: 15px;
 }
