@@ -42,6 +42,28 @@ if (rex_request_method() == 'post') {
         '%.sql%',
     ];
 
+    $addConfigPatterns = static function (array &$patterns, string $configValue, string $mode): void {
+        $lines = explode("\n", str_replace("\r", "", $configValue));
+        foreach ($lines as $line) {
+            $rule = strtolower(trim((string) $line));
+            if ('' === $rule) {
+                continue;
+            }
+
+            if ('ends' === $mode) {
+                $patterns[] = '%' . $rule;
+                continue;
+            }
+
+            $patterns[] = '%' . $rule . '%';
+        }
+    };
+
+    $addConfigPatterns($noiseLikePatterns, (string) $addon->getConfig('statistics_ignored_paths', ''), 'contains');
+    $addConfigPatterns($noiseLikePatterns, (string) $addon->getConfig('statistics_ignored_path_contains', ''), 'contains');
+    $addConfigPatterns($noiseLikePatterns, (string) $addon->getConfig('statistics_ignored_path_ends', ''), 'ends');
+    $noiseLikePatterns = array_values(array_unique($noiseLikePatterns));
+
     $buildLikeWhere = static function (string $column, array $patterns): array {
         $parts = [];
         $params = [];
