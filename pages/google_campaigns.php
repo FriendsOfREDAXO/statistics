@@ -13,6 +13,8 @@ $requestCampaignKey = rex_request('campaign_key', 'string', '');
 $filterDateHelper = new DateFilter($requestDateStart, $requestDateEnd, 'pagestats_visits_per_url');
 echo StatsSubpageRenderer::renderFilter($currentBackendPage, $filterDateHelper);
 
+$requestOnlyAds = rex_request('only_ads', 'boolean', false);
+
 $trackedParams = [
     'gad_campaignid',
     'gad_source',
@@ -27,7 +29,7 @@ $trackedParams = [
     'utm_content',
 ];
 
-$extractCampaignData = static function (string $url) use ($trackedParams): ?array {
+$extractCampaignData = static function (string $url) use ($trackedParams, $addon): ?array {
     $trimmed = trim($url);
     if ('' === $trimmed) {
         return null;
@@ -62,11 +64,9 @@ $extractCampaignData = static function (string $url) use ($trackedParams): ?arra
             continue;
         }
 
-        if (is_array($value)) {
-            $normalized[$normalizedKey] = trim((string) reset($value));
-        } else {
-            $normalized[$normalizedKey] = trim((string) $value);
-        }
+        $normalized[$normalizedKey] = is_array($value)
+            ? trim((string) reset($value))
+            : trim((string) $value);
     }
 
     if ([] === $normalized) {
@@ -75,35 +75,40 @@ $extractCampaignData = static function (string $url) use ($trackedParams): ?arra
 
     $landingPath = is_string($path) && '' !== $path ? $path : '/';
 
-    $campaignLabel = '';
-    $campaignKey = '';
+    $campaignId = (string) ($normalized['gad_campaignid'] ?? '');
+    $utmCampaign = (string) ($normalized['utm_campaign'] ?? '');
+    $utmId = (string) ($normalized['utm_id'] ?? '');
+    $hasClickId = (isset($normalized['gclid']) && '' !== $normalized['gclid'])
+        || (isset($normalized['gbraid']) && '' !== $normalized['gbraid'])
+        || (isset($normalized['wbraid']) && '' !== $normalized['wbraid']);
 
-    if (isset($normalized['gad_campaignid']) && '' !== $normalized['gad_campaignid']) {
-        $campaignKey = 'gad_campaignid:' . $normalized['gad_campaignid'];
-        $campaignLabel = 'Google Ads #' . $normalized['gad_campaignid'];
-    } elseif (isset($normalized['utm_id']) && '' !== $normalized['utm_id']) {
-        $campaignKey = 'utm_id:' . $normalized['utm_id'];
-        $campaignLabel = 'UTM-ID ' . $normalized['utm_id'];
-    } elseif (isset($normalized['utm_campaign']) && '' !== $normalized['utm_campaign']) {
-        $campaignKey = 'utm_campaign:' . $normalized['utm_campaign'];
-        $campaignLabel = 'UTM ' . $normalized['utm_campaign'];
-    } elseif (isset($normalized['gbraid']) && '' !== $normalized['gbraid']) {
-        $campaignKey = 'gbraid:' . $normalized['gbraid'];
-        $campaignLabel = 'GBRAID';
-    } elseif (isset($normalized['wbraid']) && '' !== $normalized['wbraid']) {
-        $campaignKey = 'wbraid:' . $normalized['wbraid'];
-        $campaignLabel = 'WBRAID';
-    } elseif (isset($normalized['gclid']) && '' !== $normalized['gclid']) {
-        $campaignKey = 'gclid:' . $normalized['gclid'];
-        $campaignLabel = 'GCLID';
-    } else {
+    if ('' === $campaignId && '' === $utmCampaign && '' === $utmId && !$hasClickId) {
         return null;
     }
 
+    if ('' !== $campaignId) {
+        $campaignType = 'google_ads';
+        $campaignLabel = 'Google Ads #' . $campaignId;
+        $groupKey = 'ads:' . $campaignId . '|' . $landingPath;
+    } elseif ('' !== $utmCampaign) {
+        $campaignType = 'utm_campaign';
+        $campaignLabel = 'UTM ' . $utmCampaign;
+        $groupKey = 'utm_campaign:' . $utmCampaign . '|' . $landingPath;
+    } elseif ('' !== $utmId) {
+        $campaignType = 'utm_id';
+        $campaignLabel = 'UTM-ID ' . $utmId;
+        $groupKey = 'utm_id:' . $utmId . '|' . $landingPath;
+    } else {
+        $campaignType = 'click_id_only';
+        $campaignLabel = $addon->i18n('statistics_google_campaigns_click_id_only');
+        $groupKey = 'click_only|' . $landingPath;
+    }
+
     return [
-        'signature' => $campaignKey . '|' . $landingPath,
-        'campaign_key' => $campaignKey,
+        'signature' => $groupKey,
+        'campaign_id' => $campaignId,
         'campaign_label' => $campaignLabel,
+        'campaign_type' => $campaignType,
         'landing_path' => $landingPath,
         'params' => $normalized,
     ];
@@ -120,6 +125,9 @@ $urlRows = $sql->getArray(
 );
 
 $groups = [];
+$totalDetectedCalls = 0;
+$totalAdsCalls = 0;
+$campaignIds = [];
 
 foreach ($urlRows as $row) {
     $url = (string) ($row['url'] ?? '');
@@ -134,24 +142,41 @@ foreach ($urlRows as $row) {
         continue;
     }
 
+    if ($requestOnlyAds && '' === $campaignData['campaign_id']) {
+        continue;
+    }
+
     $signature = $campaignData['signature'];
     if (!isset($groups[$signature])) {
         $groups[$signature] = [
-            'campaign_key' => $campaignData['campaign_key'],
+            'campaign_id' => $campaignData['campaign_id'],
             'campaign_label' => $campaignData['campaign_label'],
+            'campaign_type' => $campaignData['campaign_type'],
             'landing_path' => $campaignData['landing_path'],
             'count' => 0,
             'click_ids' => [],
-            'params' => $campaignData['params'],
+            'param_keys' => [],
             'urls' => [],
         ];
     }
 
     $groups[$signature]['count'] += $count;
+    $totalDetectedCalls += $count;
+
+    if ('' !== $campaignData['campaign_id']) {
+        $totalAdsCalls += $count;
+        $campaignIds[$campaignData['campaign_id']] = true;
+    }
 
     foreach (['gclid', 'gbraid', 'wbraid'] as $clickIdKey) {
         if (isset($campaignData['params'][$clickIdKey]) && '' !== $campaignData['params'][$clickIdKey]) {
             $groups[$signature]['click_ids'][$clickIdKey . ':' . $campaignData['params'][$clickIdKey]] = true;
+        }
+    }
+
+    foreach ($campaignData['params'] as $paramKey => $paramValue) {
+        if ('' !== $paramValue) {
+            $groups[$signature]['param_keys'][$paramKey] = true;
         }
     }
 
@@ -162,13 +187,48 @@ foreach ($urlRows as $row) {
 }
 
 if ([] === $groups) {
-    echo StatsSubpageRenderer::renderSection($addon->i18n('statistics_google_campaigns_groups'), rex_view::info($addon->i18n('statistics_no_data')));
+    $body = '<div class="alert alert-warning" style="margin-bottom:10px;">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_no_hits'), ENT_QUOTES) . '</div>';
+    $body .= '<p><a class="btn btn-default" href="https://ads.google.com/aw/campaigns" target="_blank" rel="noopener noreferrer">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_open_ads'), ENT_QUOTES) . '</a></p>';
+    echo StatsSubpageRenderer::renderSection($addon->i18n('statistics_google_campaigns_groups'), $body . rex_view::info($addon->i18n('statistics_no_data')));
     return;
 }
 
 uasort($groups, static fn (array $a, array $b): int => ($b['count'] <=> $a['count']));
 
-$intro = '<div class="alert alert-info" style="margin-bottom:10px;">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_intro'), ENT_QUOTES) . '</div>';
+$topGroup = reset($groups);
+$topGroupText = '';
+if (is_array($topGroup)) {
+    $topGroupText = (string) $topGroup['campaign_label'] . ' - ' . (string) $topGroup['landing_path'];
+}
+
+$statusClass = $totalAdsCalls > 0 ? 'alert alert-success' : 'alert alert-warning';
+$statusText = $totalAdsCalls > 0
+    ? sprintf($addon->i18n('statistics_google_campaigns_status_found'), (string) $totalAdsCalls)
+    : $addon->i18n('statistics_google_campaigns_status_only_click_ids');
+
+$filterBase = [
+    'page' => 'statistics/google_campaigns',
+    'date_start' => $filterDateHelper->date_start->format('Y-m-d'),
+    'date_end' => $filterDateHelper->date_end->format('Y-m-d'),
+];
+$allLink = rex_url::backendController(array_merge($filterBase, ['only_ads' => 0]), false);
+$onlyAdsLink = rex_url::backendController(array_merge($filterBase, ['only_ads' => 1]), false);
+
+$intro = '<div class="' . $statusClass . '" style="margin-bottom:10px;">' . htmlspecialchars($statusText, ENT_QUOTES) . '</div>';
+$intro .= '<div class="alert alert-info" style="margin-bottom:10px;">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_intro'), ENT_QUOTES) . ' '
+    . '<a href="https://ads.google.com/aw/campaigns" target="_blank" rel="noopener noreferrer">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_open_ads'), ENT_QUOTES) . '</a>'
+    . '</div>';
+
+$kpi = '<div class="row">';
+$kpi .= '<div class="col-sm-4"><div class="panel panel-default"><div class="panel-body"><div class="text-muted">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_kpi_detected_calls'), ENT_QUOTES) . '</div><div style="font-size:28px;font-weight:700;line-height:1.2;">' . htmlspecialchars((string) $totalDetectedCalls, ENT_QUOTES) . '</div></div></div></div>';
+$kpi .= '<div class="col-sm-4"><div class="panel panel-default"><div class="panel-body"><div class="text-muted">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_kpi_ads_campaigns'), ENT_QUOTES) . '</div><div style="font-size:28px;font-weight:700;line-height:1.2;">' . htmlspecialchars((string) count($campaignIds), ENT_QUOTES) . '</div></div></div></div>';
+$kpi .= '<div class="col-sm-4"><div class="panel panel-default"><div class="panel-body"><div class="text-muted">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_kpi_top_group'), ENT_QUOTES) . '</div><div style="font-size:15px;font-weight:700;line-height:1.3;word-break:break-word;">' . htmlspecialchars($topGroupText, ENT_QUOTES) . '</div></div></div></div>';
+$kpi .= '</div>';
+
+$buttons = '<div style="margin-bottom:10px;">';
+$buttons .= '<a class="btn btn-primary" href="' . htmlspecialchars($allLink, ENT_QUOTES) . '">' . htmlspecialchars($addon->i18n('statistics_filter_all'), ENT_QUOTES) . '</a> ';
+$buttons .= '<a class="btn btn-primary" href="' . htmlspecialchars($onlyAdsLink, ENT_QUOTES) . '">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_only_ads'), ENT_QUOTES) . '</a>';
+$buttons .= '</div>';
 
 $table = '<table class="table-bordered dt_order_second statistics_table table-striped table-hover table" data-page-length="30">';
 $table .= '<thead><tr>';
@@ -185,17 +245,12 @@ foreach ($groups as $signature => $group) {
         'campaign_key' => base64_encode((string) $signature),
         'date_start' => $filterDateHelper->date_start->format('Y-m-d'),
         'date_end' => $filterDateHelper->date_end->format('Y-m-d'),
+        'only_ads' => $requestOnlyAds ? 1 : 0,
     ], false);
 
-    $paramPairs = [];
-    foreach ($group['params'] as $k => $v) {
-        if ('' === (string) $v) {
-            continue;
-        }
-        $paramPairs[] = $k . '=' . $v;
-    }
-
-    $paramsText = implode(', ', $paramPairs);
+    $paramKeys = array_keys($group['param_keys']);
+    sort($paramKeys);
+    $paramsText = implode(', ', $paramKeys);
 
     $table .= '<tr>';
     $table .= '<td><a href="' . htmlspecialchars($campaignDetailUrl, ENT_QUOTES) . '">' . htmlspecialchars((string) $group['campaign_label'], ENT_QUOTES) . '</a></td>';
@@ -208,7 +263,7 @@ foreach ($groups as $signature => $group) {
 
 $table .= '</tbody></table>';
 
-echo StatsSubpageRenderer::renderSection($addon->i18n('statistics_google_campaigns_groups'), $intro . $table);
+echo StatsSubpageRenderer::renderSection($addon->i18n('statistics_google_campaigns_groups'), $intro . $kpi . $buttons . $table);
 
 if ('' !== $requestCampaignKey) {
     $decodedSignature = base64_decode($requestCampaignKey, true);
@@ -217,6 +272,7 @@ if ('' !== $requestCampaignKey) {
         usort($selected['urls'], static fn (array $a, array $b): int => ($b['count'] <=> $a['count']));
 
         $detailBody = '<div style="margin-bottom:10px;"><strong>' . htmlspecialchars($selected['campaign_label'], ENT_QUOTES) . '</strong> - ' . htmlspecialchars($selected['landing_path'], ENT_QUOTES) . '</div>';
+        $detailBody .= '<p><a class="btn btn-default" href="https://ads.google.com/aw/campaigns" target="_blank" rel="noopener noreferrer">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_open_ads'), ENT_QUOTES) . '</a></p>';
         $detailBody .= '<table class="table table-striped table-hover table-bordered"><thead><tr>';
         $detailBody .= '<th>' . htmlspecialchars($addon->i18n('statistics_url'), ENT_QUOTES) . '</th>';
         $detailBody .= '<th>' . htmlspecialchars($addon->i18n('statistics_count'), ENT_QUOTES) . '</th>';
