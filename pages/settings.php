@@ -197,6 +197,9 @@ if (rex_request_method() == 'post') {
         $sql->setQuery('delete from ' . rex::getTable('pagestats_visits_per_url'));
         $count += $sql->getRows();
 
+        $sql->setQuery('delete from ' . rex::getTable('pagestats_visitors_per_url'));
+        $count += $sql->getRows();
+
         echo rex_view::success($count . ' ' . $addon->i18n('statistics_deleted_dump'));
     } elseif ($function == 'delete_media') {
         $sql = rex_sql::factory();
@@ -227,6 +230,10 @@ if (rex_request_method() == 'post') {
 
             [$whereUrl, $paramsUrl] = $buildLikeWhere('url', $noiseLikePatterns);
             $result = $deleteChunkedLimited(rex::getTable('pagestats_visits_per_url'), $whereUrl, $paramsUrl, $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_visitors_per_url'), $whereUrl, $paramsUrl, $chunkSize, $maxRoundsPerRun);
             $count += (int) $result['deleted'];
             $hasMore = $hasMore || (bool) $result['has_more'];
 
@@ -268,6 +275,7 @@ if (rex_request_method() == 'post') {
             $count += $deleteChunked(rex::getTable('pagestats_visits_per_day'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
             $count += $deleteChunked(rex::getTable('pagestats_visitors_per_day'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
             $count += $deleteChunked(rex::getTable('pagestats_visits_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+            $count += $deleteChunked(rex::getTable('pagestats_visitors_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
             $count += $deleteChunked(rex::getTable('pagestats_referer'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
             $count += $deleteChunked(rex::getTable('pagestats_media'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
             $count += $deleteChunked(rex::getTable('pagestats_api'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
@@ -303,6 +311,7 @@ if (rex_request_method() == 'post') {
 
             // Reduce high-cardinality raw tables first.
             $count += $deleteChunked(rex::getTable('pagestats_visits_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+            $count += $deleteChunked(rex::getTable('pagestats_visitors_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
             $count += $deleteChunked(rex::getTable('pagestats_referer'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
             $count += $deleteChunked(rex::getTable('pagestats_media'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
             $count += $deleteChunked(rex::getTable('pagestats_api'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
@@ -333,6 +342,7 @@ if (rex_request_method() == 'post') {
             rex::getTable('pagestats_visits_per_day'),
             rex::getTable('pagestats_visitors_per_day'),
             rex::getTable('pagestats_visits_per_url'),
+            rex::getTable('pagestats_visitors_per_url'),
             rex::getTable('pagestats_urlstatus'),
             rex::getTable('pagestats_bot'),
             rex::getTable('pagestats_referer'),
@@ -532,6 +542,7 @@ $maintenanceTables = [
     rex::getTable('pagestats_visits_per_day'),
     rex::getTable('pagestats_visitors_per_day'),
     rex::getTable('pagestats_visits_per_url'),
+    rex::getTable('pagestats_visitors_per_url'),
     rex::getTable('pagestats_urlstatus'),
     rex::getTable('pagestats_bot'),
     rex::getTable('pagestats_referer'),

@@ -140,10 +140,14 @@ class Pages
         $favoriteMap = array_fill_keys($favoriteUrls, true);
         $rows = $this->getPageRows($httpstatus, $limit, $favoriteUrls, $onlyFavorites);
 
+        $visitsNote = '<div class="alert alert-info" style="margin-bottom:10px;">'
+            . htmlspecialchars($this->addon->i18n('statistics_pages_visits_note'), ENT_QUOTES)
+            . '</div>';
+
         if ([] === $rows) {
-            $table = rex_view::info($this->addon->i18n('statistics_no_data'));
+            $table = $visitsNote . rex_view::info($this->addon->i18n('statistics_no_data'));
         } else {
-            $table = '';
+            $table = $visitsNote;
 
             if ($limit > 0 && count($rows) >= $limit) {
                 $table .= rex_view::warning(sprintf($this->addon->i18n('statistics_pages_list_limited'), (string) $limit));
@@ -153,7 +157,8 @@ class Pages
             $table .= '<thead><tr>';
             $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_favorite'), ENT_QUOTES) . '</th>';
             $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_url'), ENT_QUOTES) . '</th>';
-            $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_count'), ENT_QUOTES) . '</th>';
+            $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_pages_visits_column'), ENT_QUOTES) . '</th>';
+            $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_pages_visitors_column'), ENT_QUOTES) . '</th>';
             $table .= '<th>Status</th>';
             $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_ignore'), ENT_QUOTES) . '</th>';
             $table .= '</tr></thead><tbody>';
@@ -161,6 +166,7 @@ class Pages
             foreach ($rows as $row) {
                 $url = (string) $row['url'];
                 $count = (string) $row['count'];
+                $visitors = (string) $row['visitors'];
                 $status = (string) $row['status'];
                 $isFavorite = isset($favoriteMap[$url]);
 
@@ -200,6 +206,7 @@ class Pages
                 $table .= '<td data-sort="' . ($isFavorite ? '0' : '1') . '"><a href="' . htmlspecialchars($toggleFavoriteUrl, ENT_QUOTES) . '" title="' . htmlspecialchars($favoriteTitle, ENT_QUOTES) . '" style="text-decoration:none;font-size:18px;line-height:1;">' . $star . '</a></td>';
                 $table .= '<td><a href="' . htmlspecialchars($detailUrl, ENT_QUOTES) . '">' . htmlspecialchars($url, ENT_QUOTES) . '</a></td>';
                 $table .= '<td data-sort="' . htmlspecialchars($count, ENT_QUOTES) . '">' . htmlspecialchars($count, ENT_QUOTES) . '</td>';
+                $table .= '<td data-sort="' . htmlspecialchars($visitors, ENT_QUOTES) . '">' . htmlspecialchars($visitors, ENT_QUOTES) . '</td>';
                 $table .= '<td>' . htmlspecialchars($status, ENT_QUOTES) . '</td>';
                 $table .= '<td><a href="' . htmlspecialchars($ignoreUrl, ENT_QUOTES) . '" data-confirm="' . $confirm . '">' . $this->addon->i18n('statistics_ignore_and_delete') . '</a></td>';
                 $table .= '</tr>';
@@ -219,13 +226,19 @@ class Pages
     {
         $sql = rex_sql::factory();
 
-        $query = 'SELECT agg.url, agg.count, IFNULL(us.status, "-") AS status '
+        $query = 'SELECT agg.url, agg.count, IFNULL(vis.unique_visitors, 0) AS visitors, IFNULL(us.status, "-") AS status '
             . 'FROM ('
             . ' SELECT url, IFNULL(SUM(count), 0) AS count'
             . ' FROM ' . rex::getTable('pagestats_visits_per_url')
             . ' WHERE date BETWEEN :start AND :end'
             . ' GROUP BY url'
-            . ') agg ';
+            . ') agg '
+            . 'LEFT JOIN ('
+            . ' SELECT url, IFNULL(SUM(count), 0) AS unique_visitors'
+            . ' FROM ' . rex::getTable('pagestats_visitors_per_url')
+            . ' WHERE date BETWEEN :start AND :end'
+            . ' GROUP BY url'
+            . ') vis ON vis.url = agg.url ';
 
         if ('200' === $httpstatus) {
             $query .= 'INNER JOIN ' . rex::getTable('pagestats_urlstatus') . ' us ON agg.url = us.url AND us.status = "200 OK" ';

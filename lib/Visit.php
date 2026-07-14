@@ -485,6 +485,30 @@ class Visit
         $sql->setQuery($sql_insert);
     }
 
+    /**
+     * Tracks unique visitor sessions per URL and day.
+     * A token can contribute at most once per URL and day.
+     */
+    public function persistVisitorPerUrl(): void
+    {
+        if ('' === $this->token) {
+            return;
+        }
+
+        $hash = hash('sha1', $this->datetime_now->format('Y-m-d') . '|' . $this->url . '|' . $this->token);
+        $sql = rex_sql::factory();
+
+        $sqlInsert = 'INSERT INTO ' . rex::getTable('pagestats_visitors_per_url') . ' (hash,date,url,count) VALUES '
+            . '(:hash,:date,:url,1) '
+            . 'ON DUPLICATE KEY UPDATE count = count;';
+
+        $sql->setQuery($sqlInsert, [
+            ':hash' => $hash,
+            ':date' => $this->datetime_now->format('Y-m-d'),
+            ':url' => $this->url,
+        ]);
+    }
+
 
     /**
      *

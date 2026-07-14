@@ -159,6 +159,9 @@ rex_extension::register('RESPONSE_SHUTDOWN', function () use ($statistics_has_ba
                             }
 
                             $visit->updateVisitsPerUrl();
+                            if (method_exists($visit, 'persistVisitorPerUrl')) {
+                                $visit->{'persistVisitorPerUrl'}();
+                            }
 
                             // visitor is human
                             // check hash with save_visit, if true then save visit

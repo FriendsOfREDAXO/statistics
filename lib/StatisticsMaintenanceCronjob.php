@@ -14,6 +14,7 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
 
         try {
             $deleted += $this->deleteChunked(rex::getTable('pagestats_visits_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+            $deleted += $this->deleteChunked(rex::getTable('pagestats_visitors_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
             $deleted += $this->deleteChunked(rex::getTable('pagestats_referer'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
             $deleted += $this->deleteChunked(rex::getTable('pagestats_media'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
             $deleted += $this->deleteChunked(rex::getTable('pagestats_api'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
@@ -29,6 +30,7 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
                     rex::getTable('pagestats_visits_per_day'),
                     rex::getTable('pagestats_visitors_per_day'),
                     rex::getTable('pagestats_visits_per_url'),
+                    rex::getTable('pagestats_visitors_per_url'),
                     rex::getTable('pagestats_urlstatus'),
                     rex::getTable('pagestats_bot'),
                     rex::getTable('pagestats_referer'),
