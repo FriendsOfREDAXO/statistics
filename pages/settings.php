@@ -89,8 +89,8 @@ if (rex_request_method() == 'post') {
 
         foreach (array_values($patterns) as $index => $pattern) {
             $paramKey = ':pattern' . $index;
-            $parts[] = 'LOWER(' . $column . ') LIKE ' . $paramKey;
-            $params[$paramKey] = strtolower((string) $pattern);
+            $parts[] = $column . ' LIKE ' . $paramKey;
+            $params[$paramKey] = (string) $pattern;
         }
 
         return [implode(' OR ', $parts), $params];
@@ -132,6 +132,28 @@ if (rex_request_method() == 'post') {
         } while ($affected >= $chunkSize);
 
         return $total;
+    };
+
+    $deleteChunkedLimited = static function (string $table, string $condition, array $params = [], int $chunkSize = 5000, int $maxRounds = 20) use ($runDeleteWithRetry): array {
+        $total = 0;
+        $round = 0;
+        $hasMore = false;
+
+        do {
+            ++$round;
+            $affected = $runDeleteWithRetry(
+                'DELETE FROM ' . $table . ' WHERE ' . $condition . ' LIMIT ' . (int) $chunkSize,
+                $params
+            );
+            $total += $affected;
+
+            $hasMore = $affected >= $chunkSize;
+        } while ($hasMore && $round < $maxRounds);
+
+        return [
+            'deleted' => $total,
+            'has_more' => $hasMore,
+        ];
     };
 
     $deleteJoinChunked = static function (string $queryPrefix, string $condition, array $params = [], int $chunkSize = 5000) use ($runDeleteWithRetry): int {
@@ -192,15 +214,28 @@ if (rex_request_method() == 'post') {
     } elseif ($function == 'delete_noise') {
         try {
             $count = 0;
+            $hasMore = false;
+            $maxRoundsPerRun = 15;
+            $chunkSize = 4000;
 
             [$whereUrl, $paramsUrl] = $buildLikeWhere('url', $noiseLikePatterns);
-            $count += $deleteChunked(rex::getTable('pagestats_visits_per_url'), $whereUrl, $paramsUrl);
-            $count += $deleteChunked(rex::getTable('pagestats_urlstatus'), $whereUrl, $paramsUrl);
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_visits_per_url'), $whereUrl, $paramsUrl, $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_urlstatus'), $whereUrl, $paramsUrl, $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
 
             [$whereLastpage, $paramsLastpage] = $buildLikeWhere('lastpage', $noiseLikePatterns);
-            $count += $deleteChunked(rex::getTable('pagestats_sessionstats'), $whereLastpage, $paramsLastpage);
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_sessionstats'), $whereLastpage, $paramsLastpage, $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
 
             echo rex_view::success(sprintf($addon->i18n('statistics_deleted_noise'), (string) $count));
+            if ($hasMore) {
+                echo rex_view::warning(sprintf($addon->i18n('statistics_deleted_noise_partial'), (string) $count));
+            }
         } catch (rex_sql_exception $exception) {
             echo rex_view::error($addon->i18n('statistics_cleanup_lock_timeout'));
         }
@@ -232,6 +267,65 @@ if (rex_request_method() == 'post') {
             );
 
             echo rex_view::success(sprintf($addon->i18n('statistics_deleted_old'), (string) $count, (string) $keepDays));
+        } catch (rex_sql_exception $exception) {
+            echo rex_view::error($addon->i18n('statistics_cleanup_lock_timeout'));
+        }
+    } elseif ($function == 'delete_raw_old') {
+        try {
+            $keepDaysRaw = rex_post('keep_days_raw', 'int', 120);
+            if ($keepDaysRaw < 1) {
+                $keepDaysRaw = 1;
+            }
+
+            $cutoffDate = (new DateTimeImmutable('today'))->modify('-' . $keepDaysRaw . ' days')->format('Y-m-d');
+            $cutoffDatetime = $cutoffDate . ' 00:00:00';
+
+            $count = 0;
+
+            // Reduce high-cardinality raw tables first.
+            $count += $deleteChunked(rex::getTable('pagestats_visits_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+            $count += $deleteChunked(rex::getTable('pagestats_referer'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+            $count += $deleteChunked(rex::getTable('pagestats_media'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+            $count += $deleteChunked(rex::getTable('pagestats_api'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+            $count += $deleteChunked(rex::getTable('pagestats_sessionstats'), 'lastvisit < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
+            $count += $deleteChunked(rex::getTable('pagestats_hash'), 'datetime < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
+
+            // Remove stale URL status records without matching URL rows.
+            $count += $deleteJoinChunked(
+                'DELETE us FROM ' . rex::getTable('pagestats_urlstatus') . ' us '
+                . 'LEFT JOIN ' . rex::getTable('pagestats_visits_per_url') . ' v ON v.url = us.url',
+                'v.url IS NULL'
+            );
+
+            echo rex_view::success(sprintf($addon->i18n('statistics_deleted_raw_old'), (string) $count, (string) $keepDaysRaw));
+        } catch (rex_sql_exception $exception) {
+            echo rex_view::error($addon->i18n('statistics_cleanup_lock_timeout'));
+        }
+    } elseif ($function == 'optimize_tables') {
+        $optimized = 0;
+
+        $tablesToOptimize = [
+            rex::getTable('pagestats_hash'),
+            rex::getTable('pagestats_data'),
+            rex::getTable('pagestats_visits_per_day'),
+            rex::getTable('pagestats_visitors_per_day'),
+            rex::getTable('pagestats_visits_per_url'),
+            rex::getTable('pagestats_urlstatus'),
+            rex::getTable('pagestats_bot'),
+            rex::getTable('pagestats_referer'),
+            rex::getTable('pagestats_media'),
+            rex::getTable('pagestats_api'),
+            rex::getTable('pagestats_sessionstats'),
+        ];
+
+        try {
+            foreach ($tablesToOptimize as $tableName) {
+                $sql = rex_sql::factory();
+                $sql->setQuery('OPTIMIZE TABLE ' . $tableName);
+                ++$optimized;
+            }
+
+            echo rex_view::success(sprintf($addon->i18n('statistics_optimized_tables'), (string) $optimized));
         } catch (rex_sql_exception $exception) {
             echo rex_view::error($addon->i18n('statistics_cleanup_lock_timeout'));
         }
@@ -529,6 +623,18 @@ $content = $storageUsageHtml . '
 <label for="statistics-keep-days" style="margin:0;">' . $addon->i18n('statistics_cleanup_keep_days') . '</label>
 <input id="statistics-keep-days" class="form-control" style="width:110px" type="number" min="1" step="1" name="keep_days" value="365">
 <button class="btn btn-warning" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_old') . '">' . $addon->i18n('statistics_delete_old') . '</button>
+</form>
+
+<form style="margin:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap" action="' . rex_url::currentBackendPage() . '" method="post">
+<input type="hidden" name="func" value="delete_raw_old">
+<label for="statistics-keep-days-raw" style="margin:0;">' . $addon->i18n('statistics_cleanup_keep_days_raw') . '</label>
+<input id="statistics-keep-days-raw" class="form-control" style="width:110px" type="number" min="1" step="1" name="keep_days_raw" value="120">
+<button class="btn btn-warning" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_raw_old') . '">' . $addon->i18n('statistics_delete_raw_old') . '</button>
+</form>
+
+<form style="margin:5px" action="' . rex_url::currentBackendPage() . '" method="post">
+<input type="hidden" name="func" value="optimize_tables">
+<button class="btn btn-primary" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_optimize_tables') . '">' . $addon->i18n('statistics_optimize_tables') . '</button>
 </form>
 
 </div>
