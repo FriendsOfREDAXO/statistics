@@ -85,11 +85,8 @@ class Visit
     const IGNORE_PATH_STARTS = [
         '/wp-',
         '/wordpress',
-        '/api/',
         '/administrator',
         '/admin/',
-        '/cms/',
-        '/blog/',
         '//',
     ];
 
