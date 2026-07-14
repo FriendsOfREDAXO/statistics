@@ -343,7 +343,15 @@ if (rex_request_method() == 'post') {
 
             echo rex_view::success(sprintf($addon->i18n('statistics_optimized_tables'), (string) $optimized));
         } catch (rex_sql_exception $exception) {
-            echo rex_view::error($addon->i18n('statistics_cleanup_lock_timeout'));
+            $message = strtolower($exception->getMessage());
+            $isLockTimeout = false !== strpos($message, '1205') || false !== strpos($message, 'lock wait timeout');
+
+            if ($isLockTimeout) {
+                echo rex_view::error($addon->i18n('statistics_cleanup_lock_timeout'));
+            } else {
+                rex_logger::logException($exception);
+                echo rex_view::error($exception->getMessage());
+            }
         }
     } elseif ($function == 'updateGeo2Ip') {
         $updated = Ip2Geo::updateDatabase();
