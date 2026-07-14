@@ -87,11 +87,17 @@ class StatsLazyBlockRenderer
             . '<hr>'
             . '<h5><b>' . htmlspecialchars($this->addon->i18n('statistics_os'), ENT_QUOTES) . '</b></h5>'
             . $os->getList();
-        $html .= $this->renderVerticalSection('Gerätetyp, Hersteller & Betriebssystem', 'chart_device_brand_stack', $deviceAndBrandTable);
-        $charts[] = [
-            'id' => 'chart_device_brand_stack',
-            'option' => $this->buildDeviceBrandOsStackedOption($browsertype->getData(), $brand->getData(), $os->getData(), 7, 7),
-        ];
+        $deviceCharts = ''
+            . '<h5><b>' . htmlspecialchars($this->addon->i18n('statistics_devicetype'), ENT_QUOTES) . '</b></h5>'
+            . '<div id="chart_device_type_compact" style="width:100%;height:180px"></div>'
+            . '<h5 style="margin-top:18px"><b>' . htmlspecialchars($this->addon->i18n('statistics_brand'), ENT_QUOTES) . '</b></h5>'
+            . '<div id="chart_device_brand_compact" style="width:100%;height:220px"></div>'
+            . '<h5 style="margin-top:18px"><b>' . htmlspecialchars($this->addon->i18n('statistics_os'), ENT_QUOTES) . '</b></h5>'
+            . '<div id="chart_device_os_compact" style="width:100%;height:220px"></div>';
+        $html .= $this->renderTwoColumnSection('Gerätetyp, Hersteller & Betriebssystem', $deviceCharts, $deviceAndBrandTable);
+        $charts[] = ['id' => 'chart_device_type_compact', 'option' => $this->buildTopCategoriesBarOption($browsertype->getData(), '{b}: <b>{c}</b>', 6)];
+        $charts[] = ['id' => 'chart_device_brand_compact', 'option' => $this->buildTopCategoriesBarOption($brand->getData(), '{b}: <b>{c}</b>', 7)];
+        $charts[] = ['id' => 'chart_device_os_compact', 'option' => $this->buildTopCategoriesBarOption($os->getData(), '{b}: <b>{c}</b>', 7)];
 
         // Keep model as table-only to reduce chart density and browser load.
         $html .= $this->renderTableOnlySection($this->addon->i18n('statistics_model'), $model->getList());
@@ -138,19 +144,26 @@ class StatsLazyBlockRenderer
         $visitdurationData = $visitduration->getChartData();
         $charts[] = ['id' => 'chart_visitduration', 'option' => $this->buildGenericBarOption($visitdurationData['values'], $visitdurationData['labels'], '{b} <br> <b>{c} mal</b>')];
 
-        $html .= $this->renderVerticalSection(
-            'Ausstiegsseiten',
-            'chart_lastpage',
-            $lastpage->getList(),
-            'lp_modal',
-            '<p>Zeigt an, welche URLs als letztes aufgerufen worden sind bevor die Webseite verlassen wurde.</p>'
-        );
         $lastpageData = $lastpage->getChartData();
-        $charts[] = ['id' => 'chart_lastpage', 'option' => $this->buildGenericBarOption($lastpageData['labels'], $lastpageData['values'], '{b} <br> Anzahl: <b>{c}</b>')];
 
-        $html .= $this->renderVerticalSection('Länder', 'chart_country', $country->getList());
+        $html .= $this->renderInsightTableSection(
+            'Ausstiegsseiten',
+            'Top-Ausstiegsseiten im gewählten Zeitraum',
+            $lastpageData['labels'],
+            $lastpageData['values'],
+            $lastpage->getList(),
+            '{b} <br> Anzahl: <b>{c}</b>'
+        );
+
         $countryData = $country->getChartData();
-        $charts[] = ['id' => 'chart_country', 'option' => $this->buildGenericBarOption($countryData['labels'], $countryData['values'], '{b} <br> Anzahl: <b>{c}</b>')];
+        $html .= $this->renderInsightTableSection(
+            'Länder',
+            'Geografische Verteilung auf einen Blick',
+            $countryData['labels'],
+            $countryData['values'],
+            $country->getList(),
+            '{b} <br> Anzahl: <b>{c}</b>'
+        );
 
         return ['html' => $html, 'charts' => $charts];
     }
@@ -276,6 +289,102 @@ class StatsLazyBlockRenderer
         return $fragment->parse('core/page/section.php');
     }
 
+    private function renderTwoColumnSection(string $title, string $left, string $right): string
+    {
+        $fragment = new rex_fragment();
+        $fragment->setVar('title', $title);
+        $fragment->setVar(
+            'body',
+            '<div class="row">'
+                . '<div class="col-sm-12 col-lg-6">' . $left . '</div>'
+                . '<div class="col-sm-12 col-lg-6">' . $right . '</div>'
+            . '</div>',
+            false
+        );
+
+        return $fragment->parse('core/page/section.php');
+    }
+
+    /**
+     * @param array<int, int|string> $labels
+     * @param array<int, int|string> $values
+     */
+    private function renderInsightTableSection(string $title, string $subtitle, array $labels, array $values, string $table, string $tooltipFormatter): string
+    {
+        $insights = $this->buildInsightList($labels, $values, $tooltipFormatter, 6);
+
+        $fragment = new rex_fragment();
+        $fragment->setVar('title', $title);
+        $fragment->setVar(
+            'body',
+            '<div class="row">'
+                . '<div class="col-sm-12 col-lg-5">'
+                    . '<div class="alert alert-info" style="margin-bottom:12px;">'
+                        . '<strong>' . htmlspecialchars($subtitle, ENT_QUOTES) . '</strong>'
+                    . '</div>'
+                    . $insights
+                . '</div>'
+                . '<div class="col-sm-12 col-lg-7">'
+                    . $table
+                . '</div>'
+            . '</div>',
+            false
+        );
+
+        return $fragment->parse('core/page/section.php');
+    }
+
+    /**
+     * @param array<int, int|string> $labels
+     * @param array<int, int|string> $values
+     */
+    private function buildInsightList(array $labels, array $values, string $tooltipFormatter, int $limit = 6): string
+    {
+        if ([] === $labels || [] === $values) {
+            return rex_view::info($this->addon->i18n('statistics_no_data'));
+        }
+
+        $combined = [];
+        foreach ($labels as $index => $label) {
+            $combined[] = [
+                'label' => (string) $label,
+                'value' => isset($values[$index]) ? (int) $values[$index] : 0,
+            ];
+        }
+
+        usort(
+            $combined,
+            static fn (array $a, array $b): int => $b['value'] <=> $a['value']
+        );
+
+        $top = array_slice($combined, 0, $limit);
+        if ([] === $top) {
+            return rex_view::info($this->addon->i18n('statistics_no_data'));
+        }
+
+        $max = max(array_column($top, 'value'));
+        $palette = $this->getChartPalette();
+
+        $html = '<div class="list-group">';
+        foreach ($top as $index => $entry) {
+            $percentage = $max > 0 ? (int) round(($entry['value'] / $max) * 100) : 0;
+            $color = $palette[$index % count($palette)];
+
+            $html .= '<div class="list-group-item" title="' . htmlspecialchars(str_replace(['{b}', '{c}'], [$entry['label'], (string) $entry['value']], $tooltipFormatter), ENT_QUOTES) . '">';
+            $html .= '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;">';
+            $html .= '<span style="word-break:break-word;">' . htmlspecialchars($entry['label'], ENT_QUOTES) . '</span>';
+            $html .= '<span class="label" style="background:' . htmlspecialchars($color, ENT_QUOTES) . ';">' . htmlspecialchars((string) $entry['value'], ENT_QUOTES) . '</span>';
+            $html .= '</div>';
+            $html .= '<div style="margin-top:8px;height:6px;background:#eef2f6;border-radius:999px;overflow:hidden;">';
+            $html .= '<div style="width:' . $percentage . '%;height:6px;background:' . htmlspecialchars($color, ENT_QUOTES) . ';"></div>';
+            $html .= '</div>';
+            $html .= '</div>';
+        }
+        $html .= '</div>';
+
+        return $html;
+    }
+
     /**
      * @param array<int, array{name: string, value: int}> $data
      * @return array<string, mixed>
@@ -378,7 +487,7 @@ class StatsLazyBlockRenderer
                 'type' => 'bar',
                 'stack' => 'gesamt',
                 'emphasis' => ['focus' => 'series'],
-                'data' => [(int) $row['value'], 0],
+                'data' => [(int) $row['value'], 0, 0],
             ];
         }
 
@@ -417,9 +526,31 @@ class StatsLazyBlockRenderer
         $series = array_values($seriesMap);
         $palette = $this->getChartPalette();
         foreach ($series as $index => &$entry) {
+            $entry['data'] = array_map(static fn ($value): float => (float) $value, $entry['data']);
             $entry['itemStyle'] = [
                 'color' => $palette[$index % count($palette)],
-                'borderRadius' => [4, 4, 4, 4],
+                'borderRadius' => [3, 3, 3, 3],
+            ];
+            $entry['label'] = [
+                'show' => true,
+                'position' => 'inside',
+                'formatter' => '{c}%',
+            ];
+        }
+        unset($entry);
+
+        $totals = [0.0, 0.0, 0.0];
+        foreach ($series as $entry) {
+            $totals[0] += (float) $entry['data'][0];
+            $totals[1] += (float) $entry['data'][1];
+            $totals[2] += (float) $entry['data'][2];
+        }
+
+        foreach ($series as &$entry) {
+            $entry['data'] = [
+                $totals[0] > 0 ? round((((float) $entry['data'][0]) / $totals[0]) * 100, 1) : 0,
+                $totals[1] > 0 ? round((((float) $entry['data'][1]) / $totals[1]) * 100, 1) : 0,
+                $totals[2] > 0 ? round((((float) $entry['data'][2]) / $totals[2]) * 100, 1) : 0,
             ];
         }
         unset($entry);
@@ -429,20 +560,24 @@ class StatsLazyBlockRenderer
             'tooltip' => [
                 'trigger' => 'axis',
                 'axisPointer' => ['type' => 'shadow'],
+                'valueFormatter' => '{value}%',
             ],
             'legend' => [
-                'type' => 'scroll',
-                'top' => 0,
+                'show' => false,
             ],
             'grid' => [
                 'left' => '3%',
                 'right' => '4%',
                 'bottom' => '3%',
-                'top' => '16%',
+                'top' => '8%',
                 'containLabel' => true,
             ],
             'xAxis' => [
                 'type' => 'value',
+                'max' => 100,
+                'axisLabel' => [
+                    'formatter' => '{value}%',
+                ],
             ],
             'yAxis' => [
                 'type' => 'category',
