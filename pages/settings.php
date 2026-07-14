@@ -374,7 +374,92 @@ echo $fragment->parse('core/page/section.php');
 
 
 // forms which should make a post request to this page to trigger deletion of stats data
-$content = '
+$maintenanceTables = [
+    rex::getTable('pagestats_hash'),
+    rex::getTable('pagestats_data'),
+    rex::getTable('pagestats_visits_per_day'),
+    rex::getTable('pagestats_visitors_per_day'),
+    rex::getTable('pagestats_visits_per_url'),
+    rex::getTable('pagestats_urlstatus'),
+    rex::getTable('pagestats_bot'),
+    rex::getTable('pagestats_referer'),
+    rex::getTable('pagestats_media'),
+    rex::getTable('pagestats_api'),
+    rex::getTable('pagestats_sessionstats'),
+];
+
+$formatBytes = static function (int $bytes): string {
+    if ($bytes <= 0) {
+        return '0 B';
+    }
+
+    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    $power = min((int) floor(log($bytes, 1024)), count($units) - 1);
+    $value = $bytes / (1024 ** $power);
+
+    return number_format($value, $power > 0 ? 2 : 0, ',', '.') . ' ' . $units[$power];
+};
+
+$storageUsageByTable = array_fill_keys($maintenanceTables, 0);
+
+try {
+    $params = [];
+    $placeholders = [];
+    foreach (array_values($maintenanceTables) as $index => $tableName) {
+        $key = ':t' . $index;
+        $placeholders[] = $key;
+        $params[$key] = $tableName;
+    }
+
+    if ([] !== $placeholders) {
+        $sql = rex_sql::factory();
+        $rows = $sql->getArray(
+            'SELECT table_name, IFNULL(data_length, 0) + IFNULL(index_length, 0) AS bytes '
+            . 'FROM information_schema.tables '
+            . 'WHERE table_schema = DATABASE() '
+            . 'AND table_name IN (' . implode(', ', $placeholders) . ')',
+            $params
+        );
+
+        foreach ($rows as $row) {
+            $tableName = (string) ($row['table_name'] ?? '');
+            if (isset($storageUsageByTable[$tableName])) {
+                $storageUsageByTable[$tableName] = (int) ($row['bytes'] ?? 0);
+            }
+        }
+    }
+} catch (Throwable $throwable) {
+    // Fallback to 0 values if information_schema is not accessible.
+}
+
+$totalStorageUsage = array_sum($storageUsageByTable);
+
+$storageUsageHtml = '<div class="alert alert-info" style="margin-bottom:10px;">';
+$storageUsageHtml .= '<strong>' . htmlspecialchars($addon->i18n('statistics_storage_usage_current'), ENT_QUOTES) . ':</strong> ';
+$storageUsageHtml .= htmlspecialchars($formatBytes($totalStorageUsage), ENT_QUOTES);
+$storageUsageHtml .= '<br><small>' . htmlspecialchars($addon->i18n('statistics_storage_usage_note'), ENT_QUOTES) . '</small>';
+$storageUsageHtml .= '</div>';
+
+$storageUsageHtml .= '<table class="table table-striped table-bordered" style="margin-bottom:15px;">';
+$storageUsageHtml .= '<thead><tr>';
+$storageUsageHtml .= '<th>' . htmlspecialchars($addon->i18n('statistics_storage_usage_table'), ENT_QUOTES) . '</th>';
+$storageUsageHtml .= '<th>' . htmlspecialchars($addon->i18n('statistics_storage_usage_size'), ENT_QUOTES) . '</th>';
+$storageUsageHtml .= '</tr></thead><tbody>';
+
+foreach ($storageUsageByTable as $tableName => $bytes) {
+    $storageUsageHtml .= '<tr>';
+    $storageUsageHtml .= '<td>' . htmlspecialchars($tableName, ENT_QUOTES) . '</td>';
+    $storageUsageHtml .= '<td data-sort="' . htmlspecialchars((string) $bytes, ENT_QUOTES) . '">' . htmlspecialchars($formatBytes((int) $bytes), ENT_QUOTES) . '</td>';
+    $storageUsageHtml .= '</tr>';
+}
+
+$storageUsageHtml .= '<tr>';
+$storageUsageHtml .= '<td><strong>' . htmlspecialchars($addon->i18n('statistics_storage_usage_total'), ENT_QUOTES) . '</strong></td>';
+$storageUsageHtml .= '<td data-sort="' . htmlspecialchars((string) $totalStorageUsage, ENT_QUOTES) . '"><strong>' . htmlspecialchars($formatBytes((int) $totalStorageUsage), ENT_QUOTES) . '</strong></td>';
+$storageUsageHtml .= '</tr>';
+$storageUsageHtml .= '</tbody></table>';
+
+$content = $storageUsageHtml . '
 <div style="display: flex; flex-wrap: wrap">
 
 <form style="margin:5px" action="' . rex_url::currentBackendPage() . '" method="post">
@@ -425,6 +510,6 @@ $content = '
 
 $fragment = new rex_fragment();
 $fragment->setVar('class', 'danger', false);
-$fragment->setVar('title', $addon->i18n('statistics_delete_statistics'), false);
+$fragment->setVar('title', $addon->i18n('statistics_maintenance'), false);
 $fragment->setVar('body', $content, false);
 echo $fragment->parse('core/page/section.php');
