@@ -9,11 +9,20 @@ use rex_view;
 
 class Lastpage
 {
+    private ?DateFilter $filter_date_helper;
     /** @var null|array<int, array{lastpage: string, count: int}> */
     private ?array $rows = null;
 
+    public function __construct(?DateFilter $filter_date_helper = null)
+    {
+        $this->filter_date_helper = $filter_date_helper;
+    }
 
-    public function getChartData()
+
+    /**
+     * @return array{labels: array<int, string>, values: array<int, int>}
+     */
+    public function getChartData(): array
     {
         $res = $this->getRows();
 
@@ -21,8 +30,8 @@ class Lastpage
         $values = array_column($res, "count");
 
         return [
-            "labels" => $labels,
-            "values" => $values
+            'labels' => $labels,
+            'values' => $values,
         ];
     }
 
@@ -71,12 +80,25 @@ class Lastpage
         }
 
         $sql = rex_sql::factory();
+        $query = 'SELECT lastpage, COUNT(*) AS count FROM ' . rex::getTable('pagestats_sessionstats');
+        $params = [];
+
+        if (null !== $this->filter_date_helper) {
+            $query .= ' WHERE DATE(lastvisit) BETWEEN :start AND :end';
+            $params = [
+                'start' => $this->filter_date_helper->date_start->format('Y-m-d'),
+                'end' => $this->filter_date_helper->date_end->format('Y-m-d'),
+            ];
+        }
+
+        $query .= ' GROUP BY lastpage ORDER BY count DESC';
+
         $this->rows = array_map(
             static fn(array $row): array => [
                 'lastpage' => (string) $row['lastpage'],
                 'count' => (int) $row['count'],
             ],
-            $sql->getArray("select lastpage , count(*) as 'count' from " . rex::getTable("pagestats_sessionstats") . " group by lastpage order by count desc;")
+            $sql->getArray($query, $params)
         );
 
         return $this->rows;

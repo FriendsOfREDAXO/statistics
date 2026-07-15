@@ -126,6 +126,7 @@ statistics_details_for = Details for:
 statistics_all_domains = All domains
 statistics_domain_filter_label = Domain filter
 statistics_domain_filter_note = This filter affects the table and is kept for the current browser session.
+statistics_filter_scope_alltime_data = This section uses highly aggregated data without a date axis and therefore shows all-time values.
 statistics_filter_all = All
 statistics_filter_only_200 = Only 200
 statistics_filter_only_not_200 = Only non-200

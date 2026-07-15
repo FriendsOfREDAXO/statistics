@@ -9,11 +9,20 @@ use rex_view;
 
 class VisitDuration
 {
+    private ?DateFilter $filter_date_helper;
     /** @var null|array<int, array{timespan: string, count: int, dur: int}> */
     private ?array $rows = null;
 
+    public function __construct(?DateFilter $filter_date_helper = null)
+    {
+        $this->filter_date_helper = $filter_date_helper;
+    }
 
-    public function getChartData()
+
+    /**
+     * @return array{labels: array<int, int>, values: array<int, string>}
+     */
+    public function getChartData(): array
     {
         $res = $this->getRows();
 
@@ -21,8 +30,8 @@ class VisitDuration
         $values = array_column($res, "timespan");
 
         return [
-            "labels" => $labels,
-            "values" => $values
+            'labels' => $labels,
+            'values' => $values,
         ];
     }
 
@@ -77,13 +86,35 @@ class VisitDuration
         }
 
         $sql = rex_sql::factory();
+        $where = '';
+        $params = [];
+
+        if (null !== $this->filter_date_helper) {
+            $where = ' AND DATE(lastvisit) BETWEEN :start AND :end';
+            $params = [
+                'start' => $this->filter_date_helper->date_start->format('Y-m-d'),
+                'end' => $this->filter_date_helper->date_end->format('Y-m-d'),
+            ];
+        }
+
+        $sessionTable = rex::getTable('pagestats_sessionstats');
+        $query = 'SELECT "0 Sekunden" AS timespan, COUNT(*) AS count, FLOOR(visitduration / 30) AS dur '
+            . 'FROM ' . $sessionTable . ' WHERE visitduration = 0' . $where . ' '
+            . 'GROUP BY timespan, dur '
+            . 'UNION '
+            . 'SELECT CONCAT(FLOOR(visitduration / 30) * 30, "-", (FLOOR(visitduration / 30) + 1) * 30, " Sekunden (~", FLOOR(visitduration / 60) + 1, "min)") AS timespan, '
+            . 'COUNT(*) AS count, FLOOR(visitduration / 30) AS dur '
+            . 'FROM ' . $sessionTable . ' WHERE visitduration > 0' . $where . ' '
+            . 'GROUP BY timespan, dur '
+            . 'ORDER BY dur ASC';
+
         $this->rows = array_map(
             static fn(array $row): array => [
                 'timespan' => (string) $row['timespan'],
                 'count' => (int) $row['count'],
                 'dur' => (int) $row['dur'],
             ],
-            $sql->getArray("select '0 Sekunden' as timespan, count(*) as count, floor(visitduration / 30) as dur from " . rex::getTable("pagestats_sessionstats") . " where visitduration = 0 group by timespan, dur union select concat(floor(visitduration / 30) * 30, '-', (floor(visitduration / 30) + 1) * 30, ' Sekunden (~', floor(visitduration / 60) + 1, 'min)') as timespan, count(*) as count, floor(visitduration / 30) as dur from " . rex::getTable("pagestats_sessionstats") . " where visitduration > 0 group by timespan, dur order by dur asc")
+            $sql->getArray($query, $params)
         );
 
         return $this->rows;
