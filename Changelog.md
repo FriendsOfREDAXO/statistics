@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.3.0] - 14.07.2026
+
+-   Neue Unterseite `Google-Kampagnen` zur Auflösung und Gruppierung von Kampagnen-Parametern aus Ziel-URLs (u. a. `gad_campaignid`, `gclid`, `gbraid`, `wbraid`, `utm_*`)
+-   Kampagnenansicht redakteursfreundlich erweitert: klare Statusmeldung, KPI-Überblick, Filter „Nur Google Ads (mit Kampagnen-ID)“ und Direktlink zu Google Ads
+-   Seitenaufrufe um Favoriten-/Watchlist-Funktion erweitert: URLs können per Stern markiert, farblich hervorgehoben und priorisiert angezeigt werden (inkl. Filter „Nur Favoriten")
+-   Seitenaufrufe-Tabelle fachlich erweitert und präzisiert: getrennte Anzeige für Aufrufe (Visits) und Besucher je URL (eindeutige Sessions)
+-   Rollout-Verhalten für „Besucher je URL" präzisiert: bei Neuinstallation standardmäßig aktiv, bei bestehenden Installationen zunächst deaktiviert und per Einstellung aktivierbar
+-   Tracking-Filter deutlich erweitert: mehr Probe-/Scanner-/CMS-Requests und verdächtige Dateiendungen werden bereits beim Erfassen ignoriert
+-   Wartungsbereich ausgebaut und in „Statistikwartung“ überführt, inklusive Anzeige des aktuellen Speicherverbrauchs pro Statistik-Tabelle
+-   Neue Wartungswerkzeuge in den Einstellungen: gezielte Rohdaten-Bereinigung nach Aufbewahrungsdauer sowie Tabellen-Optimierung (`OPTIMIZE TABLE`) zur realen Speicherfreigabe
+-   Löschroutinen für große Datenbestände gehärtet: Chunked Deletes, Retry bei Lock-Timeouts (SQLSTATE 1205) und Teilbereinigungs-Hinweise
+-   Neuer Cronjob-Typ „Statistikwartung (Rohdaten bereinigen)“ für automatische Rohdaten-Retention und optionale Tabellen-Optimierung
+-   Statistik-Startseite weiter für große Datenmengen stabilisiert: mehr Lazy-/On-Demand-Laden in Analysebereichen, inklusive „Aufrufe nach Uhrzeiten“
+-   ECharts-Einbindung priorisiert: Bei installiertem `echarts` AddOn wird dessen Vendor-Asset bevorzugt (lokaler Fallback bleibt erhalten)
+-   Overview verbessert um „Stand jetzt“-Zeitstempel zur klaren Einordnung der aktuellen Tageswerte
+-   Besuchsdauer-Auswertung ergänzt um klaren Hinweis zur Interpretation von „0 Sekunden“ (möglicher Absprung oder Einzelaufruf)
+
 ## [3.2.4] - 14.07.2026
 
 -   Statistiken-Startseite für Safari und große Datenmengen weiter entlastet: Initialisierung von Charts und DataTables wird stärker gestaffelt und lazy geladen

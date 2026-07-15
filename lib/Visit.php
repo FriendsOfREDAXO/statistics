@@ -36,27 +36,78 @@ class Visit
         'rex_version=1',
         'search_it_build_index',
         'rex-api-call',
+        'apple-touch',
+        '/.env',
+        '/.htaccess',
+        '/dump.sql',
+        '/db.sql',
+        '/backup.sql',
+        '/database.sql',
     ];
 
     const IGNORE_PATH_CONTAINS = [
         '/wp-login.php',
+        '/wp-json',
+        '/wp-config',
         '/wp-admin',
         '/wp-includes/',
         '/wp-content/',
         '/xmlrpc.php',
         '/wlwmanifest.xml',
         '/wordpress',
+        '/drupal',
+        '/joomla',
+        '/magento',
+        '/prestashop',
+        '/typo3',
+        '/shopware',
+        '/administrator',
+        '/admin/login',
+        '/adminer',
+        '/adminer.php',
+        '/phpmyadmin',
+        '/phpmyadmin2',
+        '/pma',
+        '/dbadmin',
+        '/myadmin',
+        '/webadmin',
+        '/mysql',
+        '/phpinfo.php',
+        '/server-status',
+        '/server-info',
+        '/cgi-bin/',
+        '/webmail',
+        '/roundcube',
+        '/vendor/phpunit',
+        '/.git/',
     ];
 
     const IGNORE_PATH_STARTS = [
         '/wp-',
         '/wordpress',
+        '/administrator',
+        '/admin/',
         '//',
     ];
 
     const IGNORE_WHEN_ENDS = [
         '.css',
         '.js',
+        '.php',
+        '.json',
+        '.xml',
+        '.yml',
+        '.save',
+        '.env',
+        '.sql',
+        '.htaccess',
+        '.ini',
+        '.log',
+        '.bak',
+        '.old',
+        '.zip',
+        '.tar.gz',
+        '.7z',
         'favicon.ico',
         'apple-touch-icon.png',
         'apple-touch-icon-precomposed.png',
@@ -171,6 +222,8 @@ class Visit
         $ignored_paths = $this->addon->getConfig('statistics_ignored_paths');
         $ignored_ips = $this->addon->getConfig('statistics_ignored_ips');
         $ignored_regex = $this->addon->getConfig('pagestats_ignored_regex');
+        $ignored_path_contains = $this->addon->getConfig('statistics_ignored_path_contains');
+        $ignored_path_ends = $this->addon->getConfig('statistics_ignored_path_ends');
         $normalizedUrl = strtolower(trim($this->url));
         $normalizedPath = $this->normalizePathFromUrl($this->url);
 
@@ -219,6 +272,28 @@ class Visit
             foreach ($ignored_paths as $path) {
                 $path = strtolower(trim((string) $path));
                 if ('' !== $path && (str_starts_with($normalizedUrl, $path) || str_starts_with($normalizedPath, $path))) {
+                    return true;
+                }
+            }
+        }
+
+        if (trim((string) $ignored_path_contains) !== '') {
+            $ignored_path_contains = explode("\n", str_replace("\r", "", $ignored_path_contains));
+
+            foreach ($ignored_path_contains as $rule) {
+                $rule = strtolower(trim((string) $rule));
+                if ('' !== $rule && (str_contains($normalizedUrl, $rule) || str_contains($normalizedPath, $rule))) {
+                    return true;
+                }
+            }
+        }
+
+        if (trim((string) $ignored_path_ends) !== '') {
+            $ignored_path_ends = explode("\n", str_replace("\r", "", $ignored_path_ends));
+
+            foreach ($ignored_path_ends as $rule) {
+                $rule = strtolower(trim((string) $rule));
+                if ('' !== $rule && (str_ends_with($normalizedUrl, $rule) || str_ends_with($normalizedPath, $rule))) {
                     return true;
                 }
             }
@@ -408,6 +483,30 @@ class Visit
         ON DUPLICATE KEY UPDATE count = count + 1;';
 
         $sql->setQuery($sql_insert);
+    }
+
+    /**
+     * Tracks unique visitor sessions per URL and day.
+     * A token can contribute at most once per URL and day.
+     */
+    public function persistVisitorPerUrl(): void
+    {
+        if ('' === $this->token) {
+            return;
+        }
+
+        $hash = hash('sha1', $this->datetime_now->format('Y-m-d') . '|' . $this->url . '|' . $this->token);
+        $sql = rex_sql::factory();
+
+        $sqlInsert = 'INSERT INTO ' . rex::getTable('pagestats_visitors_per_url') . ' (hash,date,url,count) VALUES '
+            . '(:hash,:date,:url,1) '
+            . 'ON DUPLICATE KEY UPDATE count = count;';
+
+        $sql->setQuery($sqlInsert, [
+            ':hash' => $hash,
+            ':date' => $this->datetime_now->format('Y-m-d'),
+            ':url' => $this->url,
+        ]);
     }
 
 

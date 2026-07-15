@@ -1,5 +1,5 @@
 package: statistics
-version: 3.2.4
+version: 3.3.0
 author: Andreas Lenhardt
 supportpage: https://github.com/AndiLeni/statistics
 
@@ -14,6 +14,9 @@ page:
         pages:
             title: "translate:statistics_pages"
             icon: rex-icon fa-file-text-o
+        google_campaigns:
+            title: "translate:statistics_google_campaigns"
+            icon: rex-icon fa-bullseye
         referer:
             title: "translate:statistics_referer"
             icon: rex-icon fa-external-link
@@ -43,6 +46,10 @@ requires:
 
 default_config:
     statistics_ignored_paths: ""
+    statistics_ignored_path_contains: ""
+    statistics_ignored_path_ends: ""
+    statistics_favorite_urls: ""
+    statistics_pages_visitors_enabled: true
     statistics_ignored_ips: ""
     statistics_visit_duration: 30
     statistics_scroll_pagination: "none"

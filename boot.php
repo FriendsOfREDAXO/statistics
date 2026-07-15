@@ -33,6 +33,7 @@ if (rex::isBackend()) {
 
     if (rex_addon::get('cronjob')->isAvailable() && !rex::isSafeMode()) {
         rex_cronjob_manager::registerType('rex_statistics_hashremove_cronjob');
+        rex_cronjob_manager::registerType('rex_statistics_maintenance_cronjob');
     }
 
     $pagination_scroll = $addon->getConfig('statistics_scroll_pagination');
@@ -158,6 +159,9 @@ rex_extension::register('RESPONSE_SHUTDOWN', function () use ($statistics_has_ba
                             }
 
                             $visit->updateVisitsPerUrl();
+                            if ((bool) $addon->getConfig('statistics_pages_visitors_enabled', false) && method_exists($visit, 'persistVisitorPerUrl')) {
+                                $visit->{'persistVisitorPerUrl'}();
+                            }
 
                             // visitor is human
                             // check hash with save_visit, if true then save visit

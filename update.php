@@ -61,6 +61,12 @@ $deduplicateCountTable(rex::getTable('pagestats_bot'), ['name', 'category', 'pro
 // create tables
 $addon->includeFile(__DIR__ . '/install.php');
 
+// Keep the new per-URL visitor metric disabled on existing installations
+// until editors explicitly enable it in settings.
+if (!rex_config::has('statistics', 'statistics_pages_visitors_enabled')) {
+    rex_config::set('statistics', 'statistics_pages_visitors_enabled', false);
+}
+
 
 // version 3 migrations
 

@@ -120,6 +120,7 @@ class Summary
             'top_article_path_week' => $topArticlePath,
             'top_article_count_week' => $topArticleCount,
             'pages_per_session_week' => $weekPagesPerSession,
+            'generated_at' => date('d.m.Y H:i'),
         ];
     }
 

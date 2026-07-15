@@ -39,6 +39,7 @@ class StatsDashboard
         $fragmentOverview->setVar('top_article_path_week', $overviewData['top_article_path_week']);
         $fragmentOverview->setVar('top_article_count_week', $overviewData['top_article_count_week']);
         $fragmentOverview->setVar('pages_per_session_week', $overviewData['pages_per_session_week']);
+        $fragmentOverview->setVar('generated_at', $overviewData['generated_at'] ?? '');
 
         return $fragmentOverview->parse('overview.php');
     }
