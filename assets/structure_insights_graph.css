@@ -1,0 +1,49 @@
+#statistics-structure-graph .statistics-graph-frame {
+    overflow: auto;
+    border: 1px solid #d8deeb;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+#statistics-structure-graph svg {
+    display: block;
+    min-width: 900px;
+}
+
+.statistics-graph-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+#statistics-graph-modal .modal-dialog {
+    width: 96vw;
+    max-width: 96vw;
+}
+
+#statistics-graph-modal .modal-body {
+    padding: 10px;
+}
+
+.statistics-graph-modal-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+#statistics-graph-modal-canvas {
+    height: 78vh;
+    overflow: auto;
+    border: 1px solid #ccd6ea;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+#statistics-graph-modal-canvas svg {
+    display: block;
+    transform-origin: 0 0;
+    margin: 16px;
+}

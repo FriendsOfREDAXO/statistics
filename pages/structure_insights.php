@@ -476,6 +476,45 @@ echo '<a class="btn btn-default js-statistics-structure-export" data-export-form
 echo '</div>';
 
 echo '<div class="panel panel-default">';
+echo '<div class="panel-heading">';
+echo '<div class="statistics-graph-heading">';
+echo '<strong>' . rex_escape($addon->i18n('statistics_structure_graph_title')) . '</strong>';
+echo '<div class="btn-group btn-group-xs" role="group" aria-label="Graph actions">';
+echo '<button type="button" class="btn btn-default" id="statistics-graph-open-modal">' . rex_escape($addon->i18n('statistics_structure_graph_open_modal')) . '</button>';
+echo '<button type="button" class="btn btn-default" id="statistics-graph-export-svg">' . rex_escape($addon->i18n('statistics_structure_graph_export_svg')) . '</button>';
+echo '</div>';
+echo '</div>';
+echo '</div>';
+echo '<div class="panel-body">';
+echo '<div id="statistics-structure-graph" data-empty-text="' . rex_escape($addon->i18n('statistics_structure_graph_empty')) . '" data-root-label="' . rex_escape($addon->i18n('statistics_structure_graph_root')) . '"></div>';
+echo '</div>';
+echo '</div>';
+
+echo '<div class="modal fade" id="statistics-graph-modal" tabindex="-1" role="dialog" aria-labelledby="statistics-graph-modal-title">';
+echo '  <div class="modal-dialog modal-lg" role="document">';
+echo '    <div class="modal-content">';
+echo '      <div class="modal-header">';
+echo '        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>';
+echo '        <h4 class="modal-title" id="statistics-graph-modal-title">' . rex_escape($addon->i18n('statistics_structure_graph_title')) . '</h4>';
+echo '      </div>';
+echo '      <div class="modal-body">';
+echo '        <div class="statistics-graph-modal-toolbar">';
+echo '          <div class="btn-group btn-group-sm" role="group" aria-label="Zoom">';
+echo '            <button type="button" class="btn btn-default" data-graph-zoom="out">' . rex_escape($addon->i18n('statistics_structure_graph_zoom_out')) . '</button>';
+echo '            <button type="button" class="btn btn-default" data-graph-zoom="in">' . rex_escape($addon->i18n('statistics_structure_graph_zoom_in')) . '</button>';
+echo '            <button type="button" class="btn btn-default" data-graph-zoom="reset">' . rex_escape($addon->i18n('statistics_structure_graph_zoom_reset')) . '</button>';
+echo '          </div>';
+echo '          <div class="btn-group btn-group-sm" role="group" aria-label="Export">';
+echo '            <button type="button" class="btn btn-default" data-graph-export="svg">' . rex_escape($addon->i18n('statistics_structure_graph_export_svg')) . '</button>';
+echo '          </div>';
+echo '        </div>';
+echo '        <div id="statistics-graph-modal-canvas"></div>';
+echo '      </div>';
+echo '    </div>';
+echo '  </div>';
+echo '</div>';
+
+echo '<div class="panel panel-default">';
 echo '<div class="panel-heading"><strong>' . rex_escape($addon->i18n('statistics_structure_tree_title')) . '</strong></div>';
 echo '<div class="table-responsive">';
 echo '<table class="table table-striped table-hover">';
