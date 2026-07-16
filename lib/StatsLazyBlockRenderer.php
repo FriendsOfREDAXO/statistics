@@ -83,6 +83,10 @@ class StatsLazyBlockRenderer
         $html = '';
         $charts = [];
 
+        $html .= '<div class="alert alert-info" style="margin-bottom:10px;">'
+            . htmlspecialchars($this->addon->i18n('statistics_filter_scope_alltime_data'), ENT_QUOTES)
+            . '</div>';
+
         $html .= $this->renderVerticalSection($this->addon->i18n('statistics_browser'), 'chart_browser', $browser->getList());
         $charts[] = ['id' => 'chart_browser', 'option' => $this->buildTopCategoriesBarOption($browser->getData(), '{b}: <b>{c}</b>')];
 
@@ -178,7 +182,7 @@ class StatsLazyBlockRenderer
     private function renderExtendedSubBlock(string $blockId): array
     {
         if ('extended-pagecount' === $blockId) {
-            $pagecount = new Pagecount();
+            $pagecount = new Pagecount($this->filter_date_helper);
             $pagecountData = $pagecount->getChartData();
             $labels = [];
             $values = [];
@@ -201,7 +205,7 @@ class StatsLazyBlockRenderer
         }
 
         if ('extended-visitduration' === $blockId) {
-            $visitduration = new VisitDuration();
+            $visitduration = new VisitDuration($this->filter_date_helper);
             $visitdurationData = $visitduration->getChartData();
             $labels = [];
             $values = [];
@@ -224,7 +228,7 @@ class StatsLazyBlockRenderer
         }
 
         if ('extended-lastpage' === $blockId) {
-            $lastpage = new Lastpage();
+            $lastpage = new Lastpage($this->filter_date_helper);
             $lastpageData = $lastpage->getChartData();
 
             return [
@@ -244,8 +248,12 @@ class StatsLazyBlockRenderer
             $country = new Country();
             $countryData = $country->getChartData();
 
+            $note = '<div class="alert alert-info" style="margin-bottom:10px;">'
+                . htmlspecialchars($this->addon->i18n('statistics_filter_scope_alltime_data'), ENT_QUOTES)
+                . '</div>';
+
             return [
-                'html' => $this->renderInsightTableSection(
+                'html' => $note . $this->renderInsightTableSection(
                     'Länder',
                     'Geografische Verteilung auf einen Blick',
                     $countryData['labels'],

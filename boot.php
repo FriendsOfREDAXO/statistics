@@ -9,6 +9,7 @@ use Jaybizzle\CrawlerDetect\CrawlerDetect;
 
 if (rex::isBackend()) {
     $addon = rex_addon::get('statistics');
+    $currentPage = rex_be_controller::getCurrentPage();
 
 
     // permissions
@@ -30,6 +31,11 @@ if (rex::isBackend()) {
     rex_view::addJsFile($addon->getAssetsUrl('datatables.min.js'));
 
     rex_view::addJsFile($addon->getAssetsUrl('statistics.js'));
+
+    if ('statistics/structure_insights' === $currentPage) {
+        rex_view::addJsFile('https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js');
+        rex_view::addJsFile($addon->getAssetsUrl('structure_insights_export.js'));
+    }
 
     if (rex_addon::get('cronjob')->isAvailable() && !rex::isSafeMode()) {
         rex_cronjob_manager::registerType('rex_statistics_hashremove_cronjob');

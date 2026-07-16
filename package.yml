@@ -14,6 +14,10 @@ page:
         pages:
             title: "translate:statistics_pages"
             icon: rex-icon fa-file-text-o
+        structure_insights:
+            title: "translate:statistics_structure_insights"
+            icon: rex-icon fa-sitemap
+            itemclass: pull-right
         google_campaigns:
             title: "translate:statistics_google_campaigns"
             icon: rex-icon fa-bullseye
@@ -56,6 +60,7 @@ default_config:
     statistics_ignore_url_params: false
     statistics_default_datefilter_range: "thisYear"
     statistics_combine_all_domains: true
+    statistics_hidden_domains: ""
     statistics_show_chart_toolbox: false
     statistics_ignore_backend_loggedin: true
     statistics_rec_onlyok: false

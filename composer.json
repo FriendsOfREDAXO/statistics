@@ -5,7 +5,8 @@
         "matomo/device-detector": "^6.2",
         "jaybizzle/crawler-detect": "^1.2",
         "matomo/referrer-spam-blacklist": "^4.0",
-        "matomo/network": "^2.0"
+        "matomo/network": "^2.0",
+        "phpoffice/phpspreadsheet": "^1.29"
     },
     "replace": {
         "composer/ca-bundle": "*",

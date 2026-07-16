@@ -9,11 +9,20 @@ use rex_view;
 
 class Pagecount
 {
+    private ?DateFilter $filter_date_helper;
     /** @var null|array<int, array{pagecount: int, count: int}> */
     private ?array $rows = null;
 
+    public function __construct(?DateFilter $filter_date_helper = null)
+    {
+        $this->filter_date_helper = $filter_date_helper;
+    }
 
-    public function getChartData()
+
+    /**
+     * @return array{labels: array<int, int>, values: array<int, int>}
+     */
+    public function getChartData(): array
     {
         $res = $this->getRows();
 
@@ -21,8 +30,8 @@ class Pagecount
         $values = array_column($res, "pagecount");
 
         return [
-            "labels" => $labels,
-            "values" => $values
+            'labels' => $labels,
+            'values' => $values,
         ];
     }
 
@@ -71,12 +80,25 @@ class Pagecount
         }
 
         $sql = rex_sql::factory();
+        $query = 'SELECT pagecount, COUNT(*) AS count FROM ' . rex::getTable('pagestats_sessionstats');
+        $params = [];
+
+        if (null !== $this->filter_date_helper) {
+            $query .= ' WHERE DATE(lastvisit) BETWEEN :start AND :end';
+            $params = [
+                'start' => $this->filter_date_helper->date_start->format('Y-m-d'),
+                'end' => $this->filter_date_helper->date_end->format('Y-m-d'),
+            ];
+        }
+
+        $query .= ' GROUP BY pagecount ORDER BY pagecount ASC';
+
         $this->rows = array_map(
             static fn(array $row): array => [
                 'pagecount' => (int) $row['pagecount'],
                 'count' => (int) $row['count'],
             ],
-            $sql->getArray("select pagecount , count(*) as 'count' from " . rex::getTable("pagestats_sessionstats") . " group by pagecount order by pagecount asc;")
+            $sql->getArray($query, $params)
         );
 
         return $this->rows;
