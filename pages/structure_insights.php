@@ -46,8 +46,19 @@ $selectedMetaFields = array_values(array_filter(
 $metaTitles = [];
 if ([] !== $selectedMetaFields) {
     $sql = rex_sql::factory();
-    $in = $sql->in($selectedMetaFields, 'name', false);
-    $rows = $sql->getArray('SELECT name, title FROM ' . rex::getTable('metainfo_field') . ' WHERE ' . $in);
+    $params = [];
+    $placeholders = [];
+
+    foreach (array_values($selectedMetaFields) as $index => $fieldName) {
+        $paramKey = 'meta_' . $index;
+        $placeholders[] = ':' . $paramKey;
+        $params[$paramKey] = $fieldName;
+    }
+
+    $rows = $sql->getArray(
+        'SELECT name, title FROM ' . rex::getTable('metainfo_field') . ' WHERE name IN (' . implode(', ', $placeholders) . ')',
+        $params,
+    );
     foreach ($rows as $row) {
         $metaTitles[(string) $row['name']] = (string) $row['title'];
     }
@@ -90,10 +101,10 @@ $statusLabel = static function (int $status) use ($addon): string {
     return $status > 0 ? $addon->i18n('statistics_status_online') : $addon->i18n('statistics_status_offline');
 };
 
-$normalizeDate = static function (string $updatedate, string $createdate): string {
+$resolveDate = static function (string $updatedate, string $createdate): ?DateTimeImmutable {
     $candidate = trim('' !== trim($updatedate) ? $updatedate : $createdate);
     if ('' === $candidate || '0000-00-00 00:00:00' === $candidate || '0000-00-00' === $candidate) {
-        return '-';
+        return null;
     }
 
     // Some installations store UNIX timestamps instead of SQL datetime strings.
@@ -107,18 +118,26 @@ $normalizeDate = static function (string $updatedate, string $createdate): strin
 
         try {
             return (new DateTimeImmutable('@' . $timestamp))
-                ->setTimezone(new DateTimeZone(date_default_timezone_get()))
-                ->format('Y-m-d H:i:s');
+                ->setTimezone(new DateTimeZone(date_default_timezone_get()));
         } catch (Throwable) {
-            return $candidate;
+            return null;
         }
     }
 
     try {
-        return (new DateTimeImmutable($candidate))->format('Y-m-d H:i:s');
+        return new DateTimeImmutable($candidate);
     } catch (Throwable) {
-        return $candidate;
+        return null;
     }
+};
+
+$normalizeDate = static function (string $updatedate, string $createdate) use ($resolveDate): string {
+    $date = $resolveDate($updatedate, $createdate);
+    if (null === $date) {
+        return '-';
+    }
+
+    return $date->format('Y-m-d H:i:s');
 };
 
 $treeRows = [];
@@ -250,30 +269,37 @@ $addArticleRows(
     $resolveEditorLabel,
 );
 
-$cutoff = (new DateTimeImmutable('-2 years'))->format('Y-m-d H:i:s');
+$cutoff = new DateTimeImmutable('-2 years');
 $sql = rex_sql::factory();
-
-$oldCategoryCount = (int) $sql->getValue(
-    'SELECT COUNT(*) FROM ' . rex::getTable('article')
-    . ' WHERE clang_id = :clang AND startarticle = 1'
-    . ' AND COALESCE(NULLIF(updatedate, ""), createdate) <> ""'
-    . ' AND COALESCE(NULLIF(updatedate, ""), createdate) < :cutoff',
-    ['clang' => $clangId, 'cutoff' => $cutoff],
-);
-
-$oldArticleCount = (int) $sql->getValue(
-    'SELECT COUNT(*) FROM ' . rex::getTable('article')
-    . ' WHERE clang_id = :clang AND startarticle = 0'
-    . ' AND COALESCE(NULLIF(updatedate, ""), createdate) <> ""'
-    . ' AND COALESCE(NULLIF(updatedate, ""), createdate) < :cutoff',
-    ['clang' => $clangId, 'cutoff' => $cutoff],
-);
-
-$latestEdit = (string) $sql->getValue(
-    'SELECT MAX(COALESCE(NULLIF(updatedate, ""), createdate)) AS latest_edit FROM ' . rex::getTable('article') . ' WHERE clang_id = :clang',
+$ageRows = $sql->getArray(
+    'SELECT startarticle, updatedate, createdate FROM ' . rex::getTable('article') . ' WHERE clang_id = :clang',
     ['clang' => $clangId],
 );
-$latestEditFormatted = $normalizeDate($latestEdit, '');
+
+$oldCategoryCount = 0;
+$oldArticleCount = 0;
+$latestEditDate = null;
+
+foreach ($ageRows as $ageRow) {
+    $date = $resolveDate((string) $ageRow['updatedate'], (string) $ageRow['createdate']);
+    if (null === $date) {
+        continue;
+    }
+
+    if (null === $latestEditDate || $date > $latestEditDate) {
+        $latestEditDate = $date;
+    }
+
+    if ($date < $cutoff) {
+        if ((int) $ageRow['startarticle'] === 1) {
+            ++$oldCategoryCount;
+        } else {
+            ++$oldArticleCount;
+        }
+    }
+}
+
+$latestEditFormatted = null !== $latestEditDate ? $latestEditDate->format('Y-m-d H:i:s') : '-';
 $nowFormatted = (new DateTimeImmutable())->format('d.m.Y H:i');
 
 $activeEditorsRaw = $sql->getArray(
@@ -411,7 +437,7 @@ echo '</select>';
 echo '<small style="display:block;margin-top:4px;color:#6b7c93;">' . rex_escape($addon->i18n('statistics_structure_metafields_note')) . '</small>';
 echo '</div>';
 echo '<div style="display:flex;gap:8px;align-items:flex-end;">';
-echo '<button class="btn btn-primary" type="submit">' . rex_i18n::msg('filter') . '</button>';
+echo '<button class="btn btn-primary" type="submit">' . rex_escape($addon->i18n('statistics_filter')) . '</button>';
 echo '</div>';
 echo '</form>';
 echo '</div></div>';
@@ -441,11 +467,51 @@ foreach ($selectedMetaFields as $metaField) {
 }
 
 $csvUrl = rex_url::backendPage(rex_be_controller::getCurrentPage(), array_merge($baseParams, ['export' => 'csv']));
+$xlsUrl = rex_url::backendPage(rex_be_controller::getCurrentPage(), array_merge($baseParams, ['export' => 'xls']));
 $xlsxUrl = '#';
 
 echo '<div style="margin-bottom:10px;display:flex;gap:8px;">';
 echo '<a class="btn btn-default js-statistics-structure-export" data-pjax="false" href="' . $csvUrl . '">' . rex_escape($addon->i18n('statistics_structure_export_csv')) . '</a>';
-echo '<a class="btn btn-default js-statistics-structure-export" data-export-format="xlsx" data-pjax="false" href="' . $xlsxUrl . '">' . rex_escape($addon->i18n('statistics_structure_export_xlsx')) . '</a>';
+echo '<a class="btn btn-default js-statistics-structure-export" data-export-format="xlsx" data-export-fallback-url="' . $xlsUrl . '" data-pjax="false" href="' . $xlsxUrl . '">' . rex_escape($addon->i18n('statistics_structure_export_xlsx')) . '</a>';
+echo '</div>';
+
+echo '<div class="panel panel-default">';
+echo '<div class="panel-heading">';
+echo '<div class="statistics-graph-heading">';
+echo '<strong>' . rex_escape($addon->i18n('statistics_structure_graph_title')) . '</strong>';
+echo '<div class="btn-group btn-group-xs" role="group" aria-label="Graph actions">';
+echo '<button type="button" class="btn btn-default" id="statistics-graph-open-modal">' . rex_escape($addon->i18n('statistics_structure_graph_open_modal')) . '</button>';
+echo '<button type="button" class="btn btn-default" id="statistics-graph-export-svg">' . rex_escape($addon->i18n('statistics_structure_graph_export_svg')) . '</button>';
+echo '</div>';
+echo '</div>';
+echo '</div>';
+echo '<div class="panel-body">';
+echo '<div id="statistics-structure-graph" data-empty-text="' . rex_escape($addon->i18n('statistics_structure_graph_empty')) . '" data-root-label="' . rex_escape($addon->i18n('statistics_structure_graph_root')) . '"></div>';
+echo '</div>';
+echo '</div>';
+
+echo '<div class="modal fade" id="statistics-graph-modal" tabindex="-1" role="dialog" aria-labelledby="statistics-graph-modal-title">';
+echo '  <div class="modal-dialog modal-lg" role="document">';
+echo '    <div class="modal-content">';
+echo '      <div class="modal-header">';
+echo '        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>';
+echo '        <h4 class="modal-title" id="statistics-graph-modal-title">' . rex_escape($addon->i18n('statistics_structure_graph_title')) . '</h4>';
+echo '      </div>';
+echo '      <div class="modal-body">';
+echo '        <div class="statistics-graph-modal-toolbar">';
+echo '          <div class="btn-group btn-group-sm" role="group" aria-label="Zoom">';
+echo '            <button type="button" class="btn btn-default" data-graph-zoom="out">' . rex_escape($addon->i18n('statistics_structure_graph_zoom_out')) . '</button>';
+echo '            <button type="button" class="btn btn-default" data-graph-zoom="in">' . rex_escape($addon->i18n('statistics_structure_graph_zoom_in')) . '</button>';
+echo '            <button type="button" class="btn btn-default" data-graph-zoom="reset">' . rex_escape($addon->i18n('statistics_structure_graph_zoom_reset')) . '</button>';
+echo '          </div>';
+echo '          <div class="btn-group btn-group-sm" role="group" aria-label="Export">';
+echo '            <button type="button" class="btn btn-default" data-graph-export="svg">' . rex_escape($addon->i18n('statistics_structure_graph_export_svg')) . '</button>';
+echo '          </div>';
+echo '        </div>';
+echo '        <div id="statistics-graph-modal-canvas"></div>';
+echo '      </div>';
+echo '    </div>';
+echo '  </div>';
 echo '</div>';
 
 echo '<div class="panel panel-default">';

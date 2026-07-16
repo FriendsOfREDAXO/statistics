@@ -81,12 +81,17 @@
         }, 1000);
     }
 
-    function createXlsxExport() {
+    function createXlsxExport(fallbackUrl) {
         window.__statisticsXlsxClicked = true;
         window.__statisticsXlsxError = null;
 
         if (typeof window.ExcelJS === 'undefined') {
             window.__statisticsXlsxError = 'ExcelJS missing';
+            if (fallbackUrl) {
+                triggerDownload(fallbackUrl);
+                return;
+            }
+
             window.alert('XLSX-Export ist nicht verfügbar (ExcelJS fehlt).');
             return;
         }
@@ -211,9 +216,10 @@
             .on('click.statisticsStructureExport', 'a.js-statistics-structure-export', function (event) {
                 var format = $(this).attr('data-export-format') || '';
                 if (format === 'xlsx') {
+                    var fallbackUrl = $(this).attr('data-export-fallback-url') || '';
                     event.preventDefault();
                     event.stopPropagation();
-                    createXlsxExport();
+                    createXlsxExport(fallbackUrl);
                     return;
                 }
 
