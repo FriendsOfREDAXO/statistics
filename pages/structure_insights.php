@@ -422,7 +422,7 @@ echo '</select>';
 echo '<small style="display:block;margin-top:4px;color:#6b7c93;">' . rex_escape($addon->i18n('statistics_structure_metafields_note')) . '</small>';
 echo '</div>';
 echo '<div style="display:flex;gap:8px;align-items:flex-end;">';
-echo '<button class="btn btn-primary" type="submit">' . rex_i18n::msg('filter') . '</button>';
+echo '<button class="btn btn-primary" type="submit">' . rex_escape($addon->i18n('statistics_filter')) . '</button>';
 echo '</div>';
 echo '</form>';
 echo '</div></div>';
