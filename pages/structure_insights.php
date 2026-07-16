@@ -46,8 +46,19 @@ $selectedMetaFields = array_values(array_filter(
 $metaTitles = [];
 if ([] !== $selectedMetaFields) {
     $sql = rex_sql::factory();
-    $in = $sql->in($selectedMetaFields, 'name', false);
-    $rows = $sql->getArray('SELECT name, title FROM ' . rex::getTable('metainfo_field') . ' WHERE ' . $in);
+    $params = [];
+    $placeholders = [];
+
+    foreach (array_values($selectedMetaFields) as $index => $fieldName) {
+        $paramKey = 'meta_' . $index;
+        $placeholders[] = ':' . $paramKey;
+        $params[$paramKey] = $fieldName;
+    }
+
+    $rows = $sql->getArray(
+        'SELECT name, title FROM ' . rex::getTable('metainfo_field') . ' WHERE name IN (' . implode(', ', $placeholders) . ')',
+        $params,
+    );
     foreach ($rows as $row) {
         $metaTitles[(string) $row['name']] = (string) $row['title'];
     }
