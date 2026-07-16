@@ -467,11 +467,12 @@ foreach ($selectedMetaFields as $metaField) {
 }
 
 $csvUrl = rex_url::backendPage(rex_be_controller::getCurrentPage(), array_merge($baseParams, ['export' => 'csv']));
+$xlsUrl = rex_url::backendPage(rex_be_controller::getCurrentPage(), array_merge($baseParams, ['export' => 'xls']));
 $xlsxUrl = '#';
 
 echo '<div style="margin-bottom:10px;display:flex;gap:8px;">';
 echo '<a class="btn btn-default js-statistics-structure-export" data-pjax="false" href="' . $csvUrl . '">' . rex_escape($addon->i18n('statistics_structure_export_csv')) . '</a>';
-echo '<a class="btn btn-default js-statistics-structure-export" data-export-format="xlsx" data-pjax="false" href="' . $xlsxUrl . '">' . rex_escape($addon->i18n('statistics_structure_export_xlsx')) . '</a>';
+echo '<a class="btn btn-default js-statistics-structure-export" data-export-format="xlsx" data-export-fallback-url="' . $xlsUrl . '" data-pjax="false" href="' . $xlsxUrl . '">' . rex_escape($addon->i18n('statistics_structure_export_xlsx')) . '</a>';
 echo '</div>';
 
 echo '<div class="panel panel-default">';

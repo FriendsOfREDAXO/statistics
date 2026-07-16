@@ -33,7 +33,7 @@ if (rex::isBackend()) {
     rex_view::addJsFile($addon->getAssetsUrl('statistics.js'));
 
     if ('statistics/structure_insights' === $currentPage) {
-        rex_view::addJsFile('https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js');
+        rex_view::addJsFile($addon->getAssetsUrl('exceljs.min.js'));
         rex_view::addJsFile($addon->getAssetsUrl('structure_insights_export.js'));
     }
 
