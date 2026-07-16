@@ -101,10 +101,10 @@ $statusLabel = static function (int $status) use ($addon): string {
     return $status > 0 ? $addon->i18n('statistics_status_online') : $addon->i18n('statistics_status_offline');
 };
 
-$normalizeDate = static function (string $updatedate, string $createdate): string {
+$resolveDate = static function (string $updatedate, string $createdate): ?DateTimeImmutable {
     $candidate = trim('' !== trim($updatedate) ? $updatedate : $createdate);
     if ('' === $candidate || '0000-00-00 00:00:00' === $candidate || '0000-00-00' === $candidate) {
-        return '-';
+        return null;
     }
 
     // Some installations store UNIX timestamps instead of SQL datetime strings.
@@ -118,18 +118,26 @@ $normalizeDate = static function (string $updatedate, string $createdate): strin
 
         try {
             return (new DateTimeImmutable('@' . $timestamp))
-                ->setTimezone(new DateTimeZone(date_default_timezone_get()))
-                ->format('Y-m-d H:i:s');
+                ->setTimezone(new DateTimeZone(date_default_timezone_get()));
         } catch (Throwable) {
-            return $candidate;
+            return null;
         }
     }
 
     try {
-        return (new DateTimeImmutable($candidate))->format('Y-m-d H:i:s');
+        return new DateTimeImmutable($candidate);
     } catch (Throwable) {
-        return $candidate;
+        return null;
     }
+};
+
+$normalizeDate = static function (string $updatedate, string $createdate) use ($resolveDate): string {
+    $date = $resolveDate($updatedate, $createdate);
+    if (null === $date) {
+        return '-';
+    }
+
+    return $date->format('Y-m-d H:i:s');
 };
 
 $treeRows = [];
@@ -261,30 +269,37 @@ $addArticleRows(
     $resolveEditorLabel,
 );
 
-$cutoff = (new DateTimeImmutable('-2 years'))->format('Y-m-d H:i:s');
+$cutoff = new DateTimeImmutable('-2 years');
 $sql = rex_sql::factory();
-
-$oldCategoryCount = (int) $sql->getValue(
-    'SELECT COUNT(*) FROM ' . rex::getTable('article')
-    . ' WHERE clang_id = :clang AND startarticle = 1'
-    . ' AND COALESCE(NULLIF(updatedate, ""), createdate) <> ""'
-    . ' AND COALESCE(NULLIF(updatedate, ""), createdate) < :cutoff',
-    ['clang' => $clangId, 'cutoff' => $cutoff],
-);
-
-$oldArticleCount = (int) $sql->getValue(
-    'SELECT COUNT(*) FROM ' . rex::getTable('article')
-    . ' WHERE clang_id = :clang AND startarticle = 0'
-    . ' AND COALESCE(NULLIF(updatedate, ""), createdate) <> ""'
-    . ' AND COALESCE(NULLIF(updatedate, ""), createdate) < :cutoff',
-    ['clang' => $clangId, 'cutoff' => $cutoff],
-);
-
-$latestEdit = (string) $sql->getValue(
-    'SELECT MAX(COALESCE(NULLIF(updatedate, ""), createdate)) AS latest_edit FROM ' . rex::getTable('article') . ' WHERE clang_id = :clang',
+$ageRows = $sql->getArray(
+    'SELECT startarticle, updatedate, createdate FROM ' . rex::getTable('article') . ' WHERE clang_id = :clang',
     ['clang' => $clangId],
 );
-$latestEditFormatted = $normalizeDate($latestEdit, '');
+
+$oldCategoryCount = 0;
+$oldArticleCount = 0;
+$latestEditDate = null;
+
+foreach ($ageRows as $ageRow) {
+    $date = $resolveDate((string) $ageRow['updatedate'], (string) $ageRow['createdate']);
+    if (null === $date) {
+        continue;
+    }
+
+    if (null === $latestEditDate || $date > $latestEditDate) {
+        $latestEditDate = $date;
+    }
+
+    if ($date < $cutoff) {
+        if ((int) $ageRow['startarticle'] === 1) {
+            ++$oldCategoryCount;
+        } else {
+            ++$oldArticleCount;
+        }
+    }
+}
+
+$latestEditFormatted = null !== $latestEditDate ? $latestEditDate->format('Y-m-d H:i:s') : '-';
 $nowFormatted = (new DateTimeImmutable())->format('d.m.Y H:i');
 
 $activeEditorsRaw = $sql->getArray(
