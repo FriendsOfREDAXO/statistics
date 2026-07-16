@@ -457,6 +457,10 @@ $field7->addOption($addon->i18n('statistics_yes'), 1);
 $field7->addOption($addon->i18n('statistics_no'), 0);
 $field7->setNotice('Alle Domains werden zu einer "Gesamt" Anzahl zusammengefasst. Deaktivieren um Statistiken für alle Domains einzeln anzuzeigen.');
 
+$field7b = $form->addTextAreaField('statistics_hidden_domains');
+$field7b->setLabel($addon->i18n('statistics_hidden_domains'));
+$field7b->setNotice($addon->i18n('statistics_hidden_domains_note'));
+
 $field7 = $form->addRadioField('statistics_show_chart_toolbox');
 $field7->setLabel('Zeige Toolbox an den Charts');
 $field7->addOption($addon->i18n('statistics_yes'), 1);
