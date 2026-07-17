@@ -204,23 +204,19 @@ if (rex_request_method() == 'post') {
     } elseif ($function == 'delete_media') {
         $sql = rex_sql::factory();
         $sql->setQuery('delete from ' . rex::getTable('pagestats_media'));
-        echo rex_view::success($sql->getRows() . ' ' . $addon->i18n('statistics_deleted_bots'));
+        echo rex_view::success($sql->getRows() . ' ' . $addon->i18n('statistics_deleted_media'));
     } elseif ($function == 'delete_bot') {
         $sql = rex_sql::factory();
         $sql->setQuery('delete from ' . rex::getTable('pagestats_bot'));
-        echo rex_view::success($sql->getRows() . ' ' . $addon->i18n('statistics_deleted_referer'));
+        echo rex_view::success($sql->getRows() . ' ' . $addon->i18n('statistics_deleted_bots'));
     } elseif ($function == 'delete_referer') {
         $sql = rex_sql::factory();
         $sql->setQuery('delete from ' . rex::getTable('pagestats_referer'));
-        echo rex_view::success($sql->getRows() . ' ' . $addon->i18n('statistics_deleted_media'));
-    } elseif ($function == 'delete_media') {
-        $sql = rex_sql::factory();
-        $sql->setQuery('delete from ' . rex::getTable('pagestats_media'));
-        echo rex_view::success('Es wurden ' . $sql->getRows() . ' Einträge aus der Tabelle media gelöscht.</div>');
+        echo rex_view::success($sql->getRows() . ' ' . $addon->i18n('statistics_deleted_referer'));
     } elseif ($function == 'delete_campaigns') {
         $sql = rex_sql::factory();
         $sql->setQuery('delete from ' . rex::getTable('pagestats_api'));
-        echo rex_view::success('Es wurden ' . $sql->getRows() . ' Einträge aus der Tabelle api gelöscht.');
+        echo rex_view::success(sprintf($addon->i18n('statistics_deleted_api'), (string) $sql->getRows()));
     } elseif ($function == 'delete_noise') {
         try {
             $count = 0;
@@ -373,9 +369,9 @@ if (rex_request_method() == 'post') {
     } elseif ($function == 'updateGeo2Ip') {
         $updated = Ip2Geo::updateDatabase();
         if ($updated) {
-            echo rex_view::success("Geo Datenbank geupdated.");
+            echo rex_view::success($addon->i18n('statistics_geo_update_success'));
         } else {
-            echo rex_view::error("Geo Datenbank konnte nicht aktualisiert werden.");
+            echo rex_view::error($addon->i18n('statistics_geo_update_error'));
         }
     }
 }
@@ -423,10 +419,10 @@ $field->setNotice($addon->i18n('statistics_token_rotation_hours_note'));
 $field->getValidator()->add('type', $addon->i18n('statistics_token_rotation_hours_validate'), 'int');
 
 $field = $trackingForm->addRadioField('statistics_ignore_backend_loggedin');
-$field->setLabel('Eigene Seitenaufrufe ignorieren');
+$field->setLabel($addon->i18n('statistics_ignore_backend_loggedin_label'));
 $field->addOption($addon->i18n('statistics_yes'), 1);
 $field->addOption($addon->i18n('statistics_no'), 0);
-$field->setNotice('Aktivieren, um Seitenaufrufe durch eingeloggte User zu verwerfen.');
+$field->setNotice($addon->i18n('statistics_ignore_backend_loggedin_note'));
 
 $field = $trackingForm->addRadioField('statistics_pages_visitors_enabled');
 $field->setLabel($addon->i18n('statistics_pages_visitors_enabled'));
@@ -435,12 +431,12 @@ $field->addOption($addon->i18n('statistics_no'), 0);
 $field->setNotice($addon->i18n('statistics_pages_visitors_enabled_note'));
 
 $field = $trackingForm->addRadioField('statistics_rec_onlyok');
-$field->setLabel('Nur 200er Aufrufe erfassen');
+$field->setLabel($addon->i18n('statistics_rec_onlyok_label'));
 $field->addOption($addon->i18n('statistics_yes'), 1);
 $field->addOption($addon->i18n('statistics_no'), 0);
-$field->setNotice('Dadurch werden nur Aufrufe mit einem HTTP Status 200 OK erfasst. Die Statistik "Seitenaufrufe" loggt trotzdem auch Aufrufe ungleich 200.');
+$field->setNotice($addon->i18n('statistics_rec_onlyok_note'));
 
-$renderConfigPanel('tracking', 'Tracking & Erkennung', $trackingForm->get());
+$renderConfigPanel('tracking', rex_i18n::rawMsg('statistics_settings_panel_tracking'), $trackingForm->get());
 
 // Filter / Erfassung
 $filterForm = rex_config_form::factory('statistics', 'filter');
@@ -488,16 +484,16 @@ $field->addOption($addon->i18n('statistics_default_datefilter_wholeTime'), 'whol
 $field->setNotice($addon->i18n('statistics_default_datefilter_range_note'));
 
 $field = $filterForm->addRadioField('statistics_combine_all_domains');
-$field->setLabel('Fasse alle Domains zusammen');
+$field->setLabel($addon->i18n('statistics_combine_all_domains_label'));
 $field->addOption($addon->i18n('statistics_yes'), 1);
 $field->addOption($addon->i18n('statistics_no'), 0);
-$field->setNotice('Alle Domains werden zu einer "Gesamt" Anzahl zusammengefasst. Deaktivieren um Statistiken für alle Domains einzeln anzuzeigen.');
+$field->setNotice($addon->i18n('statistics_combine_all_domains_note'));
 
 $field = $filterForm->addTextAreaField('statistics_hidden_domains');
 $field->setLabel($addon->i18n('statistics_hidden_domains'));
 $field->setNotice($addon->i18n('statistics_hidden_domains_note'));
 
-$renderConfigPanel('filter', 'Filter & Erfassung', $filterForm->get());
+$renderConfigPanel('filter', rex_i18n::rawMsg('statistics_settings_panel_filter'), $filterForm->get());
 
 // Darstellung
 $displayForm = rex_config_form::factory('statistics', 'display');
@@ -509,11 +505,11 @@ $field->addOption($addon->i18n('statistics_scroll_panel'), 'panel');
 $field->addOption($addon->i18n('statistics_scroll_none'), 'none');
 
 $field = $displayForm->addRadioField('statistics_show_chart_toolbox');
-$field->setLabel('Zeige Toolbox an den Charts');
+$field->setLabel($addon->i18n('statistics_show_chart_toolbox_label'));
 $field->addOption($addon->i18n('statistics_yes'), 1);
 $field->addOption($addon->i18n('statistics_no'), 0);
 
-$renderConfigPanel('display', 'Darstellung & UX', $displayForm->get());
+$renderConfigPanel('display', rex_i18n::rawMsg('statistics_settings_panel_display'), $displayForm->get());
 
 // Media
 $mediaForm = rex_config_form::factory('statistics', 'media');
@@ -529,8 +525,8 @@ $field->addOption($addon->i18n('statistics_media_yes'), 1);
 $field->addOption($addon->i18n('statistics_media_no'), 0);
 $field->setNotice($addon->i18n('statistics_media_log_mm_note'));
 
-$mediaForm->addRawField(rex_view::warning('Nur eine dieser beiden Optionen aktivieren, sonst werden Aufrufe doppelt gezählt.'));
-$renderConfigPanel('media', 'Media', $mediaForm->get());
+$mediaForm->addRawField(rex_view::warning($addon->i18n('statistics_media_double_count_warning')));
+$renderConfigPanel('media', rex_i18n::rawMsg('statistics_settings_panel_media'), $mediaForm->get());
 
 // API
 $apiForm = rex_config_form::factory('statistics', 'api');
@@ -540,7 +536,7 @@ $field->addOption($addon->i18n('statistics_api_yes'), 1);
 $field->addOption($addon->i18n('statistics_api_no'), 0);
 $field->setNotice($addon->i18n('statistics_api_enable_campaigns_note'));
 
-$renderConfigPanel('api', 'API', $apiForm->get());
+$renderConfigPanel('api', rex_i18n::rawMsg('statistics_settings_panel_api'), $apiForm->get());
 
 
 
@@ -558,7 +554,7 @@ $geoDbStatusLabel = $geoDbAvailable
 $geoDbStatusClass = $geoDbAvailable ? 'alert-success' : 'alert-warning';
 
 $geoIpHtml = '
-<p>Geo-Datenbank updaten mit der IP-Adressen zu Ländern zugeordnet werden.</p>
+<p>' . htmlspecialchars($addon->i18n('statistics_geo_intro'), ENT_QUOTES) . '</p>
 <div class="alert ' . $geoDbStatusClass . '" style="margin:10px 5px;">
 <strong>' . htmlspecialchars($addon->i18n('statistics_geo_status'), ENT_QUOTES) . ':</strong> ' . htmlspecialchars($geoDbStatusLabel, ENT_QUOTES) . '<br>
 <strong>' . htmlspecialchars($addon->i18n('statistics_geo_last_update'), ENT_QUOTES) . ':</strong> ' . htmlspecialchars($geoDbLastUpdated, ENT_QUOTES) . '<br>
@@ -566,14 +562,14 @@ $geoIpHtml = '
 </div>
 <form style="margin:5px" action="' . rex_url::currentBackendPage() . '" method="post">
 <input type="hidden" name="func" value="updateGeo2Ip">
-<button class="btn btn-primary" type="submit">Geo-Datenbank Updaten</button>
+<button class="btn btn-primary" type="submit">' . htmlspecialchars($addon->i18n('statistics_geo_update_button'), ENT_QUOTES) . '</button>
 </form>
 <p><a href="https://db-ip.com">IP Geolocation by DB-IP</a></p>
 ';
 
 $fragment = new rex_fragment();
 $fragment->setVar('class', 'info', false);
-$fragment->setVar('title', "IP 2 Geo", false);
+$fragment->setVar('title', $addon->i18n('statistics_geo_title'), false);
 $fragment->setVar('body', $geoIpHtml, false);
 echo $fragment->parse('core/page/section.php');
 

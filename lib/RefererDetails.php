@@ -7,6 +7,7 @@ use DatePeriod;
 use DateTime;
 use InvalidArgumentException;
 use rex;
+use rex_addon;
 use rex_sql;
 use rex_sql_exception;
 
@@ -42,8 +43,10 @@ class RefererDetails
             return '';
         }
 
+        $addon = rex_addon::get('statistics');
+
         $table = '<table class="table-bordered dt_order_first statistics_table table-striped table-hover table">';
-        $table .= '<thead><tr><th>Datum</th><th>Anzahl</th></tr></thead><tbody>';
+        $table .= '<thead><tr><th>' . htmlspecialchars($addon->i18n('statistics_date'), ENT_QUOTES) . '</th><th>' . htmlspecialchars($addon->i18n('statistics_count'), ENT_QUOTES) . '</th></tr></thead><tbody>';
 
         foreach ($rows as $row) {
             $formattedDateObj = DateTime::createFromFormat('Y-m-d', $row['date']);

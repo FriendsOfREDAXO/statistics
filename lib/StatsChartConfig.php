@@ -3,6 +3,7 @@
 namespace AndiLeni\Statistics;
 
 use rex_config;
+use rex_i18n;
 
 class StatsChartConfig
 {
@@ -72,7 +73,7 @@ class StatsChartConfig
             'title' => (object) [],
             'tooltip' => [
                 'trigger' => 'axis',
-                'formatter' => '{@url}<br />Status: <b>{@status}</b><br />Anzahl: <b>{@count}</b>',
+                'formatter' => rex_i18n::rawMsg('statistics_pages_tooltip_formatter'),
             ],
             'dataZoom' => [[
                 'id' => 'dataZoomX',
@@ -131,7 +132,7 @@ class StatsChartConfig
                     'color' => '#198754',
                 ],
                 [
-                    'name' => 'nicht-200',
+                    'name' => rex_i18n::msg('statistics_series_not_200'),
                     'datasetId' => 'ds2',
                     'type' => 'bar',
                     'encode' => [
@@ -281,7 +282,7 @@ class StatsChartConfig
                     ],
                 ],
                 [
-                    'name' => 'nicht-200',
+                    'name' => rex_i18n::msg('statistics_series_not_200'),
                     'type' => 'bar',
                     'stack' => 'status',
                     'data' => $notOkValues,

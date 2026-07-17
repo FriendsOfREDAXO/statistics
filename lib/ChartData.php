@@ -71,7 +71,11 @@ class chartData
      */
     private function getVisitsPerDay(): array
     {
-        return $this->getDailySeries('pagestats_visits_per_day', 'Aufrufe Gesamt', 'Aufrufe ');
+        return $this->getDailySeries(
+            'pagestats_visits_per_day',
+            $this->addon->i18n('statistics_series_views_total'),
+            $this->addon->i18n('statistics_series_views_prefix')
+        );
     }
 
     /**
@@ -81,7 +85,11 @@ class chartData
      */
     private function getVisitorsPerDay(): array
     {
-        return $this->getDailySeries('pagestats_visitors_per_day', 'Besucher Gesamt', 'Besucher ');
+        return $this->getDailySeries(
+            'pagestats_visitors_per_day',
+            $this->addon->i18n('statistics_series_visitors_total'),
+            $this->addon->i18n('statistics_series_visitors_prefix')
+        );
     }
 
     /**
@@ -146,8 +154,18 @@ class chartData
         );
 
         $series = array_merge(
-            $this->getMonthlySeries('pagestats_visits_per_day', $period_map, 'Aufrufe Gesamt', 'Aufrufe '),
-            $this->getMonthlySeries('pagestats_visitors_per_day', $period_map, 'Besucher Gesamt', 'Besucher ')
+            $this->getMonthlySeries(
+                'pagestats_visits_per_day',
+                $period_map,
+                $this->addon->i18n('statistics_series_views_total'),
+                $this->addon->i18n('statistics_series_views_prefix')
+            ),
+            $this->getMonthlySeries(
+                'pagestats_visitors_per_day',
+                $period_map,
+                $this->addon->i18n('statistics_series_visitors_total'),
+                $this->addon->i18n('statistics_series_visitors_prefix')
+            )
         );
 
         return [
@@ -170,8 +188,18 @@ class chartData
         $period_map = $this->createPeriodValueMap($period, 'Y', 0);
 
         $series = array_merge(
-            $this->getYearlySeries('pagestats_visits_per_day', $period_map, 'Aufrufe Gesamt', 'Aufrufe '),
-            $this->getYearlySeries('pagestats_visitors_per_day', $period_map, 'Besucher Gesamt', 'Besucher ')
+            $this->getYearlySeries(
+                'pagestats_visits_per_day',
+                $period_map,
+                $this->addon->i18n('statistics_series_views_total'),
+                $this->addon->i18n('statistics_series_views_prefix')
+            ),
+            $this->getYearlySeries(
+                'pagestats_visitors_per_day',
+                $period_map,
+                $this->addon->i18n('statistics_series_visitors_total'),
+                $this->addon->i18n('statistics_series_visitors_prefix')
+            )
         );
 
         return [
@@ -311,7 +339,7 @@ class chartData
             foreach ($domain_values as $domain => $values) {
                 $series[] = [
                     'data' => array_values($values),
-                    'name' => $domainNamePrefix . $domain,
+                    'name' => $domainNamePrefix . ' ' . $domain,
                     'type' => 'line',
                 ];
             }
@@ -384,7 +412,7 @@ class chartData
             foreach ($domain_values as $domain => $values) {
                 $series[] = [
                     'data' => array_values($values),
-                    'name' => $domainNamePrefix . $domain,
+                    'name' => $domainNamePrefix . ' ' . $domain,
                     'type' => 'line',
                 ];
             }
@@ -457,7 +485,7 @@ class chartData
             foreach ($domain_values as $domain => $values) {
                 $series[] = [
                     'data' => array_values($values),
-                    'name' => $domainNamePrefix . $domain,
+                    'name' => $domainNamePrefix . ' ' . $domain,
                     'type' => 'line',
                 ];
             }

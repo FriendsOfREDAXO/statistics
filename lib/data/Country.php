@@ -65,7 +65,7 @@ class Country
             $table = rex_view::info($addon->i18n('statistics_no_data'));
         } else {
             $table = '<table class="dt_order_second statistics_table table table-striped table-hover">';
-            $table .= '<thead><tr><th>' . htmlspecialchars($addon->i18n('statistics_name'), ENT_QUOTES) . '</th><th>Anzahl</th></tr></thead><tbody>';
+            $table .= '<thead><tr><th>' . htmlspecialchars($addon->i18n('statistics_name'), ENT_QUOTES) . '</th><th>' . htmlspecialchars($addon->i18n('statistics_count'), ENT_QUOTES) . '</th></tr></thead><tbody>';
             foreach ($rows as $row) {
                 $table .= '<tr><td>' . htmlspecialchars($row['name'], ENT_QUOTES) . '</td><td data-sort="' . htmlspecialchars((string) $row['count'], ENT_QUOTES) . '">' . htmlspecialchars((string) $row['count'], ENT_QUOTES) . '</td></tr>';
             }

@@ -11,6 +11,7 @@
 -   Copilot-Reviewpunkte vollständig adressiert und Threads aufgelöst (u. a. Confirm-Bindung, Panel-Rücksprunglogik, Fehlerunterdrückung entfernt)
 -   Codebasis technisch gehärtet: Typbereinigung, robustere Date/Array-Fallbacks, präzisere PHPDoc-Array-Shapes, abgesicherter `gzdecode()`-Pfad beim `ip2geo`-Download sowie sauberere Fragment-/Help-Verarbeitung
 -   Vollständiger RexStan-Lauf für `redaxo/src/addons/statistics` im `coreweb`-Container erfolgreich abgeschlossen: keine verbleibenden Fehler
+-   Restliche harte UI-Texte in Charts/Filtern/Tabs auf i18n umgestellt (inkl. Tooltip-Formattern, Serienlabels, ARIA-Texten und Kampagnen-Fallbacks), damit Issue #109 vollständig abgeschlossen ist
 
 ## [3.3.0] - 14.07.2026
 

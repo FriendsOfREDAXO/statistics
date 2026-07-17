@@ -5,6 +5,7 @@ namespace AndiLeni\Statistics;
 use rex;
 use rex_addon;
 use rex_addon_interface;
+use rex_i18n;
 use rex_config;
 use rex_fragment;
 use rex_sql;
@@ -106,7 +107,7 @@ class StatsLazyBlockRenderer
             . '<div id="chart_device_brand_compact" style="width:100%;height:220px"></div>'
             . '<h5 style="margin-top:18px"><b>' . htmlspecialchars($this->addon->i18n('statistics_os'), ENT_QUOTES) . '</b></h5>'
             . '<div id="chart_device_os_compact" style="width:100%;height:220px"></div>';
-        $html .= $this->renderTwoColumnSection('Gerätetyp, Hersteller & Betriebssystem', $deviceCharts, $deviceAndBrandTable);
+        $html .= $this->renderTwoColumnSection(rex_i18n::rawMsg('statistics_device_brand_os_title'), $deviceCharts, $deviceAndBrandTable);
         $charts[] = ['id' => 'chart_device_type_compact', 'option' => $this->buildTopCategoriesBarOption($browsertype->getData(), '{b}: <b>{c}</b>', 6)];
         $charts[] = ['id' => 'chart_device_brand_compact', 'option' => $this->buildTopCategoriesBarOption($brand->getData(), '{b}: <b>{c}</b>', 7)];
         $charts[] = ['id' => 'chart_device_os_compact', 'option' => $this->buildTopCategoriesBarOption($os->getData(), '{b}: <b>{c}</b>', 7)];
@@ -118,7 +119,7 @@ class StatsLazyBlockRenderer
 
         $html .= $this->renderLazySectionCard(
             $this->addon->i18n('statistics_hours'),
-            'Wird bei Bedarf geladen und nutzt mehr Platz für den Verlauf.',
+            $this->addon->i18n('statistics_lazy_hours_note'),
             'device-hourly'
         );
 
@@ -154,23 +155,23 @@ class StatsLazyBlockRenderer
         $html = '';
 
         $html .= $this->renderLazySectionCard(
-            'Anzahl besuchter Seiten in einer Sitzung',
-            'Wird bei Bedarf geladen, um den Browser zu entlasten.',
+            $this->addon->i18n('statistics_extended_pages_per_session_title'),
+            $this->addon->i18n('statistics_lazy_section_note'),
             'extended-pagecount'
         );
         $html .= $this->renderLazySectionCard(
-            'Besuchsdauer',
-            'Wird bei Bedarf geladen, um den Browser zu entlasten.',
+            $this->addon->i18n('statistics_extended_visit_duration_title'),
+            $this->addon->i18n('statistics_lazy_section_note'),
             'extended-visitduration'
         );
         $html .= $this->renderLazySectionCard(
-            'Ausstiegsseiten',
-            'Wird bei Bedarf geladen, um den Browser zu entlasten.',
+            $this->addon->i18n('statistics_extended_exit_pages_title'),
+            $this->addon->i18n('statistics_lazy_section_note'),
             'extended-lastpage'
         );
         $html .= $this->renderLazySectionCard(
-            'Länder',
-            'Wird bei Bedarf geladen, um den Browser zu entlasten.',
+            $this->addon->i18n('statistics_extended_countries_title'),
+            $this->addon->i18n('statistics_lazy_section_note'),
             'extended-country'
         );
 
@@ -188,18 +189,18 @@ class StatsLazyBlockRenderer
             $labels = [];
             $values = [];
             foreach ($pagecountData['values'] as $index => $pagesVisited) {
-                $labels[] = (string) $pagesVisited . ' Seiten';
+                $labels[] = sprintf($this->addon->i18n('statistics_pages_suffix'), (string) $pagesVisited);
                 $values[] = isset($pagecountData['labels'][$index]) ? (int) $pagecountData['labels'][$index] : 0;
             }
 
             return [
                 'html' => $this->renderInsightTableSection(
-                    'Anzahl besuchter Seiten in einer Sitzung',
-                    'Verteilung der Seiten pro Sitzung',
+                    $this->addon->i18n('statistics_extended_pages_per_session_title'),
+                    $this->addon->i18n('statistics_extended_pages_per_session_subtitle'),
                     $labels,
                     $values,
                     $pagecount->getList(),
-                    '{b}: <b>{c} Sitzungen</b>'
+                    $this->addon->i18n('statistics_tooltip_sessions')
                 ),
                 'charts' => [],
             ];
@@ -217,12 +218,12 @@ class StatsLazyBlockRenderer
 
             return [
                 'html' => $this->renderInsightTableSection(
-                    'Besuchsdauer',
-                    'Verteilung der Sitzungsdauer',
+                    $this->addon->i18n('statistics_extended_visit_duration_title'),
+                    $this->addon->i18n('statistics_extended_visit_duration_subtitle'),
                     $labels,
                     $values,
                     $visitduration->getList(),
-                    '{b}: <b>{c} Sitzungen</b>'
+                    $this->addon->i18n('statistics_tooltip_sessions')
                 ),
                 'charts' => [],
             ];
@@ -234,12 +235,12 @@ class StatsLazyBlockRenderer
 
             return [
                 'html' => $this->renderInsightTableSection(
-                    'Ausstiegsseiten',
-                    'Top-Ausstiegsseiten im gewählten Zeitraum',
+                    $this->addon->i18n('statistics_extended_exit_pages_title'),
+                    $this->addon->i18n('statistics_extended_exit_pages_subtitle'),
                     $lastpageData['labels'],
                     $lastpageData['values'],
                     $lastpage->getList(),
-                    '{b} <br> Anzahl: <b>{c}</b>'
+                    $this->addon->i18n('statistics_tooltip_count')
                 ),
                 'charts' => [],
             ];
@@ -255,12 +256,12 @@ class StatsLazyBlockRenderer
 
             return [
                 'html' => $note . $this->renderInsightTableSection(
-                    'Länder',
-                    'Geografische Verteilung auf einen Blick',
+                    $this->addon->i18n('statistics_extended_countries_title'),
+                    $this->addon->i18n('statistics_extended_countries_subtitle'),
                     $countryData['labels'],
                     $countryData['values'],
                     $country->getList(),
-                    '{b} <br> Anzahl: <b>{c}</b>'
+                    $this->addon->i18n('statistics_tooltip_count')
                 ),
                 'charts' => [],
             ];
@@ -356,7 +357,7 @@ class StatsLazyBlockRenderer
         }
 
         $bars .= '</div>';
-        $bars .= '<div style="font-size:12px;color:#6b7c93;padding:4px 2px 0;">Stundenverteilung im Tagesverlauf</div>';
+        $bars .= '<div style="font-size:12px;color:#6b7c93;padding:4px 2px 0;">' . htmlspecialchars($this->addon->i18n('statistics_hours_distribution_note'), ENT_QUOTES) . '</div>';
         $bars .= '</div>';
 
         return $this->renderTwoColumnSection($title, $bars, $table);
@@ -387,7 +388,7 @@ class StatsLazyBlockRenderer
         }
 
         $bars .= '</div>';
-        $bars .= '<div style="font-size:13px;color:#6b7c93;padding:4px 2px 0;">Stundenverteilung im Tagesverlauf</div>';
+        $bars .= '<div style="font-size:13px;color:#6b7c93;padding:4px 2px 0;">' . htmlspecialchars($this->addon->i18n('statistics_hours_distribution_note'), ENT_QUOTES) . '</div>';
         $bars .= '</div>';
 
         $bars .= '<div style="margin-top:12px;">';
@@ -640,7 +641,7 @@ class StatsLazyBlockRenderer
                     static fn (int $carry, array $row): int => $carry + (int) $row['value'],
                     0
                 );
-                $top[] = ['name' => 'Andere', 'value' => $otherSum];
+                $top[] = ['name' => $this->addon->i18n('statistics_other'), 'value' => $otherSum];
             }
 
             $labels = array_column($top, 'name');
@@ -668,7 +669,7 @@ class StatsLazyBlockRenderer
                 'type' => 'value',
             ]],
             'series' => [[
-                'name' => 'Anzahl',
+                'name' => $this->addon->i18n('statistics_count'),
                 'type' => 'bar',
                 'data' => $coloredValues,
                 'label' => [
@@ -850,7 +851,7 @@ class StatsLazyBlockRenderer
                 static fn (int $carry, array $row): int => $carry + (int) $row['value'],
                 0
             );
-            $top[] = ['name' => 'Andere', 'value' => $otherSum];
+            $top[] = ['name' => $this->addon->i18n('statistics_other'), 'value' => $otherSum];
         }
 
         return $top;
@@ -1055,20 +1056,23 @@ class StatsLazyBlockRenderer
     {
         $series = array_map(function (array $entry): array {
             $name = (string) ($entry['name'] ?? '');
+            $totalSuffix = ' ' . $this->addon->i18n('statistics_total');
+            $viewsPrefix = $this->addon->i18n('statistics_series_views_prefix');
+            $visitorsPrefix = $this->addon->i18n('statistics_series_visitors_prefix');
 
             $entry['type'] = 'line';
             $entry['smooth'] = true;
             $entry['showSymbol'] = false;
             $entry['sampling'] = 'lttb';
 
-            $isTotal = false !== strpos($name, 'Gesamt');
-            if (!$isTotal && 0 === strpos($name, 'Aufrufe ')) {
-                $entry['stack'] = 'Aufrufe';
+            $isTotal = false !== strpos($name, $totalSuffix);
+            if (!$isTotal && 0 === strpos($name, $viewsPrefix)) {
+                $entry['stack'] = $this->addon->i18n('statistics_stack_views');
                 $entry['areaStyle'] = ['opacity' => 0.1];
             }
 
-            if (!$isTotal && 0 === strpos($name, 'Besucher ')) {
-                $entry['stack'] = 'Besucher';
+            if (!$isTotal && 0 === strpos($name, $visitorsPrefix)) {
+                $entry['stack'] = $this->addon->i18n('statistics_stack_visitors');
                 $entry['areaStyle'] = ['opacity' => 0.08];
             }
 
