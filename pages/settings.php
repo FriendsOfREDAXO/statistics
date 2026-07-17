@@ -735,7 +735,7 @@ $maintenanceTasksHtml .= $renderActionCard(
     $addon->i18n('statistics_maintenance_scope_noise'),
     '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_delete_noise') . '">'
     . '<input type="hidden" name="func" value="delete_noise">'
-    . '<button class="btn btn-default" type="submit">' . $addon->i18n('statistics_delete_noise') . '</button>'
+    . '<button class="btn btn-default" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_noise') . '">' . $addon->i18n('statistics_delete_noise') . '</button>'
     . '</form>'
 );
 $maintenanceTasksHtml .= $renderActionCard(
@@ -745,7 +745,7 @@ $maintenanceTasksHtml .= $renderActionCard(
     . '<input type="hidden" name="func" value="delete_old">'
     . '<label for="statistics-keep-days" style="margin:0;">' . $addon->i18n('statistics_cleanup_keep_days') . '</label>'
     . '<input id="statistics-keep-days" class="form-control" style="width:110px" type="number" min="1" step="1" name="keep_days" value="365">'
-    . '<button class="btn btn-default" type="submit">' . $addon->i18n('statistics_delete_old') . '</button>'
+    . '<button class="btn btn-default" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_old') . '">' . $addon->i18n('statistics_delete_old') . '</button>'
     . '</form>'
 );
 $maintenanceTasksHtml .= $renderActionCard(
@@ -755,7 +755,7 @@ $maintenanceTasksHtml .= $renderActionCard(
     . '<input type="hidden" name="func" value="delete_raw_old">'
     . '<label for="statistics-keep-days-raw" style="margin:0;">' . $addon->i18n('statistics_cleanup_keep_days_raw') . '</label>'
     . '<input id="statistics-keep-days-raw" class="form-control" style="width:110px" type="number" min="1" step="1" name="keep_days_raw" value="120">'
-    . '<button class="btn btn-default" type="submit">' . $addon->i18n('statistics_delete_raw_old') . '</button>'
+    . '<button class="btn btn-default" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_raw_old') . '">' . $addon->i18n('statistics_delete_raw_old') . '</button>'
     . '</form>'
 );
 $maintenanceTasksHtml .= $renderActionCard(
@@ -763,7 +763,7 @@ $maintenanceTasksHtml .= $renderActionCard(
     $addon->i18n('statistics_maintenance_scope_optimize'),
     '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_optimize_tables') . '">'
     . '<input type="hidden" name="func" value="optimize_tables">'
-    . '<button class="btn btn-default" type="submit">' . $addon->i18n('statistics_optimize_tables') . '</button>'
+    . '<button class="btn btn-default" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_optimize_tables') . '">' . $addon->i18n('statistics_optimize_tables') . '</button>'
     . '</form>'
 );
 
