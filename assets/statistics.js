@@ -138,6 +138,103 @@ $(document).on("rex:ready", function (event, container) {
         };
     }
 
+    function initSettingsPanelReturn() {
+        if (window.location.search.indexOf('page=statistics/settings') === -1) {
+            return;
+        }
+
+        var storageKey = 'statistics.settings.lastPanel';
+        var forms = Array.from(document.querySelectorAll('form[action*="page=statistics/settings"]'));
+
+        forms.forEach(function (form) {
+            if (!form || form.dataset.statisticsSettingsReturnBound === 'true') {
+                return;
+            }
+
+            var firstNamedField = form.querySelector('input[name], textarea[name], select[name]');
+            if (!firstNamedField || !firstNamedField.name) {
+                return;
+            }
+
+            var panelName = firstNamedField.name.split('[')[0];
+            if (!panelName || panelName === '_csrf_token' || panelName === 'func') {
+                return;
+            }
+
+            form.dataset.statisticsSettingsReturnBound = 'true';
+            form.dataset.statisticsSettingsPanel = panelName;
+
+            form.addEventListener('submit', function () {
+                var hashTarget = '#statistics-settings-panel-' + panelName;
+                var actionBase = (form.getAttribute('action') || '').split('#')[0];
+                form.setAttribute('action', actionBase + hashTarget);
+
+                try {
+                    window.sessionStorage.setItem(storageKey, panelName);
+                } catch (error) {
+                    // Ignore storage errors (private mode etc.)
+                }
+            });
+        });
+
+        var hash = window.location.hash || '';
+        if (hash.indexOf('#statistics-settings-panel-') === 0) {
+            var hashTargetElement = document.querySelector(hash);
+            if (hashTargetElement) {
+                window.setTimeout(function () {
+                    hashTargetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                    var hashPanel = hashTargetElement.querySelector('.panel');
+                    if (hashPanel) {
+                        hashPanel.classList.add('panel-info');
+                        window.setTimeout(function () {
+                            hashPanel.classList.remove('panel-info');
+                        }, 1200);
+                    }
+                }, 40);
+                return;
+            }
+        }
+
+        var storedPanel = '';
+        try {
+            storedPanel = window.sessionStorage.getItem(storageKey) || '';
+        } catch (error) {
+            storedPanel = '';
+        }
+
+        if (!storedPanel) {
+            return;
+        }
+
+        var targetField = document.querySelector(
+            'input[name^="' + storedPanel + '["], textarea[name^="' + storedPanel + '["], select[name^="' + storedPanel + '["]'
+        );
+        if (!targetField) {
+            return;
+        }
+
+        var targetPanel = targetField.closest('.panel');
+        if (!targetPanel) {
+            return;
+        }
+
+        window.setTimeout(function () {
+            targetPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            targetPanel.classList.add('panel-info');
+
+            window.setTimeout(function () {
+                targetPanel.classList.remove('panel-info');
+            }, 1200);
+        }, 40);
+
+        try {
+            window.sessionStorage.removeItem(storageKey);
+        } catch (error) {
+            // Ignore storage errors
+        }
+    }
+
     function rememberChart(elementId, chart) {
         if (!elementId || !chart) {
             return chart;
@@ -833,7 +930,14 @@ $(document).on("rex:ready", function (event, container) {
         bootstrapStatisticsDashboard();
     }
 
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSettingsPanelReturn);
+    } else {
+        initSettingsPanelReturn();
+    }
+
     $(document).on('rex:ready', function () {
         bootstrapStatisticsDashboard();
+        initSettingsPanelReturn();
     });
 })();

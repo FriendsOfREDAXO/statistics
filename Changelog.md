@@ -1,5 +1,42 @@
 # Changelog
 
+## [3.3.10] - 17.07.2026
+
+-   Geo-Bereich in den Einstellungen erweitert: zeigt jetzt Status, letzte Aktualisierung und Dateigröße der `ip2geo.mmdb`
+-   Geo-Update meldet Fehlschläge jetzt als Fehler statt als Erfolgsmeldung
+
+## [3.3.9] - 17.07.2026
+
+-   Einstellungs-Panels speichern jetzt sauber getrennt: jedes Formular hat eine eigene interne Form-ID
+-   Fix für den Panel-Workflow: Absenden eines Bereichs triggert nicht mehr die Verarbeitung der anderen Einstellungs-Formulare
+
+## [3.3.8] - 17.07.2026
+
+-   Einstellungsseite neu gegliedert: eigene Panels für „Tracking & Erkennung“, „Filter & Erfassung“, „Darstellung & UX“, „Media“ und „API“
+-   Lange Konfigurationsstrecke in klar separierte Karten aufgeteilt, damit Themen schneller auffindbar und verständlicher bearbeitbar sind
+
+## [3.3.7] - 17.07.2026
+
+-   Wartungsaufgaben-Buttons auf neutrales Default-Design umgestellt (ohne Farbmarkierung)
+-   Confirm/Submit-Handling für Wartungsaufgaben robuster umgesetzt über `form[data-confirm]`, damit Aktionen zuverlässig ausgelöst werden
+-   Visuelle Zuordnung geschärft: Löschaktionen bleiben rot, Wartungsaufgaben sind neutral gehalten
+
+## [3.3.6] - 17.07.2026
+
+-   Statistikwartung UX überarbeitet: klare Trennung zwischen Löschaktionen und Wartungsaufgaben
+-   Aktionen sind jetzt pro Karte mit „betroffene Daten“-Hinweis dargestellt, damit Button-Zuordnung und Auswirkungen schneller verständlich sind
+
+## [3.3.5] - 17.07.2026
+
+-   Erkennungsmodus ist jetzt umschaltbar: stateless (Standard) oder klassisch per Session
+-   Session-Modus wurde für geringeres Lock-Risiko optimiert: Session wird nur kurz für Token-Zugriff geöffnet und direkt wieder geschlossen
+-   Einstellungen zeigen jetzt einen Hinweis mit Vor- und Nachteilen beider Modi
+
+## [3.3.4] - 17.07.2026
+
+-   Token-Rotation für die stateless Erkennung ist jetzt in den Einstellungen konfigurierbar (1-24 Stunden)
+-   Token-Bildung nutzt ein konfigurierbares Zeitfenster statt starrer Tagesrotation
+
 ## [3.3.3] - 17.07.2026
 
 -   Visitor-Erkennung nachgeschärft: stateless Token nutzt jetzt eine gekürzte IP (IPv4 `/24`, IPv6 `/64`) statt gar keiner IP

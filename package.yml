@@ -1,5 +1,5 @@
 package: statistics
-version: 3.3.3
+version: 3.3.10
 author: Andreas Lenhardt
 supportpage: https://github.com/AndiLeni/statistics
 
@@ -54,8 +54,10 @@ default_config:
     statistics_ignored_path_ends: ""
     statistics_favorite_urls: ""
     statistics_pages_visitors_enabled: true
+    statistics_identity_mode: "stateless"
     statistics_ignored_ips: ""
     statistics_visit_duration: 30
+    statistics_token_rotation_hours: 24
     statistics_scroll_pagination: "none"
     statistics_ignore_url_params: false
     statistics_default_datefilter_range: "thisYear"
