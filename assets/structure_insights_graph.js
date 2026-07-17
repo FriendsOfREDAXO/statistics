@@ -5,6 +5,8 @@
         scale: 1,
         minScale: 0.25,
         maxScale: 3,
+        fullSvgMarkup: '',
+        emptyText: 'No data available.',
     };
 
     function isStructureInsightsPage() {
@@ -75,22 +77,26 @@
     function layoutTree(root) {
         var leafCounter = 0;
         var maxDepth = 0;
+        var top = 56;
+        var left = 150;
+        var rowGap = 108;
+        var columnGap = 320;
 
         function walk(node, depth) {
             node.level = depth;
             maxDepth = Math.max(maxDepth, depth);
 
             if (!node.children.length) {
-                node.x = 120 + leafCounter * 260;
+                node.y = top + leafCounter * rowGap;
                 leafCounter += 1;
             } else {
                 node.children.forEach(function (child) {
                     walk(child, depth + 1);
                 });
-                node.x = (node.children[0].x + node.children[node.children.length - 1].x) / 2;
+                node.y = (node.children[0].y + node.children[node.children.length - 1].y) / 2;
             }
 
-            node.y = 40 + depth * 170;
+            node.x = left + depth * columnGap;
         }
 
         walk(root, 0);
@@ -98,6 +104,8 @@
         return {
             leafCount: Math.max(leafCounter, 1),
             maxDepth: maxDepth,
+            rowGap: rowGap,
+            columnGap: columnGap,
         };
     }
 
@@ -112,8 +120,8 @@
 
     function buildSvgMarkup(root) {
         var metrics = layoutTree(root);
-        var width = Math.max(900, metrics.leafCount * 260 + 160);
-        var height = Math.max(320, (metrics.maxDepth + 1) * 170 + 120);
+        var width = Math.max(900, (metrics.maxDepth + 1) * metrics.columnGap + 260);
+        var height = Math.max(420, metrics.leafCount * metrics.rowGap + 120);
 
         var parts = [];
         parts.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + width + ' ' + height + '" width="100%" height="' + height + '" role="img">');
@@ -121,7 +129,8 @@
         parts.push('<pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">');
         parts.push('<path d="M 48 0 L 0 0 0 48" fill="none" stroke="#d9e2f0" stroke-opacity="0.7" stroke-width="1"/>');
         parts.push('</pattern>');
-        parts.push('<linearGradient id="nodeCategory" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f7b7de"/><stop offset="100%" stop-color="#ffa28e"/></linearGradient>');
+        parts.push('<linearGradient id="nodeRoot" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#d7eef3"/><stop offset="100%" stop-color="#a9d8e6"/></linearGradient>');
+        parts.push('<linearGradient id="nodeCategory" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#d8f3dc"/><stop offset="100%" stop-color="#b7e4c7"/></linearGradient>');
         parts.push('<linearGradient id="nodeArticle" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#c4d7ff"/><stop offset="100%" stop-color="#e3edff"/></linearGradient>');
         parts.push('</defs>');
         parts.push('<rect x="0" y="0" width="' + width + '" height="' + height + '" fill="#ffffff"/>');
@@ -135,18 +144,18 @@
         }
 
         function edgePath(parent, child) {
-            var x1 = parent.x;
-            var y1 = parent.y + 42;
-            var x2 = child.x;
-            var y2 = child.y - 42;
-            var midY = (y1 + y2) / 2;
-            return 'M ' + x1 + ' ' + y1 + ' C ' + x1 + ' ' + midY + ', ' + x2 + ' ' + midY + ', ' + x2 + ' ' + y2;
+            var x1 = parent.x + 115;
+            var y1 = parent.y;
+            var x2 = child.x - 115;
+            var y2 = child.y;
+            var midX = (x1 + x2) / 2;
+            return 'M ' + x1 + ' ' + y1 + ' C ' + midX + ' ' + y1 + ', ' + midX + ' ' + y2 + ', ' + x2 + ' ' + y2;
         }
 
         function drawEdges(node) {
             node.children.forEach(function (child) {
                 parts.push('<path d="' + edgePath(node, child) + '" stroke="#223961" stroke-width="3" fill="none"/>');
-                parts.push('<circle cx="' + child.x + '" cy="' + (child.y - 42) + '" r="4" fill="#f4d2e7" stroke="#223961" stroke-width="2"/>');
+                parts.push('<circle cx="' + (child.x - 115) + '" cy="' + child.y + '" r="4" fill="#f4d2e7" stroke="#223961" stroke-width="2"/>');
                 drawEdges(child);
             });
         }
@@ -160,7 +169,9 @@
             var x = node.x - w / 2;
             var y = node.y - h / 2;
             var fill = 'url(#nodeArticle)';
-            if (kind === 'root' || kind === 'category') {
+            if (kind === 'root') {
+                fill = 'url(#nodeRoot)';
+            } else if (kind === 'category') {
                 fill = 'url(#nodeCategory)';
             }
 
@@ -196,7 +207,7 @@
     }
 
     function getCurrentSvg() {
-        return $('#statistics-structure-graph svg').get(0) || null;
+        return $('#statistics-graph-modal-canvas svg').get(0) || null;
     }
 
     function serializeSvg(svgElement) {
@@ -237,12 +248,21 @@
     }
 
     function exportSvg() {
-        var svg = getCurrentSvg();
-        if (!svg) {
-            return;
+        ensureFullGraphMarkup();
+
+        var content = graphState.fullSvgMarkup;
+
+        if (!content) {
+            var svg = getCurrentSvg();
+            if (!svg) {
+                return;
+            }
+
+            content = serializeSvg(svg);
+        } else {
+            content = '<?xml version="1.0" encoding="UTF-8"?>\n' + content;
         }
 
-        var content = serializeSvg(svg);
         downloadBlob('statistics-sitemap-' + timestamp() + '.svg', new Blob([content], {
             type: 'image/svg+xml;charset=utf-8',
         }));
@@ -263,17 +283,59 @@
     }
 
     function openModalWithGraph() {
-        var svg = getCurrentSvg();
-        if (!svg) {
+        ensureFullGraphMarkup();
+
+        var $canvas = $('#statistics-graph-modal-canvas');
+        if (!graphState.fullSvgMarkup) {
+            $canvas.html('<div class="alert alert-info" style="margin:12px;">' + escapeXml(graphState.emptyText) + '</div>');
+            $canvas.scrollLeft(0);
+            $canvas.scrollTop(0);
+            $('#statistics-graph-modal').modal('show');
             return;
         }
 
-        var $canvas = $('#statistics-graph-modal-canvas');
-        $canvas.empty().append($(svg.cloneNode(true)));
+        $canvas.empty().append($(graphState.fullSvgMarkup));
         graphState.scale = 1;
         applyScale();
 
+        // Always start the modal at the graph origin; otherwise previous scroll state can clip the first node.
+        $canvas.scrollLeft(0);
+        $canvas.scrollTop(0);
+
         $('#statistics-graph-modal').modal('show');
+
+        // Re-apply after modal layout/animation to avoid browser-specific scroll restoration.
+        $('#statistics-graph-modal')
+            .off('shown.bs.modal.statisticsGraphPosition')
+            .on('shown.bs.modal.statisticsGraphPosition', function () {
+                $canvas.scrollLeft(0);
+                $canvas.scrollTop(0);
+            });
+    }
+
+    function ensureFullGraphMarkup() {
+        if (graphState.fullSvgMarkup) {
+            return true;
+        }
+
+        var $config = $('#statistics-structure-graph-config');
+        if (!$config.length) {
+            return false;
+        }
+
+        graphState.emptyText = $config.attr('data-empty-text') || graphState.emptyText;
+
+        var rows = parseRows();
+        if (!rows.length) {
+            graphState.fullSvgMarkup = '';
+            return false;
+        }
+
+        var rootLabel = $config.attr('data-root-label') || 'Website';
+        var tree = buildTree(rows, rootLabel);
+        graphState.fullSvgMarkup = buildSvgMarkup(tree);
+
+        return true;
     }
 
     function bindGraphActions() {
@@ -315,37 +377,15 @@
             });
     }
 
-    function renderGraph() {
-        if (!isStructureInsightsPage()) {
-            return;
-        }
-
-        var $container = $('#statistics-structure-graph');
-        if (!$container.length) {
-            return;
-        }
-
-        var rows = parseRows();
-        if (!rows.length) {
-            var emptyText = $container.attr('data-empty-text') || 'No data available.';
-            $container.html('<div class="alert alert-info" style="margin-bottom:0;">' + escapeXml(emptyText) + '</div>');
-            return;
-        }
-
-        var rootLabel = $container.attr('data-root-label') || 'Website';
-        var tree = buildTree(rows, rootLabel);
-        var svgMarkup = buildSvgMarkup(tree);
-
-        $container.html('<div class="statistics-graph-frame">' + svgMarkup + '</div>');
-    }
-
     function init() {
         if (!isStructureInsightsPage()) {
             return;
         }
 
         bindGraphActions();
-        renderGraph();
+
+        // Reset cached markup on each page init so data stays in sync with the current table.
+        graphState.fullSvgMarkup = '';
     }
 
     $(init);

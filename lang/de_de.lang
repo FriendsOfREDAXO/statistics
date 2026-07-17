@@ -349,3 +349,5 @@ statistics_structure_graph_export_pdf = PDF Export
 statistics_structure_graph_zoom_in = Zoom +
 statistics_structure_graph_zoom_out = Zoom -
 statistics_structure_graph_zoom_reset = Reset
+statistics_structure_graph_preview_note = Vorschau zeigt die ersten %s Ebenen. Die komplette Sitemap ist in der Großansicht verfügbar.
+statistics_structure_graph_on_demand_note = Die grafische Sitemap wird nur auf Klick geladen (Großansicht oder SVG-Export), um die Seite kompakt und schnell zu halten.

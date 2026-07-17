@@ -5,9 +5,20 @@
     background: #ffffff;
 }
 
+#statistics-structure-graph .statistics-graph-frame--preview {
+    max-height: 320px;
+    overflow: hidden;
+}
+
 #statistics-structure-graph svg {
     display: block;
     min-width: 900px;
+}
+
+#statistics-structure-graph .statistics-graph-frame--preview svg {
+    min-width: 0;
+    width: 100%;
+    height: 300px;
 }
 
 .statistics-graph-heading {

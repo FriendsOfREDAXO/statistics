@@ -351,3 +351,5 @@ statistics_structure_graph_export_pdf = Export PDF
 statistics_structure_graph_zoom_in = Zoom +
 statistics_structure_graph_zoom_out = Zoom -
 statistics_structure_graph_zoom_reset = Reset
+statistics_structure_graph_preview_note = Preview shows the first %s levels. The complete sitemap is available in the large view.
+statistics_structure_graph_on_demand_note = The graphical sitemap loads only on click (large view or SVG export) to keep this page compact and fast.
