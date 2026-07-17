@@ -182,7 +182,7 @@
             parts.push('<g>');
             parts.push('<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="12" ry="12" fill="' + fill + '" stroke="#223961" stroke-width="3"/>');
             parts.push('<circle cx="' + (x + 14) + '" cy="' + (y + 14) + '" r="6" fill="' + statusColor + '" stroke="#223961" stroke-width="2"/>');
-            parts.push('<text x="' + (x + 28) + '" y="' + (y + 24) + '" fill="#203556" font-family="Aptos, Segoe UI, sans-serif" font-size="12" font-weight="700">' + escapeXml(kind === 'root' ? '' : node.type) + '</text>');
+            parts.push('<text x="' + (x + 28) + '" y="' + (y + 24) + '" fill="#203556" font-family="Aptos, Segoe UI, sans-serif" font-size="12" font-weight="700">' + escapeXml(kind === 'root' ? '' : (((node.type || '').charAt(0).toUpperCase()) + (node.type || '').slice(1))) + '</text>');
             parts.push('<text x="' + (x + 14) + '" y="' + (y + 50) + '" fill="#203556" font-family="Aptos, Segoe UI, sans-serif" font-size="14" font-weight="700">' + escapeXml(label) + '</text>');
             parts.push('</g>');
 
