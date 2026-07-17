@@ -19,7 +19,7 @@ $selectedMetaFields = array_values(array_unique($selectedMetaFields));
 
 $availableMetaFields = [];
 foreach (rex_sql::showColumns(rex::getTable('article')) as $column) {
-    $name = (string) ($column['name'] ?? '');
+    $name = (string) $column['name'];
     if ('' === $name) {
         continue;
     }
@@ -49,7 +49,7 @@ if ([] !== $selectedMetaFields) {
     $params = [];
     $placeholders = [];
 
-    foreach (array_values($selectedMetaFields) as $index => $fieldName) {
+    foreach ($selectedMetaFields as $index => $fieldName) {
         $paramKey = 'meta_' . $index;
         $placeholders[] = ':' . $paramKey;
         $params[$paramKey] = $fieldName;
@@ -222,21 +222,19 @@ $walkCategory = static function (
     );
 
     foreach ($category->getChildren(false) as $child) {
-        if ($child instanceof rex_category) {
-            $walker(
-                $child,
-                $depth + 1,
-                $clangId,
-                $currentPath,
-                $metaFields,
-                $statusLabelCb,
-                $dateCb,
-                $editorCb,
-                $addArticleRowsCb,
-                $walker,
-                $rows,
-            );
-        }
+        $walker(
+            $child,
+            $depth + 1,
+            $clangId,
+            $currentPath,
+            $metaFields,
+            $statusLabelCb,
+            $dateCb,
+            $editorCb,
+            $addArticleRowsCb,
+            $walker,
+            $rows,
+        );
     }
 };
 

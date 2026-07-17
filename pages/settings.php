@@ -231,7 +231,7 @@ if (rex_request_method() == 'post') {
             [$whereUrl, $paramsUrl] = $buildLikeWhere('url', $noiseLikePatterns);
             $result = $deleteChunkedLimited(rex::getTable('pagestats_visits_per_url'), $whereUrl, $paramsUrl, $chunkSize, $maxRoundsPerRun);
             $count += (int) $result['deleted'];
-            $hasMore = $hasMore || (bool) $result['has_more'];
+            $hasMore = (bool) $result['has_more'];
 
             $result = $deleteChunkedLimited(rex::getTable('pagestats_visitors_per_url'), $whereUrl, $paramsUrl, $chunkSize, $maxRoundsPerRun);
             $count += (int) $result['deleted'];
@@ -613,27 +613,25 @@ $storageUsageByTable = array_fill_keys($maintenanceTables, 0);
 try {
     $params = [];
     $placeholders = [];
-    foreach (array_values($maintenanceTables) as $index => $tableName) {
+    foreach ($maintenanceTables as $index => $tableName) {
         $key = ':t' . $index;
         $placeholders[] = $key;
         $params[$key] = $tableName;
     }
 
-    if ([] !== $placeholders) {
-        $sql = rex_sql::factory();
-        $rows = $sql->getArray(
-            'SELECT table_name, IFNULL(data_length, 0) + IFNULL(index_length, 0) AS bytes '
-            . 'FROM information_schema.tables '
-            . 'WHERE table_schema = DATABASE() '
-            . 'AND table_name IN (' . implode(', ', $placeholders) . ')',
-            $params
-        );
+    $sql = rex_sql::factory();
+    $rows = $sql->getArray(
+        'SELECT table_name, IFNULL(data_length, 0) + IFNULL(index_length, 0) AS bytes '
+        . 'FROM information_schema.tables '
+        . 'WHERE table_schema = DATABASE() '
+        . 'AND table_name IN (' . implode(', ', $placeholders) . ')',
+        $params
+    );
 
-        foreach ($rows as $row) {
-            $tableName = (string) ($row['table_name'] ?? '');
-            if (isset($storageUsageByTable[$tableName])) {
-                $storageUsageByTable[$tableName] = (int) ($row['bytes'] ?? 0);
-            }
+    foreach ($rows as $row) {
+        $tableName = (string) ($row['table_name'] ?? '');
+        if (isset($storageUsageByTable[$tableName])) {
+            $storageUsageByTable[$tableName] = (int) ($row['bytes'] ?? 0);
         }
     }
 } catch (Throwable $throwable) {
