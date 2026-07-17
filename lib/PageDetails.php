@@ -55,7 +55,8 @@ class PageDetails
         $table .= '<thead><tr><th>Datum</th><th>Anzahl</th></tr></thead><tbody>';
 
         foreach ($rows as $row) {
-            $formattedDate = DateTime::createFromFormat('Y-m-d', $row['date'])?->format('d.m.Y') ?? $row['date'];
+            $formattedDateObj = DateTime::createFromFormat('Y-m-d', $row['date']);
+            $formattedDate = false !== $formattedDateObj ? $formattedDateObj->format('d.m.Y') : $row['date'];
             $table .= '<tr>';
             $table .= '<td data-sort="' . htmlspecialchars($row['date'], ENT_QUOTES) . '">' . htmlspecialchars($formattedDate, ENT_QUOTES) . '</td>';
             $table .= '<td data-sort="' . htmlspecialchars((string) $row['count'], ENT_QUOTES) . '">' . htmlspecialchars((string) $row['count'], ENT_QUOTES) . '</td>';
@@ -88,11 +89,10 @@ class PageDetails
 
 
     /**
-     * 
-     * 
-     * @return array 
-     * @throws InvalidArgumentException 
-     * @throws rex_sql_exception 
+     *
+     * @return array{labels: array<int, string>, values: array<int, string>}
+     * @throws InvalidArgumentException
+     * @throws rex_sql_exception
      */
     public function getSumPerDay(): array
     {
@@ -110,17 +110,15 @@ class PageDetails
             $array[$value->format("d.m.Y")] = "0";
         }
 
-        $data = [];
         $arr2 = [];
 
         foreach ($this->getDetailRows() as $row) {
-            $date = DateTime::createFromFormat('Y-m-d', $row['date'])?->format('d.m.Y') ?? $row['date'];
+            $dateObj = DateTime::createFromFormat('Y-m-d', $row['date']);
+            $date = false !== $dateObj ? $dateObj->format('d.m.Y') : $row['date'];
             $arr2[$date] = (string) $row['count'];
         }
 
-        if ([] !== $arr2) {
-            $data = array_merge($array, $arr2);
-        }
+        $data = array_merge($array, $arr2);
 
         return [
             'labels' => array_keys($data),

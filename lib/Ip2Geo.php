@@ -31,9 +31,11 @@ class Ip2Geo
             $response = $socket->doGet();
             if ($response->isOk()) {
                 $body = $response->getBody();
-                $body = gzdecode($body);
-                rex_file::put(rex_path::addonData("statistics", "ip2geo.mmdb"), $body);
-                return true;
+                $decodedBody = gzdecode($body);
+                if (false !== $decodedBody) {
+                    rex_file::put(rex_path::addonData("statistics", "ip2geo.mmdb"), $decodedBody);
+                    return true;
+                }
             }
 
             return false;

@@ -202,10 +202,7 @@ if ([] === $groups) {
 uasort($groups, static fn (array $a, array $b): int => ($b['count'] <=> $a['count']));
 
 $topGroup = reset($groups);
-$topGroupText = '';
-if (is_array($topGroup)) {
-    $topGroupText = (string) $topGroup['campaign_label'] . ' - ' . (string) $topGroup['landing_path'];
-}
+$topGroupText = (string) $topGroup['campaign_label'] . ' - ' . (string) $topGroup['landing_path'];
 
 $statusClass = $totalAdsCalls > 0 ? 'alert alert-success' : 'alert alert-warning';
 $statusText = $totalAdsCalls > 0

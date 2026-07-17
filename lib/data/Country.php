@@ -4,6 +4,8 @@ namespace AndiLeni\Statistics;
 
 use rex;
 use rex_addon;
+use InvalidArgumentException;
+use rex_exception;
 use rex_sql;
 use rex_view;
 
@@ -30,7 +32,10 @@ class Country
         return $this->rows;
     }
 
-    public function getChartData()
+    /**
+     * @return array{labels: array<int, string>, values: array<int, int>}
+     */
+    public function getChartData(): array
     {
         $res = $this->getRows();
 
@@ -48,8 +53,8 @@ class Country
      * 
      * 
      * @return string 
-     * @throws InvalidArgumentException 
-     * @throws rex_exception 
+    * @throws InvalidArgumentException
+    * @throws rex_exception
      */
     public function getList(): string
     {

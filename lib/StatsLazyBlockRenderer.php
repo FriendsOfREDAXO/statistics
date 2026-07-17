@@ -4,6 +4,7 @@ namespace AndiLeni\Statistics;
 
 use rex;
 use rex_addon;
+use rex_addon_interface;
 use rex_config;
 use rex_fragment;
 use rex_sql;
@@ -12,7 +13,7 @@ use rex_view;
 class StatsLazyBlockRenderer
 {
     private DateFilter $filter_date_helper;
-    private rex_addon $addon;
+    private rex_addon_interface $addon;
 
     public function __construct(DateFilter $filter_date_helper)
     {
@@ -310,7 +311,7 @@ class StatsLazyBlockRenderer
             $this->addon->i18n('statistics_sunday'),
         ];
 
-        $max = max($data);
+        $max = [] === $data ? 0 : max($data);
         $max = $max > 0 ? $max : 1;
 
         $cards = '<div class="row">';
@@ -334,9 +335,9 @@ class StatsLazyBlockRenderer
     /**
      * @param array<int, int> $data
      */
-    private function renderHourlyBarsSection(string $title, array $data, string $table): string
+    protected function renderHourlyBarsSection(string $title, array $data, string $table): string
     {
-        $max = max($data);
+        $max = [] === $data ? 0 : max($data);
         $max = $max > 0 ? $max : 1;
         $palette = $this->getChartPalette();
 
@@ -366,7 +367,7 @@ class StatsLazyBlockRenderer
      */
     private function renderHourlyBarsSectionWide(string $title, array $data, string $table): string
     {
-        $max = max($data);
+        $max = [] === $data ? 0 : max($data);
         $max = $max > 0 ? $max : 1;
         $palette = $this->getChartPalette();
         $tableCollapseId = 'statistics-hourly-table-' . md5((string) random_int(1000, 9999));
@@ -707,7 +708,13 @@ class StatsLazyBlockRenderer
      * @param array<int, array{name: string, value: int}> $brandData
      * @return array<string, mixed>
      */
-    private function buildDeviceBrandOsStackedOption(array $deviceTypeData, array $brandData, array $osData, int $brandLimit = 7, int $osLimit = 7): array
+    /**
+     * @param array<int, array{name: string, value: int}> $deviceTypeData
+     * @param array<int, array{name: string, value: int}> $brandData
+     * @param array<int, array{name: string, value: int}> $osData
+     * @return array<string, mixed>
+     */
+    protected function buildDeviceBrandOsStackedOption(array $deviceTypeData, array $brandData, array $osData, int $brandLimit = 7, int $osLimit = 7): array
     {
         $deviceTop = $this->reduceToTopAndOther($deviceTypeData, 6);
         $brandTop = $this->reduceToTopAndOther($brandData, $brandLimit);
@@ -895,7 +902,7 @@ class StatsLazyBlockRenderer
      * @param array<int, int> $data
      * @return array<string, mixed>
      */
-    private function buildWeekdayOption(array $data): array
+    protected function buildWeekdayOption(array $data): array
     {
         return [
             'title' => (object) [],
@@ -938,7 +945,7 @@ class StatsLazyBlockRenderer
      * @param array<int, int> $data
      * @return array<string, mixed>
      */
-    private function buildHourOption(array $data): array
+    protected function buildHourOption(array $data): array
     {
         return [
             'title' => (object) [],
@@ -982,7 +989,7 @@ class StatsLazyBlockRenderer
      * @param array<int, int|string> $values
      * @return array<string, mixed>
      */
-    private function buildGenericBarOption(array $categories, array $values, string $tooltipFormatter): array
+    protected function buildGenericBarOption(array $categories, array $values, string $tooltipFormatter): array
     {
         return [
             'title' => (object) [],
@@ -1041,7 +1048,7 @@ class StatsLazyBlockRenderer
     }
 
     /**
-     * @param array{legend: array<int, string>, xaxis: array<int, string>, series: array<int, array<string, mixed>>} $data
+    * @param array{legend: array<int, mixed>, xaxis: array<int, string>, series: array<int, array<string, mixed>>} $data
      * @return array<string, mixed>
      */
     private function buildMainTimelineOption(array $data): array

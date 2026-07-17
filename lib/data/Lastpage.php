@@ -4,6 +4,8 @@ namespace AndiLeni\Statistics;
 
 use rex;
 use rex_addon;
+use InvalidArgumentException;
+use rex_exception;
 use rex_sql;
 use rex_view;
 

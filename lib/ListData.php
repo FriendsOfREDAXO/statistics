@@ -4,6 +4,7 @@ namespace AndiLeni\Statistics;
 
 use rex;
 use rex_addon;
+use rex_addon_interface;
 use rex_fragment;
 use rex_sql;
 use rex_sql_exception;
@@ -13,7 +14,7 @@ use InvalidArgumentException;
 class ListData
 {
     private DateFilter $filter_date_helper;
-    private rex_addon $addon;
+    private rex_addon_interface $addon;
 
 
     /**
@@ -143,6 +144,10 @@ class ListData
      */
     private function getDailyRows(string $table): array
     {
+        if ('' === trim($table)) {
+            return [];
+        }
+
         $sql = rex_sql::factory();
 
         return array_map(
@@ -167,6 +172,10 @@ class ListData
      */
     private function getMonthlyRows(string $table): array
     {
+        if ('' === trim($table)) {
+            return [];
+        }
+
         $sql = rex_sql::factory();
 
         return array_map(
@@ -189,6 +198,10 @@ class ListData
      */
     private function getYearlyRows(string $table): array
     {
+        if ('' === trim($table)) {
+            return [];
+        }
+
         $sql = rex_sql::factory();
 
         return array_map(
@@ -225,7 +238,10 @@ class ListData
             $sortValue = isset($row['sort_value']) ? (string) $row['sort_value'] : $label;
 
             if ('date' === $labelKey) {
-                $label = date('d.m.Y', strtotime($label));
+                $timestamp = strtotime($label);
+                if (false !== $timestamp) {
+                    $label = date('d.m.Y', $timestamp);
+                }
             }
 
             $table .= '<tr>';

@@ -43,8 +43,7 @@ class Brand
 
     /**
      *
-     *
-     * @return array
+     * @return array<int, array{name: string, value: int}>
      * @throws InvalidArgumentException
      * @throws rex_sql_exception
      */

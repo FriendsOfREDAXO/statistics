@@ -9,6 +9,7 @@ use DeviceDetector\DeviceDetector;
 use DeviceDetector\Yaml\Symfony as DeviceDetectorSymfonyYamlParser;
 use rex;
 use rex_addon;
+use rex_addon_interface;
 use rex_path;
 use rex_sql;
 use InvalidArgumentException;
@@ -27,7 +28,7 @@ class EventRequest
 
 
     private DateTimeImmutable $datetime_now;
-    private rex_addon $addon;
+    private rex_addon_interface $addon;
 
     private string $clientIPAddress;
     private string $name;
@@ -60,7 +61,7 @@ class EventRequest
      * @throws InvalidArgumentException
      * @throws rex_sql_exception
      */
-    public function shouldSave()
+    public function shouldSave(): bool
     {
         $hash_string = $this->userAgent . $this->clientIPAddress . $this->name;
         $hash = hash('sha1', $hash_string);
@@ -71,7 +72,7 @@ class EventRequest
         $sql->select();
 
         if ($sql->getRows() == 1) {
-            $origin = new DateTime($sql->getValue('datetime'));
+            $origin = new DateTime((string) $sql->getValue('datetime'));
             $target = new DateTime();
             $interval = $origin->diff($target);
             $minute_diff = $interval->i + ($interval->h * 60) + ($interval->d * 3600) + ($interval->m * 43800) + ($interval->y * 525599);

@@ -3,6 +3,9 @@
 $addon = rex_addon::get('statistics');
 
 $file = rex_file::get(rex_path::addon('statistics', 'README.md'));
+if (null === $file) {
+	$file = '';
+}
 
 $body = rex_markdown::factory()->parse($file);
 
