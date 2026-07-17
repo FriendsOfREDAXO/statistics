@@ -40,10 +40,10 @@ class Visit
         }
 
         if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-            $packed = @inet_pton($ipAddress);
+            $packed = inet_pton($ipAddress);
             if (false !== $packed) {
                 $masked = substr($packed, 0, 8) . str_repeat("\0", 8);
-                $expanded = @inet_ntop($masked);
+                $expanded = inet_ntop($masked);
                 if (false !== $expanded) {
                     return strtolower($expanded);
                 }

@@ -151,13 +151,25 @@ $(document).on("rex:ready", function (event, container) {
                 return;
             }
 
-            var firstNamedField = form.querySelector('input[name], textarea[name], select[name]');
-            if (!firstNamedField || !firstNamedField.name) {
-                return;
-            }
+            var namedFields = Array.from(form.querySelectorAll('input[name], textarea[name], select[name]'));
+            var panelName = '';
 
-            var panelName = firstNamedField.name.split('[')[0];
-            if (!panelName || panelName === '_csrf_token' || panelName === 'func') {
+            namedFields.some(function (field) {
+                var fieldName = field && field.name ? field.name : '';
+                if (!fieldName) {
+                    return false;
+                }
+
+                var candidate = fieldName.split('[')[0];
+                if (!candidate || candidate === '_csrf_token' || candidate === 'func') {
+                    return false;
+                }
+
+                panelName = candidate;
+                return true;
+            });
+
+            if (!panelName) {
                 return;
             }
 
