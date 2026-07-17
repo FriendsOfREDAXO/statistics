@@ -475,22 +475,10 @@ $xlsxUrl = '#';
 echo '<div style="margin-bottom:10px;display:flex;gap:8px;">';
 echo '<a class="btn btn-default js-statistics-structure-export" data-pjax="false" href="' . $csvUrl . '">' . rex_escape($addon->i18n('statistics_structure_export_csv')) . '</a>';
 echo '<a class="btn btn-default js-statistics-structure-export" data-export-format="xlsx" data-export-fallback-url="' . $xlsUrl . '" data-pjax="false" href="' . $xlsxUrl . '">' . rex_escape($addon->i18n('statistics_structure_export_xlsx')) . '</a>';
+echo '<button type="button" class="btn btn-default" id="statistics-graph-open-modal" data-toggle="modal" data-target="#statistics-graph-modal">' . rex_escape($addon->i18n('statistics_structure_graph_title')) . '</button>';
 echo '</div>';
 
-echo '<div class="panel panel-default">';
-echo '<div class="panel-heading">';
-echo '<div class="statistics-graph-heading">';
-echo '<strong>' . rex_escape($addon->i18n('statistics_structure_graph_title')) . '</strong>';
-echo '<div class="btn-group btn-group-xs" role="group" aria-label="Graph actions">';
-echo '<button type="button" class="btn btn-default" id="statistics-graph-open-modal">' . rex_escape($addon->i18n('statistics_structure_graph_open_modal')) . '</button>';
-echo '<button type="button" class="btn btn-default" id="statistics-graph-export-svg">' . rex_escape($addon->i18n('statistics_structure_graph_export_svg')) . '</button>';
-echo '</div>';
-echo '</div>';
-echo '</div>';
-echo '<div class="panel-body">';
-echo '<div id="statistics-structure-graph" data-empty-text="' . rex_escape($addon->i18n('statistics_structure_graph_empty')) . '" data-root-label="' . rex_escape($addon->i18n('statistics_structure_graph_root')) . '"></div>';
-echo '</div>';
-echo '</div>';
+echo '<div id="statistics-structure-graph-config" style="display:none" data-empty-text="' . rex_escape($addon->i18n('statistics_structure_graph_empty')) . '" data-root-label="' . rex_escape($addon->i18n('statistics_structure_graph_root')) . '"></div>';
 
 echo '<div class="modal fade" id="statistics-graph-modal" tabindex="-1" role="dialog" aria-labelledby="statistics-graph-modal-title">';
 echo '  <div class="modal-dialog modal-lg" role="document">';

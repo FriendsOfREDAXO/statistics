@@ -33,10 +33,11 @@ if (rex::isBackend()) {
     rex_view::addJsFile($addon->getAssetsUrl('statistics.js'));
 
     if ('statistics/structure_insights' === $currentPage) {
-        rex_view::addCssFile($addon->getAssetsUrl('structure_insights_graph.css'));
-        rex_view::addJsFile($addon->getAssetsUrl('exceljs.min.js'));
-        rex_view::addJsFile($addon->getAssetsUrl('structure_insights_export.js'));
-        rex_view::addJsFile($addon->getAssetsUrl('structure_insights_graph.js'));
+        $assetVersion = rawurlencode((string) $addon->getVersion());
+        rex_view::addCssFile($addon->getAssetsUrl('structure_insights_graph.css') . '?v=' . $assetVersion);
+        rex_view::addJsFile($addon->getAssetsUrl('exceljs.min.js') . '?v=' . $assetVersion);
+        rex_view::addJsFile($addon->getAssetsUrl('structure_insights_export.js') . '?v=' . $assetVersion);
+        rex_view::addJsFile($addon->getAssetsUrl('structure_insights_graph.js') . '?v=' . $assetVersion);
     }
 
     if (rex_addon::get('cronjob')->isAvailable() && !rex::isSafeMode()) {
