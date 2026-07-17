@@ -4,6 +4,8 @@ namespace AndiLeni\Statistics;
 
 use rex;
 use rex_addon;
+use InvalidArgumentException;
+use rex_exception;
 use rex_sql;
 use rex_view;
 
@@ -58,7 +60,7 @@ class VisitDuration
         } else {
             $table = $note;
             $table .= '<table class="dt_order_second statistics_table table table-striped table-hover">';
-            $table .= '<thead><tr><th>Dauer in Sekunden</th><th>Anzahl</th></tr></thead><tbody>';
+            $table .= '<thead><tr><th>' . htmlspecialchars($addon->i18n('statistics_duration_seconds_label'), ENT_QUOTES) . '</th><th>' . htmlspecialchars($addon->i18n('statistics_count'), ENT_QUOTES) . '</th></tr></thead><tbody>';
 
             foreach ($rows as $row) {
                 $timespan = (string) $row['timespan'];

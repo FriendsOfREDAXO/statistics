@@ -4,6 +4,7 @@ namespace AndiLeni\Statistics;
 
 use rex;
 use rex_addon;
+use rex_addon_interface;
 use rex_fragment;
 use rex_sql;
 use rex_sql_exception;
@@ -13,7 +14,7 @@ use InvalidArgumentException;
 class ListData
 {
     private DateFilter $filter_date_helper;
-    private rex_addon $addon;
+    private rex_addon_interface $addon;
 
 
     /**
@@ -82,18 +83,18 @@ class ListData
 
     public function getDailyContent(): string
     {
-        $table = '<h3>Besuche:</h3>' . $this->renderTimeTable(
+        $table = '<h3>' . htmlspecialchars($this->addon->i18n('statistics_list_visits_heading'), ENT_QUOTES) . '</h3>' . $this->renderTimeTable(
             $this->getDailyRows('pagestats_visits_per_day'),
             'date',
-            'Datum'
+            $this->addon->i18n('statistics_date')
         );
 
         $table .= '<hr>';
 
-        $table .= '<h3>Besucher:</h3>' . $this->renderTimeTable(
+        $table .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_list_visitors_heading'), ENT_QUOTES) . '</h3>' . $this->renderTimeTable(
             $this->getDailyRows('pagestats_visitors_per_day'),
             'date',
-            'Datum'
+            $this->addon->i18n('statistics_date')
         );
 
         return $table;
@@ -101,18 +102,18 @@ class ListData
 
     public function getMonthlyContent(): string
     {
-        $table = '<h3>Besuche:</h3>' . $this->renderTimeTable(
+        $table = '<h3>' . htmlspecialchars($this->addon->i18n('statistics_list_visits_heading'), ENT_QUOTES) . '</h3>' . $this->renderTimeTable(
             $this->getMonthlyRows('pagestats_visits_per_day'),
             'month',
-            'Monat'
+            $this->addon->i18n('statistics_month')
         );
 
         $table .= '<hr>';
 
-        $table .= '<h3>Besucher:</h3>' . $this->renderTimeTable(
+        $table .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_list_visitors_heading'), ENT_QUOTES) . '</h3>' . $this->renderTimeTable(
             $this->getMonthlyRows('pagestats_visitors_per_day'),
             'month',
-            'Monat'
+            $this->addon->i18n('statistics_month')
         );
 
         return $table;
@@ -120,18 +121,18 @@ class ListData
 
     public function getYearlyContent(): string
     {
-        $table = '<h3>Besuche:</h3>' . $this->renderTimeTable(
+        $table = '<h3>' . htmlspecialchars($this->addon->i18n('statistics_list_visits_heading'), ENT_QUOTES) . '</h3>' . $this->renderTimeTable(
             $this->getYearlyRows('pagestats_visits_per_day'),
             'year',
-            'Jahr'
+            $this->addon->i18n('statistics_year')
         );
 
         $table .= '<hr>';
 
-        $table .= '<h3>Besucher:</h3>' . $this->renderTimeTable(
+        $table .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_list_visitors_heading'), ENT_QUOTES) . '</h3>' . $this->renderTimeTable(
             $this->getYearlyRows('pagestats_visitors_per_day'),
             'year',
-            'Jahr'
+            $this->addon->i18n('statistics_year')
         );
 
         return $table;
@@ -143,6 +144,10 @@ class ListData
      */
     private function getDailyRows(string $table): array
     {
+        if ('' === trim($table)) {
+            return [];
+        }
+
         $sql = rex_sql::factory();
 
         return array_map(
@@ -167,6 +172,10 @@ class ListData
      */
     private function getMonthlyRows(string $table): array
     {
+        if ('' === trim($table)) {
+            return [];
+        }
+
         $sql = rex_sql::factory();
 
         return array_map(
@@ -189,6 +198,10 @@ class ListData
      */
     private function getYearlyRows(string $table): array
     {
+        if ('' === trim($table)) {
+            return [];
+        }
+
         $sql = rex_sql::factory();
 
         return array_map(
@@ -216,7 +229,7 @@ class ListData
         $table = '<table class="table-bordered dt_order_first statistics_table table-striped table-hover table">';
         $table .= '<thead><tr>';
         $table .= '<th>' . htmlspecialchars($labelTitle, ENT_QUOTES) . '</th>';
-        $table .= '<th>Anzahl</th>';
+        $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_count'), ENT_QUOTES) . '</th>';
         $table .= '</tr></thead><tbody>';
 
         foreach ($rows as $row) {
@@ -225,7 +238,10 @@ class ListData
             $sortValue = isset($row['sort_value']) ? (string) $row['sort_value'] : $label;
 
             if ('date' === $labelKey) {
-                $label = date('d.m.Y', strtotime($label));
+                $timestamp = strtotime($label);
+                if (false !== $timestamp) {
+                    $label = date('d.m.Y', $timestamp);
+                }
             }
 
             $table .= '<tr>';

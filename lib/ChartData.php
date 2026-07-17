@@ -6,16 +6,18 @@ use DateInterval;
 use DatePeriod;
 use DateTime;
 use DateTimeImmutable;
+use DateTimeInterface;
 use InvalidArgumentException;
 use rex;
 use rex_addon;
+use rex_addon_interface;
 use rex_sql;
 use rex_sql_exception;
 
 class chartData
 {
     private DateFilter $filter_date_helper;
-    private rex_addon $addon;
+    private rex_addon_interface $addon;
 
     /**
      *
@@ -47,6 +49,7 @@ class chartData
     }
 
     /**
+        * @return array{series: array<int, array<string, mixed>>, legend: array<int, mixed>, xaxis: array<int, string>}
      * @throws InvalidArgumentException
      * @throws rex_sql_exception
      */
@@ -62,24 +65,35 @@ class chartData
     }
 
     /**
+        * @return array<int, array<string, mixed>>
      * @throws InvalidArgumentException
      * @throws rex_sql_exception
      */
     private function getVisitsPerDay(): array
     {
-        return $this->getDailySeries('pagestats_visits_per_day', 'Aufrufe Gesamt', 'Aufrufe ');
+        return $this->getDailySeries(
+            'pagestats_visits_per_day',
+            $this->addon->i18n('statistics_series_views_total'),
+            $this->addon->i18n('statistics_series_views_prefix')
+        );
     }
 
     /**
+        * @return array<int, array<string, mixed>>
      * @throws InvalidArgumentException
      * @throws rex_sql_exception
      */
     private function getVisitorsPerDay(): array
     {
-        return $this->getDailySeries('pagestats_visitors_per_day', 'Besucher Gesamt', 'Besucher ');
+        return $this->getDailySeries(
+            'pagestats_visitors_per_day',
+            $this->addon->i18n('statistics_series_visitors_total'),
+            $this->addon->i18n('statistics_series_visitors_prefix')
+        );
     }
 
     /**
+        * @return array{data: array<int, array{0: string, 1: int}>, max: int}
      * @throws InvalidArgumentException
      * @throws rex_sql_exception
      */
@@ -97,7 +111,12 @@ class chartData
 
         $heatmap_calendar = [];
         foreach ($visits_per_day as $row) {
-            $heatmap_calendar[$row['date']] = $row['count'];
+            $dateKey = (string) ($row['date'] ?? '');
+            if ('' === $dateKey) {
+                continue;
+            }
+
+            $heatmap_calendar[$dateKey] = (int) ($row['count'] ?? 0);
         }
 
         $period = new DatePeriod($jan_first, new DateInterval('P1D'), $dec_last);
@@ -114,6 +133,7 @@ class chartData
     }
 
     /**
+        * @return array{series: array<int, array<string, mixed>>, legend: array<int, mixed>, xaxis: array<int, string>}
      * @throws InvalidArgumentException
      * @throws rex_sql_exception
      */
@@ -125,13 +145,27 @@ class chartData
         $period_map = $this->createPeriodValueMap($period, 'Y-m', 0);
 
         $xaxis = array_map(
-            static fn (string $key): string => DateTimeImmutable::createFromFormat('Y-m', $key)->format('M Y'),
+            static function (string $key): string {
+                $date = DateTimeImmutable::createFromFormat('Y-m', $key);
+
+                return false !== $date ? $date->format('M Y') : $key;
+            },
             array_keys($period_map)
         );
 
         $series = array_merge(
-            $this->getMonthlySeries('pagestats_visits_per_day', $period_map, 'Aufrufe Gesamt', 'Aufrufe '),
-            $this->getMonthlySeries('pagestats_visitors_per_day', $period_map, 'Besucher Gesamt', 'Besucher ')
+            $this->getMonthlySeries(
+                'pagestats_visits_per_day',
+                $period_map,
+                $this->addon->i18n('statistics_series_views_total'),
+                $this->addon->i18n('statistics_series_views_prefix')
+            ),
+            $this->getMonthlySeries(
+                'pagestats_visitors_per_day',
+                $period_map,
+                $this->addon->i18n('statistics_series_visitors_total'),
+                $this->addon->i18n('statistics_series_visitors_prefix')
+            )
         );
 
         return [
@@ -142,6 +176,7 @@ class chartData
     }
 
     /**
+        * @return array{series: array<int, array<string, mixed>>, legend: array<int, mixed>, xaxis: array<int, string>}
      * @throws InvalidArgumentException
      * @throws rex_sql_exception
      */
@@ -153,8 +188,18 @@ class chartData
         $period_map = $this->createPeriodValueMap($period, 'Y', 0);
 
         $series = array_merge(
-            $this->getYearlySeries('pagestats_visits_per_day', $period_map, 'Aufrufe Gesamt', 'Aufrufe '),
-            $this->getYearlySeries('pagestats_visitors_per_day', $period_map, 'Besucher Gesamt', 'Besucher ')
+            $this->getYearlySeries(
+                'pagestats_visits_per_day',
+                $period_map,
+                $this->addon->i18n('statistics_series_views_total'),
+                $this->addon->i18n('statistics_series_views_prefix')
+            ),
+            $this->getYearlySeries(
+                'pagestats_visitors_per_day',
+                $period_map,
+                $this->addon->i18n('statistics_series_visitors_total'),
+                $this->addon->i18n('statistics_series_visitors_prefix')
+            )
         );
 
         return [
@@ -165,9 +210,10 @@ class chartData
     }
 
     /**
+        * @param iterable<DateTimeInterface> $period
      * @return array<string, int>
      */
-    private function createPeriodValueMap(DatePeriod $period, string $format, int $initialValue = 0): array
+    private function createPeriodValueMap(iterable $period, string $format, int $initialValue = 0): array
     {
         $values = [];
         foreach ($period as $value) {
@@ -183,10 +229,15 @@ class chartData
      */
     private function getDomains(string $table): array
     {
+        $table = trim($table);
+        if ('' === $table) {
+            return [];
+        }
+
         $sql = rex_sql::factory();
         $domains = $sql->getArray('SELECT DISTINCT domain FROM ' . rex::getTable($table) . ' ORDER BY domain ASC');
 
-        return array_column($domains, 'domain');
+        return array_values(array_filter(array_map(static fn(array $row): string => (string) ($row['domain'] ?? ''), $domains), static fn(string $domain): bool => '' !== $domain));
     }
 
     /**
@@ -208,9 +259,14 @@ class chartData
             return [new DateTimeImmutable(), new DateTimeImmutable()];
         }
 
+        $minDateRaw = (string) $min_max_date[0]['min_date'];
+        $maxDateRaw = (string) $min_max_date[0]['max_date'];
+        $minDate = DateTimeImmutable::createFromFormat('Y-m-d', $minDateRaw);
+        $maxDate = DateTimeImmutable::createFromFormat('Y-m-d', $maxDateRaw);
+
         return [
-            DateTimeImmutable::createFromFormat('Y-m-d', $min_max_date[0]['min_date']),
-            DateTimeImmutable::createFromFormat('Y-m-d', $min_max_date[0]['max_date']),
+            false !== $minDate ? $minDate : new DateTimeImmutable(),
+            false !== $maxDate ? $maxDate : new DateTimeImmutable(),
         ];
     }
 
@@ -221,6 +277,11 @@ class chartData
      */
     private function getDailySeries(string $table, string $totalName, string $domainNamePrefix): array
     {
+        $table = trim($table);
+        if ('' === $table) {
+            return [];
+        }
+
         $period = new DatePeriod(
             $this->filter_date_helper->date_start,
             new DateInterval('P1D'),
@@ -247,9 +308,15 @@ class chartData
         );
 
         foreach ($rows as $row) {
-            $date = DateTime::createFromFormat('Y-m-d', $row['date'])->format('d.m.Y');
+            $dateRaw = (string) ($row['date'] ?? '');
+            $dateObj = DateTime::createFromFormat('Y-m-d', $dateRaw);
+            $date = false !== $dateObj ? $dateObj->format('d.m.Y') : $dateRaw;
             $count = (int) $row['count'];
-            $domain = $row['domain'];
+            $domain = (string) ($row['domain'] ?? '');
+
+            if ('' === $date || '' === $domain) {
+                continue;
+            }
 
             $total_values[$date] += $count;
 
@@ -272,7 +339,7 @@ class chartData
             foreach ($domain_values as $domain => $values) {
                 $series[] = [
                     'data' => array_values($values),
-                    'name' => $domainNamePrefix . $domain,
+                    'name' => $domainNamePrefix . ' ' . $domain,
                     'type' => 'line',
                 ];
             }
@@ -288,6 +355,11 @@ class chartData
      */
     private function getMonthlySeries(string $table, array $period_map, string $totalName, string $domainNamePrefix): array
     {
+        $table = trim($table);
+        if ('' === $table) {
+            return [];
+        }
+
         $total_values = $period_map;
         $combine_all_domains = (bool) $this->addon->getConfig('statistics_combine_all_domains');
         $domain_values = [];
@@ -309,7 +381,11 @@ class chartData
         foreach ($rows as $row) {
             $key = sprintf('%04d-%02d', (int) $row['year'], (int) $row['month']);
             $count = (int) $row['count'];
-            $domain = $row['domain'];
+            $domain = (string) ($row['domain'] ?? '');
+
+            if ('' === $domain) {
+                continue;
+            }
 
             if (!array_key_exists($key, $total_values)) {
                 continue;
@@ -336,7 +412,7 @@ class chartData
             foreach ($domain_values as $domain => $values) {
                 $series[] = [
                     'data' => array_values($values),
-                    'name' => $domainNamePrefix . $domain,
+                    'name' => $domainNamePrefix . ' ' . $domain,
                     'type' => 'line',
                 ];
             }
@@ -352,6 +428,11 @@ class chartData
      */
     private function getYearlySeries(string $table, array $period_map, string $totalName, string $domainNamePrefix): array
     {
+        $table = trim($table);
+        if ('' === $table) {
+            return [];
+        }
+
         $total_values = $period_map;
         $combine_all_domains = (bool) $this->addon->getConfig('statistics_combine_all_domains');
         $domain_values = [];
@@ -373,7 +454,11 @@ class chartData
         foreach ($rows as $row) {
             $key = (string) $row['year'];
             $count = (int) $row['count'];
-            $domain = $row['domain'];
+            $domain = (string) ($row['domain'] ?? '');
+
+            if ('' === $domain) {
+                continue;
+            }
 
             if (!array_key_exists($key, $total_values)) {
                 continue;
@@ -400,7 +485,7 @@ class chartData
             foreach ($domain_values as $domain => $values) {
                 $series[] = [
                     'data' => array_values($values),
-                    'name' => $domainNamePrefix . $domain,
+                    'name' => $domainNamePrefix . ' ' . $domain,
                     'type' => 'line',
                 ];
             }

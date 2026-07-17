@@ -39,11 +39,10 @@ class EventDetails
 
 
     /**
-     * 
-     * 
-     * @return array 
-     * @throws InvalidArgumentException 
-     * @throws rex_sql_exception 
+     *
+     * @return array{labels: array<int, string>, values: array<int, string>}
+     * @throws InvalidArgumentException
+     * @throws rex_sql_exception
      */
     public function getSumPerDay(): array
     {
@@ -60,17 +59,15 @@ class EventDetails
             $array[$value->format("d.m.Y")] = "0";
         }
 
-        $data = [];
         $arr2 = [];
 
         foreach ($this->getDetailRows() as $row) {
-            $date = DateTime::createFromFormat('Y-m-d', $row['date'])?->format('d.m.Y') ?? $row['date'];
+            $dateObj = DateTime::createFromFormat('Y-m-d', $row['date']);
+            $date = false !== $dateObj ? $dateObj->format('d.m.Y') : $row['date'];
             $arr2[$date] = (string) $row['count'];
         }
 
-        if ([] !== $arr2) {
-            $data = array_merge($array, $arr2);
-        }
+        $data = array_merge($array, $arr2);
 
         return [
             'labels' => array_keys($data),

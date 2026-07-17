@@ -9,6 +9,7 @@ use DeviceDetector\DeviceDetector;
 use DeviceDetector\Yaml\Symfony as DeviceDetectorSymfonyYamlParser;
 use rex;
 use rex_addon;
+use rex_addon_interface;
 use rex_path;
 use rex_sql;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
@@ -26,6 +27,34 @@ use Matomo\Network\IP;
  */
 class Visit
 {
+
+    public static function anonymizeIpAddress(string $ipAddress): string
+    {
+        if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $parts = explode('.', $ipAddress);
+            if (4 === count($parts)) {
+                $parts[3] = '0';
+                return implode('.', $parts);
+            }
+
+            return '0.0.0.0';
+        }
+
+        if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $packed = inet_pton($ipAddress);
+            if (false !== $packed) {
+                $masked = substr($packed, 0, 8) . str_repeat("\0", 8);
+                $expanded = inet_ntop($masked);
+                if (false !== $expanded) {
+                    return strtolower($expanded);
+                }
+            }
+
+            return '::';
+        }
+
+        return '0.0.0.0';
+    }
 
     const IGNORE_WHEN_STARTS = [
         '/robots.txt',
@@ -154,7 +183,7 @@ class Visit
 
     private DateTimeImmutable $datetime_now;
 
-    private rex_addon $addon;
+    private rex_addon_interface $addon;
 
     private string $clientIPAddress;
 
@@ -369,7 +398,7 @@ class Visit
         return strtolower($path);
     }
 
-    public function isChromeDataSaverUsed(IP $ip)
+    public function isChromeDataSaverUsed(IP $ip): bool
     {
         // see https://github.com/piwik/piwik/issues/7733
         return !empty($_SERVER['HTTP_VIA'])
@@ -458,7 +487,7 @@ class Visit
         $cityDbReader = new Reader($this->addon->getDataPath("ip2geo.mmdb"));
         try {
             $record = $cityDbReader->country($this->clientIPAddress);
-            $this->country = $record->country->name;
+            $this->country = (string) ($record->country->name ?? 'Unbekannt');
         } catch (\GeoIp2\Exception\AddressNotFoundException $e) {
             $this->country = "Unbekannt";
         } catch (\MaxMind\Db\Reader\InvalidDatabaseException $e) {
@@ -530,7 +559,7 @@ class Visit
         $sql->select();
 
         if ($sql->getRows() == 1) {
-            $origin = new DateTime($sql->getValue('datetime'));
+            $origin = new DateTime((string) $sql->getValue('datetime'));
             $target = new DateTime();
             $interval = $origin->diff($target);
             $minute_diff = $interval->i + ($interval->h * 60) + ($interval->d * 3600) + ($interval->m * 43800) + ($interval->y * 525599);
@@ -569,7 +598,8 @@ class Visit
     {
         $save_visitor = true;
 
-        $hash_string = $this->clientIPAddress . $this->userAgent;
+        $anonymizedClientIp = self::anonymizeIpAddress($this->clientIPAddress);
+        $hash_string = $anonymizedClientIp . $this->userAgent;
         $hash = hash('sha1', $hash_string);
 
         $sql = rex_sql::factory();
@@ -578,7 +608,7 @@ class Visit
         $sql->select();
 
         if ($sql->getRows() == 1) {
-            $origin = new DateTime($sql->getValue('datetime'));
+            $origin = new DateTime((string) $sql->getValue('datetime'));
             $today = new DateTime('today midnight');
 
             // hash was found and last visit was today, do not save visitor
@@ -650,7 +680,7 @@ class Visit
      * @throws InvalidArgumentException
      * @throws rex_sql_exception
      */
-    public function saveCrawlerDetect($name): void
+    public function saveCrawlerDetect(string $name): void
     {
         $sql = rex_sql::factory();
 

@@ -35,7 +35,10 @@ if ([] === $sum_per_page) {
     $chartBody .= rex_view::info($addon->i18n('statistics_no_data'));
 } else {
     $chartBody .= '<div class="alert alert-info" style="margin-bottom:10px;">';
-    $chartBody .= 'Top ' . htmlspecialchars((string) $chartLimit, ENT_QUOTES) . ' Seiten nach Aufrufen im gewählten Zeitraum.';
+    $chartBody .= sprintf(
+        htmlspecialchars($addon->i18n('statistics_top_pages_period'), ENT_QUOTES),
+        htmlspecialchars((string) $chartLimit, ENT_QUOTES)
+    );
     $chartBody .= '</div>';
     $chartBody .= '<div id="chart_visits_per_page" style="height:640px; width:100%"></div>';
     $chartBody .= StatsChartConfig::renderScript('chart_visits_per_page', StatsChartConfig::buildPagesStackedBarOption($sum_per_page, $chartLimit));
@@ -106,7 +109,7 @@ $of = rex_url::backendController(array_merge($baseParams, ['httpstatus' => $http
 $oaf = rex_url::backendController(array_merge($baseParams, ['httpstatus' => $httpstatus, 'only_favorites' => 0]), false);
 
 $http_filter_buttons = '<div class="statistics-pages-filter-bar">';
-$http_filter_buttons .= '<div class="btn-group" role="group" aria-label="HTTP Status Filter">';
+$http_filter_buttons .= '<div class="btn-group" role="group" aria-label="' . htmlspecialchars($addon->i18n('statistics_http_status_filter_aria'), ENT_QUOTES) . '">';
 $http_filter_buttons .= '<a class="btn btn-primary" href="' . $oa . '">' . htmlspecialchars($addon->i18n('statistics_filter_all'), ENT_QUOTES) . '</a>
 <a class="btn btn-primary" href="' . $o2 . '">' . htmlspecialchars($addon->i18n('statistics_filter_only_200'), ENT_QUOTES) . '</a>
 <a class="btn btn-primary" href="' . $on2 . '">' . htmlspecialchars($addon->i18n('statistics_filter_only_not_200'), ENT_QUOTES) . '</a>

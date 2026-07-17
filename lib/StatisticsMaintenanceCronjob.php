@@ -99,6 +99,9 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
         ];
     }
 
+    /**
+     * @param array<string, scalar> $params
+     */
     private function deleteChunked(string $table, string $condition, array $params = [], int $chunkSize = 5000): int
     {
         $total = 0;
@@ -136,6 +139,9 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
         return $total;
     }
 
+    /**
+     * @param array<string, scalar> $params
+     */
     private function runDeleteWithRetry(string $query, array $params = []): int
     {
         $maxRetries = 3;

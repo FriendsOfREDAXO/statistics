@@ -42,11 +42,10 @@ class Hour
 
 
     /**
-     * 
-     * 
-     * @return array 
-     * @throws InvalidArgumentException 
-     * @throws rex_sql_exception 
+     *
+     * @return array<int, int>
+     * @throws InvalidArgumentException
+     * @throws rex_sql_exception
      */
     public function getData(): array
     {

@@ -4,6 +4,8 @@ namespace AndiLeni\Statistics;
 
 use rex;
 use rex_addon;
+use InvalidArgumentException;
+use rex_exception;
 use rex_sql;
 use rex_view;
 
@@ -53,7 +55,7 @@ class Lastpage
             $table = rex_view::info($addon->i18n('statistics_no_data'));
         } else {
             $table = '<table class="dt_order_second statistics_table table table-striped table-hover">';
-            $table .= '<thead><tr><th>Seite</th><th>Anzahl</th></tr></thead><tbody>';
+            $table .= '<thead><tr><th>' . htmlspecialchars($addon->i18n('statistics_page'), ENT_QUOTES) . '</th><th>' . htmlspecialchars($addon->i18n('statistics_count'), ENT_QUOTES) . '</th></tr></thead><tbody>';
 
             foreach ($rows as $row) {
                 $lastpage = (string) $row['lastpage'];

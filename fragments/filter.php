@@ -27,10 +27,10 @@
                 </form>
             </div>
             <div class="col-12 col-md-6 text-center" style="padding:1rem">
-                <a class="btn btn-info" id="statistics_df_lsd">Letze 7 Tage</a>
-                <a class="btn btn-info" id="statistics_df_ltd">Letze 30 Tage</a>
-                <a class="btn btn-info" id="statistics_df_ty">Letzte 12 Monate</a>
-                <a data-start="<?php echo $this->wts ?>" class="btn btn-info" id="statistics_df_wt">Gesamt</a>
+                <a class="btn btn-info" id="statistics_df_lsd"><?php echo htmlspecialchars($this->i18n('statistics_default_datefilter_last7days'), ENT_QUOTES); ?></a>
+                <a class="btn btn-info" id="statistics_df_ltd"><?php echo htmlspecialchars($this->i18n('statistics_default_datefilter_last30days'), ENT_QUOTES); ?></a>
+                <a class="btn btn-info" id="statistics_df_ty"><?php echo htmlspecialchars($this->i18n('statistics_datefilter_last12months'), ENT_QUOTES); ?></a>
+                <a data-start="<?php echo $this->wts ?>" class="btn btn-info" id="statistics_df_wt"><?php echo htmlspecialchars($this->i18n('statistics_default_datefilter_wholeTime'), ENT_QUOTES); ?></a>
             </div>
         </div>
     </div>

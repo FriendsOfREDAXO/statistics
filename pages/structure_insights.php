@@ -19,7 +19,7 @@ $selectedMetaFields = array_values(array_unique($selectedMetaFields));
 
 $availableMetaFields = [];
 foreach (rex_sql::showColumns(rex::getTable('article')) as $column) {
-    $name = (string) ($column['name'] ?? '');
+    $name = (string) $column['name'];
     if ('' === $name) {
         continue;
     }
@@ -49,7 +49,7 @@ if ([] !== $selectedMetaFields) {
     $params = [];
     $placeholders = [];
 
-    foreach (array_values($selectedMetaFields) as $index => $fieldName) {
+    foreach ($selectedMetaFields as $index => $fieldName) {
         $paramKey = 'meta_' . $index;
         $placeholders[] = ':' . $paramKey;
         $params[$paramKey] = $fieldName;
@@ -222,21 +222,19 @@ $walkCategory = static function (
     );
 
     foreach ($category->getChildren(false) as $child) {
-        if ($child instanceof rex_category) {
-            $walker(
-                $child,
-                $depth + 1,
-                $clangId,
-                $currentPath,
-                $metaFields,
-                $statusLabelCb,
-                $dateCb,
-                $editorCb,
-                $addArticleRowsCb,
-                $walker,
-                $rows,
-            );
-        }
+        $walker(
+            $child,
+            $depth + 1,
+            $clangId,
+            $currentPath,
+            $metaFields,
+            $statusLabelCb,
+            $dateCb,
+            $editorCb,
+            $addArticleRowsCb,
+            $walker,
+            $rows,
+        );
     }
 };
 
@@ -269,37 +267,41 @@ $addArticleRows(
     $resolveEditorLabel,
 );
 
-$cutoff = new DateTimeImmutable('-2 years');
+$cutoffTs = (new DateTimeImmutable('-2 years'))->getTimestamp();
 $sql = rex_sql::factory();
-$ageRows = $sql->getArray(
-    'SELECT startarticle, updatedate, createdate FROM ' . rex::getTable('article') . ' WHERE clang_id = :clang',
-    ['clang' => $clangId],
+$updatedTsExpr = "CASE\n"
+    . "    WHEN updatedate REGEXP '^[0-9]{10,13}$' THEN IF(CHAR_LENGTH(updatedate) >= 13, FLOOR(CAST(updatedate AS UNSIGNED) / 1000), CAST(updatedate AS UNSIGNED))\n"
+    . "    WHEN updatedate IN ('', '0000-00-00', '0000-00-00 00:00:00') THEN NULL\n"
+    . "    ELSE UNIX_TIMESTAMP(updatedate)\n"
+    . "END";
+$createdTsExpr = "CASE\n"
+    . "    WHEN createdate REGEXP '^[0-9]{10,13}$' THEN IF(CHAR_LENGTH(createdate) >= 13, FLOOR(CAST(createdate AS UNSIGNED) / 1000), CAST(createdate AS UNSIGNED))\n"
+    . "    WHEN createdate IN ('', '0000-00-00', '0000-00-00 00:00:00') THEN NULL\n"
+    . "    ELSE UNIX_TIMESTAMP(createdate)\n"
+    . "END";
+$effectiveTsExpr = 'COALESCE((' . $updatedTsExpr . '), (' . $createdTsExpr . '))';
+
+$statsRows = $sql->getArray(
+    'SELECT '
+    . 'SUM(CASE WHEN startarticle = 1 AND ' . $effectiveTsExpr . ' IS NOT NULL AND ' . $effectiveTsExpr . ' < :cutoff THEN 1 ELSE 0 END) AS old_categories, '
+    . 'SUM(CASE WHEN startarticle = 0 AND ' . $effectiveTsExpr . ' IS NOT NULL AND ' . $effectiveTsExpr . ' < :cutoff THEN 1 ELSE 0 END) AS old_articles, '
+    . 'MAX(' . $effectiveTsExpr . ') AS latest_edit_ts '
+    . 'FROM ' . rex::getTable('article') . ' WHERE clang_id = :clang',
+    ['clang' => $clangId, 'cutoff' => $cutoffTs],
 );
 
-$oldCategoryCount = 0;
-$oldArticleCount = 0;
-$latestEditDate = null;
+$statsRow = $statsRows[0] ?? [];
+$oldCategoryCount = (int) ($statsRow['old_categories'] ?? 0);
+$oldArticleCount = (int) ($statsRow['old_articles'] ?? 0);
 
-foreach ($ageRows as $ageRow) {
-    $date = $resolveDate((string) $ageRow['updatedate'], (string) $ageRow['createdate']);
-    if (null === $date) {
-        continue;
-    }
-
-    if (null === $latestEditDate || $date > $latestEditDate) {
-        $latestEditDate = $date;
-    }
-
-    if ($date < $cutoff) {
-        if ((int) $ageRow['startarticle'] === 1) {
-            ++$oldCategoryCount;
-        } else {
-            ++$oldArticleCount;
-        }
-    }
+$latestEditTs = (int) ($statsRow['latest_edit_ts'] ?? 0);
+if ($latestEditTs > 0) {
+    $latestEditFormatted = (new DateTimeImmutable('@' . $latestEditTs))
+        ->setTimezone(new DateTimeZone(date_default_timezone_get()))
+        ->format('Y-m-d H:i:s');
+} else {
+    $latestEditFormatted = '-';
 }
-
-$latestEditFormatted = null !== $latestEditDate ? $latestEditDate->format('Y-m-d H:i:s') : '-';
 $nowFormatted = (new DateTimeImmutable())->format('d.m.Y H:i');
 
 $activeEditorsRaw = $sql->getArray(

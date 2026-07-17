@@ -204,23 +204,19 @@ if (rex_request_method() == 'post') {
     } elseif ($function == 'delete_media') {
         $sql = rex_sql::factory();
         $sql->setQuery('delete from ' . rex::getTable('pagestats_media'));
-        echo rex_view::success($sql->getRows() . ' ' . $addon->i18n('statistics_deleted_bots'));
+        echo rex_view::success($sql->getRows() . ' ' . $addon->i18n('statistics_deleted_media'));
     } elseif ($function == 'delete_bot') {
         $sql = rex_sql::factory();
         $sql->setQuery('delete from ' . rex::getTable('pagestats_bot'));
-        echo rex_view::success($sql->getRows() . ' ' . $addon->i18n('statistics_deleted_referer'));
+        echo rex_view::success($sql->getRows() . ' ' . $addon->i18n('statistics_deleted_bots'));
     } elseif ($function == 'delete_referer') {
         $sql = rex_sql::factory();
         $sql->setQuery('delete from ' . rex::getTable('pagestats_referer'));
-        echo rex_view::success($sql->getRows() . ' ' . $addon->i18n('statistics_deleted_media'));
-    } elseif ($function == 'delete_media') {
-        $sql = rex_sql::factory();
-        $sql->setQuery('delete from ' . rex::getTable('pagestats_media'));
-        echo rex_view::success('Es wurden ' . $sql->getRows() . ' Einträge aus der Tabelle media gelöscht.</div>');
+        echo rex_view::success($sql->getRows() . ' ' . $addon->i18n('statistics_deleted_referer'));
     } elseif ($function == 'delete_campaigns') {
         $sql = rex_sql::factory();
         $sql->setQuery('delete from ' . rex::getTable('pagestats_api'));
-        echo rex_view::success('Es wurden ' . $sql->getRows() . ' Einträge aus der Tabelle api gelöscht.');
+        echo rex_view::success(sprintf($addon->i18n('statistics_deleted_api'), (string) $sql->getRows()));
     } elseif ($function == 'delete_noise') {
         try {
             $count = 0;
@@ -231,7 +227,7 @@ if (rex_request_method() == 'post') {
             [$whereUrl, $paramsUrl] = $buildLikeWhere('url', $noiseLikePatterns);
             $result = $deleteChunkedLimited(rex::getTable('pagestats_visits_per_url'), $whereUrl, $paramsUrl, $chunkSize, $maxRoundsPerRun);
             $count += (int) $result['deleted'];
-            $hasMore = $hasMore || (bool) $result['has_more'];
+            $hasMore = (bool) $result['has_more'];
 
             $result = $deleteChunkedLimited(rex::getTable('pagestats_visitors_per_url'), $whereUrl, $paramsUrl, $chunkSize, $maxRoundsPerRun);
             $count += (int) $result['deleted'];
@@ -373,45 +369,24 @@ if (rex_request_method() == 'post') {
     } elseif ($function == 'updateGeo2Ip') {
         $updated = Ip2Geo::updateDatabase();
         if ($updated) {
-            echo rex_view::success("Geo Datenbank geupdated.");
+            echo rex_view::success($addon->i18n('statistics_geo_update_success'));
         } else {
-            echo rex_view::success("Geo Datenbank konnte nicht aktualisiert werden.");
+            echo rex_view::error($addon->i18n('statistics_geo_update_error'));
         }
     }
 }
 
 
-$form = rex_config_form::factory("statistics");
+$renderConfigPanel = static function (string $panelKey, string $title, string $formBody): void {
+    $fragment = new rex_fragment();
+    $fragment->setVar('class', 'edit', false);
+    $fragment->setVar('title', $title, false);
+    $fragment->setVar('body', $formBody, false);
 
-$form->addFieldset("Allgemein");
-
-$field2 = $form->addTextField('statistics_visit_duration');
-$field2->setLabel($addon->i18n('statistics_visit_duration'));
-$field2->setNotice($addon->i18n('statistics_duration_note'));
-$field2->getValidator()->add('type', $addon->i18n('statistics_duration_validate'), 'int');
-
-
-$field = $form->addTextAreaField('statistics_ignored_paths');
-$field->setLabel($addon->i18n('statistics_ignore_paths'));
-$field->setNotice($addon->i18n('statistics_paths_note'));
-
-$field = $form->addTextAreaField('statistics_ignored_path_contains');
-$field->setLabel($addon->i18n('statistics_ignore_path_contains'));
-$field->setNotice($addon->i18n('statistics_ignore_path_contains_note'));
-
-$field = $form->addTextAreaField('statistics_ignored_path_ends');
-$field->setLabel($addon->i18n('statistics_ignore_path_ends'));
-$field->setNotice($addon->i18n('statistics_ignore_path_ends_note'));
-
-
-$field3 = $form->addTextAreaField('statistics_ignored_ips');
-$field3->setLabel($addon->i18n('statistics_ignore_ips'));
-$field3->setNotice($addon->i18n('statistics_ips_note'));
-
-
-$field3 = $form->addTextAreaField('pagestats_ignored_regex');
-$field3->setLabel($addon->i18n('pagestats_ignored_regex'));
-$field3->setNotice($addon->i18n('pagestats_ignored_regex_note'));
+    echo '<div id="statistics-settings-panel-' . htmlspecialchars($panelKey, ENT_QUOTES) . '">';
+    echo $fragment->parse('core/page/section.php');
+    echo '</div>';
+};
 
 $regexExamples = [];
 $regexExamples[] = '#/(wp-login\.php|xmlrpc\.php|wp-admin)(?:$|[/?])#i';
@@ -419,7 +394,74 @@ $regexExamples[] = '#/(?:drupal|joomla|magento|prestashop|typo3)(?:$|[/?])#i';
 $regexExamples[] = '#/\.(?:env|sql|htaccess|ini|log|bak|old)(?:$|\?)#i';
 $regexExamples[] = '#/(?:phpmyadmin|pma|adminer)(?:$|[/?])#i';
 
-$form->addRawField(
+// Tracking / Erkennung
+$trackingForm = rex_config_form::factory('statistics', 'tracking');
+$field = $trackingForm->addTextField('statistics_visit_duration');
+$field->setLabel($addon->i18n('statistics_visit_duration'));
+$field->setNotice($addon->i18n('statistics_duration_note'));
+$field->getValidator()->add('type', $addon->i18n('statistics_duration_validate'), 'int');
+
+$field = $trackingForm->addRadioField('statistics_identity_mode');
+$field->setLabel($addon->i18n('statistics_identity_mode'));
+$field->addOption($addon->i18n('statistics_identity_mode_stateless'), 'stateless');
+$field->addOption($addon->i18n('statistics_identity_mode_session'), 'session');
+$field->setNotice($addon->i18n('statistics_identity_mode_note'));
+
+$identityHintHtml = '<strong>' . htmlspecialchars($addon->i18n('statistics_identity_mode_hint_title'), ENT_QUOTES) . '</strong><br>'
+    . htmlspecialchars($addon->i18n('statistics_identity_mode_hint_stateless'), ENT_QUOTES) . '<br>'
+    . htmlspecialchars($addon->i18n('statistics_identity_mode_hint_session'), ENT_QUOTES) . '<br>'
+    . htmlspecialchars($addon->i18n('statistics_identity_mode_hint_lock'), ENT_QUOTES);
+$trackingForm->addRawField(rex_view::info($identityHintHtml));
+
+$field = $trackingForm->addTextField('statistics_token_rotation_hours');
+$field->setLabel($addon->i18n('statistics_token_rotation_hours'));
+$field->setNotice($addon->i18n('statistics_token_rotation_hours_note'));
+$field->getValidator()->add('type', $addon->i18n('statistics_token_rotation_hours_validate'), 'int');
+
+$field = $trackingForm->addRadioField('statistics_ignore_backend_loggedin');
+$field->setLabel($addon->i18n('statistics_ignore_backend_loggedin_label'));
+$field->addOption($addon->i18n('statistics_yes'), 1);
+$field->addOption($addon->i18n('statistics_no'), 0);
+$field->setNotice($addon->i18n('statistics_ignore_backend_loggedin_note'));
+
+$field = $trackingForm->addRadioField('statistics_pages_visitors_enabled');
+$field->setLabel($addon->i18n('statistics_pages_visitors_enabled'));
+$field->addOption($addon->i18n('statistics_yes'), 1);
+$field->addOption($addon->i18n('statistics_no'), 0);
+$field->setNotice($addon->i18n('statistics_pages_visitors_enabled_note'));
+
+$field = $trackingForm->addRadioField('statistics_rec_onlyok');
+$field->setLabel($addon->i18n('statistics_rec_onlyok_label'));
+$field->addOption($addon->i18n('statistics_yes'), 1);
+$field->addOption($addon->i18n('statistics_no'), 0);
+$field->setNotice($addon->i18n('statistics_rec_onlyok_note'));
+
+$renderConfigPanel('tracking', rex_i18n::rawMsg('statistics_settings_panel_tracking'), $trackingForm->get());
+
+// Filter / Erfassung
+$filterForm = rex_config_form::factory('statistics', 'filter');
+
+$field = $filterForm->addTextAreaField('statistics_ignored_paths');
+$field->setLabel($addon->i18n('statistics_ignore_paths'));
+$field->setNotice($addon->i18n('statistics_paths_note'));
+
+$field = $filterForm->addTextAreaField('statistics_ignored_path_contains');
+$field->setLabel($addon->i18n('statistics_ignore_path_contains'));
+$field->setNotice($addon->i18n('statistics_ignore_path_contains_note'));
+
+$field = $filterForm->addTextAreaField('statistics_ignored_path_ends');
+$field->setLabel($addon->i18n('statistics_ignore_path_ends'));
+$field->setNotice($addon->i18n('statistics_ignore_path_ends_note'));
+
+$field = $filterForm->addTextAreaField('statistics_ignored_ips');
+$field->setLabel($addon->i18n('statistics_ignore_ips'));
+$field->setNotice($addon->i18n('statistics_ips_note'));
+
+$field = $filterForm->addTextAreaField('pagestats_ignored_regex');
+$field->setLabel($addon->i18n('pagestats_ignored_regex'));
+$field->setNotice($addon->i18n('pagestats_ignored_regex_note'));
+
+$filterForm->addRawField(
     rex_view::info(
         '<strong>' . htmlspecialchars($addon->i18n('pagestats_ignored_regex_examples_heading'), ENT_QUOTES) . '</strong><br><pre style="margin-top:8px;white-space:pre-wrap;">'
         . htmlspecialchars(implode(PHP_EOL, $regexExamples), ENT_QUOTES)
@@ -427,118 +469,107 @@ $form->addRawField(
     )
 );
 
-
-$field4 = $form->addRadioField('statistics_scroll_pagination');
-$field4->setLabel($addon->i18n('statistics_scroll_pagination'));
-$field4->addOption($addon->i18n('statistics_scroll_table'), 'table');
-$field4->addOption($addon->i18n('statistics_scroll_panel'), 'panel');
-$field4->addOption($addon->i18n('statistics_scroll_none'), 'none');
-
-
-$field5 = $form->addRadioField('statistics_ignore_url_params');
-$field5->setLabel($addon->i18n('statistics_statistics_ignore_url_params'));
-$field5->addOption($addon->i18n('statistics_yes'), 1);
-$field5->addOption($addon->i18n('statistics_no'), 0);
-$field5->setNotice($addon->i18n('statistics_statistics_ignore_url_params_note'));
-
-
-$field6 = $form->addRadioField('statistics_default_datefilter_range');
-$field6->setLabel($addon->i18n('statistics_default_datefilter_range'));
-$field6->addOption($addon->i18n('statistics_default_datefilter_last7days'), 'last7days');
-$field6->addOption($addon->i18n('statistics_default_datefilter_last30days'), 'last30days');
-$field6->addOption($addon->i18n('statistics_default_datefilter_thisYear'), 'thisYear');
-$field6->addOption($addon->i18n('statistics_default_datefilter_wholeTime'), 'wholeTime');
-$field6->setNotice($addon->i18n('statistics_default_datefilter_range_note'));
-
-
-$field7 = $form->addRadioField('statistics_combine_all_domains');
-$field7->setLabel('Fasse alle Domains zusammen');
-$field7->addOption($addon->i18n('statistics_yes'), 1);
-$field7->addOption($addon->i18n('statistics_no'), 0);
-$field7->setNotice('Alle Domains werden zu einer "Gesamt" Anzahl zusammengefasst. Deaktivieren um Statistiken für alle Domains einzeln anzuzeigen.');
-
-$field7b = $form->addTextAreaField('statistics_hidden_domains');
-$field7b->setLabel($addon->i18n('statistics_hidden_domains'));
-$field7b->setNotice($addon->i18n('statistics_hidden_domains_note'));
-
-$field7 = $form->addRadioField('statistics_show_chart_toolbox');
-$field7->setLabel('Zeige Toolbox an den Charts');
-$field7->addOption($addon->i18n('statistics_yes'), 1);
-$field7->addOption($addon->i18n('statistics_no'), 0);
-
-
-$field8 = $form->addRadioField('statistics_ignore_backend_loggedin');
-$field8->setLabel('Eigene Seitenaufrufe ignorieren');
-$field8->addOption($addon->i18n('statistics_yes'), 1);
-$field8->addOption($addon->i18n('statistics_no'), 0);
-$field8->setNotice('Aktivieren, um Seitenaufrufe durch eingeloggte User zu verwerfen.');
-
-$field8b = $form->addRadioField('statistics_pages_visitors_enabled');
-$field8b->setLabel($addon->i18n('statistics_pages_visitors_enabled'));
-$field8b->addOption($addon->i18n('statistics_yes'), 1);
-$field8b->addOption($addon->i18n('statistics_no'), 0);
-$field8b->setNotice($addon->i18n('statistics_pages_visitors_enabled_note'));
-
-
-$field = $form->addRadioField('statistics_rec_onlyok');
-$field->setLabel('Nur 200er Aufrufe erfassen');
+$field = $filterForm->addRadioField('statistics_ignore_url_params');
+$field->setLabel($addon->i18n('statistics_statistics_ignore_url_params'));
 $field->addOption($addon->i18n('statistics_yes'), 1);
 $field->addOption($addon->i18n('statistics_no'), 0);
-$field->setNotice('Dadurch werden nur Aufrufe mit einem HTTP Status 200 OK erfasst. Die Statistik "Seitenaufrufe" loggt trotzdem auch Aufrufe ungleich 200.');
+$field->setNotice($addon->i18n('statistics_statistics_ignore_url_params_note'));
 
+$field = $filterForm->addRadioField('statistics_default_datefilter_range');
+$field->setLabel($addon->i18n('statistics_default_datefilter_range'));
+$field->addOption($addon->i18n('statistics_default_datefilter_last7days'), 'last7days');
+$field->addOption($addon->i18n('statistics_default_datefilter_last30days'), 'last30days');
+$field->addOption($addon->i18n('statistics_default_datefilter_thisYear'), 'thisYear');
+$field->addOption($addon->i18n('statistics_default_datefilter_wholeTime'), 'wholeTime');
+$field->setNotice($addon->i18n('statistics_default_datefilter_range_note'));
 
-// media
-$form->addFieldset("Media");
+$field = $filterForm->addRadioField('statistics_combine_all_domains');
+$field->setLabel($addon->i18n('statistics_combine_all_domains_label'));
+$field->addOption($addon->i18n('statistics_yes'), 1);
+$field->addOption($addon->i18n('statistics_no'), 0);
+$field->setNotice($addon->i18n('statistics_combine_all_domains_note'));
 
-$fm1 = $form->addRadioField('statistics_media_log_all');
-$fm1->setLabel($addon->i18n('statistics_media_log_all'));
-$fm1->addOption($addon->i18n('statistics_media_yes'), 1);
-$fm1->addOption($addon->i18n('statistics_media_no'), 0);
-$fm1->setNotice($addon->i18n('statistics_media_log_all_note'));
+$field = $filterForm->addTextAreaField('statistics_hidden_domains');
+$field->setLabel($addon->i18n('statistics_hidden_domains'));
+$field->setNotice($addon->i18n('statistics_hidden_domains_note'));
 
-$fm2 = $form->addRadioField('statistics_media_log_mm');
-$fm2->setLabel($addon->i18n('statistics_media_log_mm'));
-$fm2->addOption($addon->i18n('statistics_media_yes'), 1);
-$fm2->addOption($addon->i18n('statistics_media_no'), 0);
-$fm2->setNotice($addon->i18n('statistics_media_log_mm_note'));
+$renderConfigPanel('filter', rex_i18n::rawMsg('statistics_settings_panel_filter'), $filterForm->get());
 
-$note = rex_view::warning("Nur eine dieser beiden Optionen aktivieren, sonst werden Aufrufe doppelt gezählt.");
-$form->addRawField($note);
+// Darstellung
+$displayForm = rex_config_form::factory('statistics', 'display');
 
+$field = $displayForm->addRadioField('statistics_scroll_pagination');
+$field->setLabel($addon->i18n('statistics_scroll_pagination'));
+$field->addOption($addon->i18n('statistics_scroll_table'), 'table');
+$field->addOption($addon->i18n('statistics_scroll_panel'), 'panel');
+$field->addOption($addon->i18n('statistics_scroll_none'), 'none');
 
-// api
-$form->addFieldset("API");
+$field = $displayForm->addRadioField('statistics_show_chart_toolbox');
+$field->setLabel($addon->i18n('statistics_show_chart_toolbox_label'));
+$field->addOption($addon->i18n('statistics_yes'), 1);
+$field->addOption($addon->i18n('statistics_no'), 0);
 
-$field = $form->addRadioField('statistics_api_enable');
+$renderConfigPanel('display', rex_i18n::rawMsg('statistics_settings_panel_display'), $displayForm->get());
+
+// Media
+$mediaForm = rex_config_form::factory('statistics', 'media');
+$field = $mediaForm->addRadioField('statistics_media_log_all');
+$field->setLabel($addon->i18n('statistics_media_log_all'));
+$field->addOption($addon->i18n('statistics_media_yes'), 1);
+$field->addOption($addon->i18n('statistics_media_no'), 0);
+$field->setNotice($addon->i18n('statistics_media_log_all_note'));
+
+$field = $mediaForm->addRadioField('statistics_media_log_mm');
+$field->setLabel($addon->i18n('statistics_media_log_mm'));
+$field->addOption($addon->i18n('statistics_media_yes'), 1);
+$field->addOption($addon->i18n('statistics_media_no'), 0);
+$field->setNotice($addon->i18n('statistics_media_log_mm_note'));
+
+$mediaForm->addRawField(rex_view::warning($addon->i18n('statistics_media_double_count_warning')));
+$renderConfigPanel('media', rex_i18n::rawMsg('statistics_settings_panel_media'), $mediaForm->get());
+
+// API
+$apiForm = rex_config_form::factory('statistics', 'api');
+$field = $apiForm->addRadioField('statistics_api_enable');
 $field->setLabel($addon->i18n('statistics_api_enable_campaigns'));
 $field->addOption($addon->i18n('statistics_api_yes'), 1);
 $field->addOption($addon->i18n('statistics_api_no'), 0);
 $field->setNotice($addon->i18n('statistics_api_enable_campaigns_note'));
 
-
-// parse fragment with setting form
-$addon = rex_addon::get('statistics');
-$fragment = new rex_fragment();
-$fragment->setVar('class', 'edit', false);
-$fragment->setVar('title', $addon->i18n('statistics_settings'), false);
-$fragment->setVar('body', $form->get(), false);
-echo $fragment->parse('core/page/section.php');
+$renderConfigPanel('api', rex_i18n::rawMsg('statistics_settings_panel_api'), $apiForm->get());
 
 
 
 // ip2geo section
+$geoDbPath = rex_path::addonData('statistics', 'ip2geo.mmdb');
+$geoDbAvailable = is_file($geoDbPath) && filesize($geoDbPath) > 0;
+$geoDbSize = $geoDbAvailable ? (int) filesize($geoDbPath) : 0;
+$geoDbSizeFormatted = rex_formatter::bytes($geoDbSize);
+$geoDbLastUpdated = $geoDbAvailable
+    ? date('Y-m-d H:i:s', (int) filemtime($geoDbPath))
+    : $addon->i18n('statistics_geo_status_not_available');
+$geoDbStatusLabel = $geoDbAvailable
+    ? $addon->i18n('statistics_geo_status_loaded')
+    : $addon->i18n('statistics_geo_status_missing');
+$geoDbStatusClass = $geoDbAvailable ? 'alert-success' : 'alert-warning';
+
 $geoIpHtml = '
-<p>Geo-Datenbank updaten mit der IP-Adressen zu Ländern zugeordnet werden.</p>
+<p>' . htmlspecialchars($addon->i18n('statistics_geo_intro'), ENT_QUOTES) . '</p>
+<div class="alert ' . $geoDbStatusClass . '" style="margin:10px 5px;">
+<strong>' . htmlspecialchars($addon->i18n('statistics_geo_status'), ENT_QUOTES) . ':</strong> ' . htmlspecialchars($geoDbStatusLabel, ENT_QUOTES) . '<br>
+<strong>' . htmlspecialchars($addon->i18n('statistics_geo_last_update'), ENT_QUOTES) . ':</strong> ' . htmlspecialchars($geoDbLastUpdated, ENT_QUOTES) . '<br>
+<strong>' . htmlspecialchars($addon->i18n('statistics_geo_file_size'), ENT_QUOTES) . ':</strong> ' . htmlspecialchars($geoDbSizeFormatted, ENT_QUOTES) . '
+</div>
 <form style="margin:5px" action="' . rex_url::currentBackendPage() . '" method="post">
 <input type="hidden" name="func" value="updateGeo2Ip">
-<button class="btn btn-primary" type="submit">Geo-Datenbank Updaten</button>
+<button class="btn btn-primary" type="submit">' . htmlspecialchars($addon->i18n('statistics_geo_update_button'), ENT_QUOTES) . '</button>
 </form>
 <p><a href="https://db-ip.com">IP Geolocation by DB-IP</a></p>
 ';
 
 $fragment = new rex_fragment();
 $fragment->setVar('class', 'info', false);
-$fragment->setVar('title', "IP 2 Geo", false);
+$fragment->setVar('title', $addon->i18n('statistics_geo_title'), false);
 $fragment->setVar('body', $geoIpHtml, false);
 echo $fragment->parse('core/page/section.php');
 
@@ -578,27 +609,25 @@ $storageUsageByTable = array_fill_keys($maintenanceTables, 0);
 try {
     $params = [];
     $placeholders = [];
-    foreach (array_values($maintenanceTables) as $index => $tableName) {
+    foreach ($maintenanceTables as $index => $tableName) {
         $key = ':t' . $index;
         $placeholders[] = $key;
         $params[$key] = $tableName;
     }
 
-    if ([] !== $placeholders) {
-        $sql = rex_sql::factory();
-        $rows = $sql->getArray(
-            'SELECT table_name, IFNULL(data_length, 0) + IFNULL(index_length, 0) AS bytes '
-            . 'FROM information_schema.tables '
-            . 'WHERE table_schema = DATABASE() '
-            . 'AND table_name IN (' . implode(', ', $placeholders) . ')',
-            $params
-        );
+    $sql = rex_sql::factory();
+    $rows = $sql->getArray(
+        'SELECT table_name, IFNULL(data_length, 0) + IFNULL(index_length, 0) AS bytes '
+        . 'FROM information_schema.tables '
+        . 'WHERE table_schema = DATABASE() '
+        . 'AND table_name IN (' . implode(', ', $placeholders) . ')',
+        $params
+    );
 
-        foreach ($rows as $row) {
-            $tableName = (string) ($row['table_name'] ?? '');
-            if (isset($storageUsageByTable[$tableName])) {
-                $storageUsageByTable[$tableName] = (int) ($row['bytes'] ?? 0);
-            }
+    foreach ($rows as $row) {
+        $tableName = (string) ($row['table_name'] ?? '');
+        if (isset($storageUsageByTable[$tableName])) {
+            $storageUsageByTable[$tableName] = (int) ($row['bytes'] ?? 0);
         }
     }
 } catch (Throwable $throwable) {
@@ -632,65 +661,124 @@ $storageUsageHtml .= '<td data-sort="' . htmlspecialchars((string) $totalStorage
 $storageUsageHtml .= '</tr>';
 $storageUsageHtml .= '</tbody></table>';
 
-$content = $storageUsageHtml . '
-<div style="display: flex; flex-wrap: wrap">
+$renderActionCard = static function (string $title, string $scope, string $formHtml): string {
+    $html = '<div class="panel panel-default" style="margin-bottom:10px;">';
+    $html .= '<div class="panel-body" style="padding:12px;">';
+    $html .= '<div style="font-weight:600;margin-bottom:4px;">' . htmlspecialchars($title, ENT_QUOTES) . '</div>';
+    $html .= '<div style="font-size:12px;color:#6c7785;margin-bottom:10px;">' . htmlspecialchars($scope, ENT_QUOTES) . '</div>';
+    $html .= $formHtml;
+    $html .= '</div>';
+    $html .= '</div>';
 
-<form style="margin:5px" action="' . rex_url::currentBackendPage() . '" method="post">
-<input type="hidden" name="func" value="delete_hash">
-<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_hashes') . '">' . $addon->i18n('statistics_delete_hashes') . '</button>
-</form>
+    return $html;
+};
 
-<form style="margin:5px" action="' . rex_url::currentBackendPage() . '" method="post">
-<input type="hidden" name="func" value="delete_dump">
-<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_dump') . '">' . $addon->i18n('statistics_delete_visits') . '</button>
-</form>
+$deleteActionsHtml = '';
+$deleteActionsHtml .= $renderActionCard(
+    $addon->i18n('statistics_delete_hashes'),
+    $addon->i18n('statistics_maintenance_scope_hashes'),
+    '<form action="' . rex_url::currentBackendPage() . '" method="post">'
+    . '<input type="hidden" name="func" value="delete_hash">'
+    . '<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_hashes') . '">' . $addon->i18n('statistics_delete_hashes') . '</button>'
+    . '</form>'
+);
+$deleteActionsHtml .= $renderActionCard(
+    $addon->i18n('statistics_delete_visits'),
+    $addon->i18n('statistics_maintenance_scope_all'),
+    '<form action="' . rex_url::currentBackendPage() . '" method="post">'
+    . '<input type="hidden" name="func" value="delete_dump">'
+    . '<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_dump') . '">' . $addon->i18n('statistics_delete_visits') . '</button>'
+    . '</form>'
+);
+$deleteActionsHtml .= $renderActionCard(
+    $addon->i18n('statistics_delete_bots'),
+    $addon->i18n('statistics_maintenance_scope_bot'),
+    '<form action="' . rex_url::currentBackendPage() . '" method="post">'
+    . '<input type="hidden" name="func" value="delete_bot">'
+    . '<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_bots') . '">' . $addon->i18n('statistics_delete_bots') . '</button>'
+    . '</form>'
+);
+$deleteActionsHtml .= $renderActionCard(
+    $addon->i18n('statistics_delete_referer'),
+    $addon->i18n('statistics_maintenance_scope_referer'),
+    '<form action="' . rex_url::currentBackendPage() . '" method="post">'
+    . '<input type="hidden" name="func" value="delete_referer">'
+    . '<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_referer') . '">' . $addon->i18n('statistics_delete_referer') . '</button>'
+    . '</form>'
+);
+$deleteActionsHtml .= $renderActionCard(
+    $addon->i18n('statistics_media_delete_media'),
+    $addon->i18n('statistics_maintenance_scope_media'),
+    '<form action="' . rex_url::currentBackendPage() . '" method="post">'
+    . '<input type="hidden" name="func" value="delete_media">'
+    . '<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_media_delete_media_confirm') . '">' . $addon->i18n('statistics_media_delete_media') . '</button>'
+    . '</form>'
+);
+$deleteActionsHtml .= $renderActionCard(
+    $addon->i18n('statistics_api_delete_api'),
+    $addon->i18n('statistics_maintenance_scope_api'),
+    '<form action="' . rex_url::currentBackendPage() . '" method="post">'
+    . '<input type="hidden" name="func" value="delete_campaigns">'
+    . '<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_api_delete_api_confirm') . '">' . $addon->i18n('statistics_api_delete_api') . '</button>'
+    . '</form>'
+);
 
-<form style="margin:5px" action="' . rex_url::currentBackendPage() . '" method="post">
-<input type="hidden" name="func" value="delete_bot">
-<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_bots') . '">' . $addon->i18n('statistics_delete_bots') . '</button>
-</form>
+$maintenanceTasksHtml = '';
+$maintenanceTasksHtml .= $renderActionCard(
+    $addon->i18n('statistics_delete_noise'),
+    $addon->i18n('statistics_maintenance_scope_noise'),
+    '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_delete_noise') . '">'
+    . '<input type="hidden" name="func" value="delete_noise">'
+    . '<button class="btn btn-default" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_noise') . '">' . $addon->i18n('statistics_delete_noise') . '</button>'
+    . '</form>'
+);
+$maintenanceTasksHtml .= $renderActionCard(
+    $addon->i18n('statistics_delete_old'),
+    $addon->i18n('statistics_maintenance_scope_keep_days'),
+    '<form style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_delete_old') . '">'
+    . '<input type="hidden" name="func" value="delete_old">'
+    . '<label for="statistics-keep-days" style="margin:0;">' . $addon->i18n('statistics_cleanup_keep_days') . '</label>'
+    . '<input id="statistics-keep-days" class="form-control" style="width:110px" type="number" min="1" step="1" name="keep_days" value="365">'
+    . '<button class="btn btn-default" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_old') . '">' . $addon->i18n('statistics_delete_old') . '</button>'
+    . '</form>'
+);
+$maintenanceTasksHtml .= $renderActionCard(
+    $addon->i18n('statistics_delete_raw_old'),
+    $addon->i18n('statistics_maintenance_scope_keep_days_raw'),
+    '<form style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_delete_raw_old') . '">'
+    . '<input type="hidden" name="func" value="delete_raw_old">'
+    . '<label for="statistics-keep-days-raw" style="margin:0;">' . $addon->i18n('statistics_cleanup_keep_days_raw') . '</label>'
+    . '<input id="statistics-keep-days-raw" class="form-control" style="width:110px" type="number" min="1" step="1" name="keep_days_raw" value="120">'
+    . '<button class="btn btn-default" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_raw_old') . '">' . $addon->i18n('statistics_delete_raw_old') . '</button>'
+    . '</form>'
+);
+$maintenanceTasksHtml .= $renderActionCard(
+    $addon->i18n('statistics_optimize_tables'),
+    $addon->i18n('statistics_maintenance_scope_optimize'),
+    '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_optimize_tables') . '">'
+    . '<input type="hidden" name="func" value="optimize_tables">'
+    . '<button class="btn btn-default" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_optimize_tables') . '">' . $addon->i18n('statistics_optimize_tables') . '</button>'
+    . '</form>'
+);
 
-<form style="margin:5px" action="' . rex_url::currentBackendPage() . '" method="post">
-<input type="hidden" name="func" value="delete_referer">
-<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_referer') . '">' . $addon->i18n('statistics_delete_referer') . '</button>
-</form>
+$content = $storageUsageHtml;
+$content .= '<div class="row">';
+$content .= '<div class="col-md-6">';
+$content .= '<div class="alert alert-danger" style="margin-bottom:10px;">';
+$content .= '<strong>' . htmlspecialchars($addon->i18n('statistics_maintenance_delete_heading'), ENT_QUOTES) . '</strong><br>';
+$content .= '<small>' . htmlspecialchars($addon->i18n('statistics_maintenance_delete_note'), ENT_QUOTES) . '</small>';
+$content .= '</div>';
+$content .= $deleteActionsHtml;
+$content .= '</div>';
 
-<form style="margin:5px" action="' . rex_url::currentBackendPage() . '" method="post">
-<input type="hidden" name="func" value="delete_media">
-<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_media_delete_media_confirm') . '">' . $addon->i18n('statistics_media_delete_media') . '</button>
-</form>
-
-<form style="margin:5px" action="' . rex_url::currentBackendPage() . '" method="post">
-<input type="hidden" name="func" value="delete_campaigns">
-<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_api_delete_api_confirm') . '">' . $addon->i18n('statistics_api_delete_api') . '</button>
-</form>
-
-<form style="margin:5px" action="' . rex_url::currentBackendPage() . '" method="post">
-<input type="hidden" name="func" value="delete_noise">
-<button class="btn btn-warning" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_noise') . '">' . $addon->i18n('statistics_delete_noise') . '</button>
-</form>
-
-<form style="margin:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap" action="' . rex_url::currentBackendPage() . '" method="post">
-<input type="hidden" name="func" value="delete_old">
-<label for="statistics-keep-days" style="margin:0;">' . $addon->i18n('statistics_cleanup_keep_days') . '</label>
-<input id="statistics-keep-days" class="form-control" style="width:110px" type="number" min="1" step="1" name="keep_days" value="365">
-<button class="btn btn-warning" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_old') . '">' . $addon->i18n('statistics_delete_old') . '</button>
-</form>
-
-<form style="margin:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap" action="' . rex_url::currentBackendPage() . '" method="post">
-<input type="hidden" name="func" value="delete_raw_old">
-<label for="statistics-keep-days-raw" style="margin:0;">' . $addon->i18n('statistics_cleanup_keep_days_raw') . '</label>
-<input id="statistics-keep-days-raw" class="form-control" style="width:110px" type="number" min="1" step="1" name="keep_days_raw" value="120">
-<button class="btn btn-warning" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_raw_old') . '">' . $addon->i18n('statistics_delete_raw_old') . '</button>
-</form>
-
-<form style="margin:5px" action="' . rex_url::currentBackendPage() . '" method="post">
-<input type="hidden" name="func" value="optimize_tables">
-<button class="btn btn-primary" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_optimize_tables') . '">' . $addon->i18n('statistics_optimize_tables') . '</button>
-</form>
-
-</div>
-';
+$content .= '<div class="col-md-6">';
+$content .= '<div class="alert alert-info" style="margin-bottom:10px;">';
+$content .= '<strong>' . htmlspecialchars($addon->i18n('statistics_maintenance_tasks_heading'), ENT_QUOTES) . '</strong><br>';
+$content .= '<small>' . htmlspecialchars($addon->i18n('statistics_maintenance_tasks_note'), ENT_QUOTES) . '</small>';
+$content .= '</div>';
+$content .= $maintenanceTasksHtml;
+$content .= '</div>';
+$content .= '</div>';
 
 
 $fragment = new rex_fragment();

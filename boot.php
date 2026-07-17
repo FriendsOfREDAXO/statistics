@@ -57,22 +57,60 @@ if (rex::isBackend()) {
 if (rex::isFrontend()) {
     $addon = rex_addon::get('statistics');
     $ignore_backend_loggedin = $addon->getConfig('statistics_ignore_backend_loggedin');
+    $identityMode = (string) $addon->getConfig('statistics_identity_mode', 'stateless');
+    if (!in_array($identityMode, ['stateless', 'session'], true)) {
+        $identityMode = 'stateless';
+    }
 
     if ($ignore_backend_loggedin) {
         $statistics_has_backend_login = rex_backend_login::hasSession();
+
+        // Release possible session lock from backend-login probing immediately.
+        if (PHP_SESSION_ACTIVE === session_status()) {
+            session_write_close();
+        }
     } else {
         $statistics_has_backend_login = false;
     }
 
-    rex_login::startSession();
+    if ('session' === $identityMode) {
+        rex_login::startSession();
 
-    $token = rex_session("statistics_token", "string", null);
+        $token = rex_session('statistics_token', 'string', null);
+        if (null === $token || '' === $token) {
+            $token = bin2hex(random_bytes(20));
+            rex_set_session('statistics_token', $token);
+        }
 
-    if ($token === null) {
-        $bytes = random_bytes(20);
-        $token = bin2hex($bytes);
-
-        rex_set_session('statistics_token', $token);
+        // Keep lock duration as short as possible.
+        if (PHP_SESSION_ACTIVE === session_status()) {
+            session_write_close();
+        }
+    } else {
+        $instancePepper = (string) rex::getProperty('instname');
+        $clientAddress = rex::getRequest()->getClientIp();
+        $clientAddress = $clientAddress ? $clientAddress : '0.0.0.0';
+        $anonymizedClientAddress = Visit::anonymizeIpAddress($clientAddress);
+        $tokenRotationHours = (int) $addon->getConfig('statistics_token_rotation_hours', 24);
+        if ($tokenRotationHours < 1) {
+            $tokenRotationHours = 1;
+        } elseif ($tokenRotationHours > 24) {
+            $tokenRotationHours = 24;
+        }
+        $rotationBucket = (string) floor(time() / ($tokenRotationHours * 3600));
+        $userAgent = rex_server('HTTP_USER_AGENT', 'string', '');
+        $acceptLanguage = rex_server('HTTP_ACCEPT_LANGUAGE', 'string', '');
+        $token = hash(
+            'sha256',
+            implode('|', [
+                'statistics_stateless_token_v3',
+                $instancePepper,
+                $rotationBucket,
+                $anonymizedClientAddress,
+                $userAgent,
+                $acceptLanguage,
+            ])
+        );
     }
 } else {
     $statistics_has_backend_login = true;
@@ -167,7 +205,7 @@ rex_extension::register('RESPONSE_SHUTDOWN', function () use ($statistics_has_ba
                             }
 
                             $visit->updateVisitsPerUrl();
-                            if ((bool) $addon->getConfig('statistics_pages_visitors_enabled', false) && method_exists($visit, 'persistVisitorPerUrl')) {
+                            if ((bool) $addon->getConfig('statistics_pages_visitors_enabled', false)) {
                                 $visit->{'persistVisitorPerUrl'}();
                             }
 

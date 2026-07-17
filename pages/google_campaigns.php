@@ -94,7 +94,7 @@ $extractCampaignData = static function (string $url) use ($trackedParams, $addon
 
     if ('' !== $campaignId) {
         $campaignType = 'google_ads';
-        $campaignLabel = 'Google Ads #' . $campaignId;
+        $campaignLabel = sprintf($addon->i18n('statistics_google_campaigns_label_ads'), $campaignId);
         $groupKey = 'ads:' . $campaignId . '|' . $landingPath;
     } elseif ('' !== $utmCampaign) {
         $campaignType = 'utm_campaign';
@@ -202,10 +202,7 @@ if ([] === $groups) {
 uasort($groups, static fn (array $a, array $b): int => ($b['count'] <=> $a['count']));
 
 $topGroup = reset($groups);
-$topGroupText = '';
-if (is_array($topGroup)) {
-    $topGroupText = (string) $topGroup['campaign_label'] . ' - ' . (string) $topGroup['landing_path'];
-}
+$topGroupText = (string) $topGroup['campaign_label'] . ' - ' . (string) $topGroup['landing_path'];
 
 $statusClass = $totalAdsCalls > 0 ? 'alert alert-success' : 'alert alert-warning';
 $statusText = $totalAdsCalls > 0

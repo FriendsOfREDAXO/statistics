@@ -7,6 +7,7 @@ use DatePeriod;
 use DateTime;
 use InvalidArgumentException;
 use rex;
+use rex_addon;
 use rex_sql;
 use rex_sql_exception;
 
@@ -42,11 +43,14 @@ class RefererDetails
             return '';
         }
 
+        $addon = rex_addon::get('statistics');
+
         $table = '<table class="table-bordered dt_order_first statistics_table table-striped table-hover table">';
-        $table .= '<thead><tr><th>Datum</th><th>Anzahl</th></tr></thead><tbody>';
+        $table .= '<thead><tr><th>' . htmlspecialchars($addon->i18n('statistics_date'), ENT_QUOTES) . '</th><th>' . htmlspecialchars($addon->i18n('statistics_count'), ENT_QUOTES) . '</th></tr></thead><tbody>';
 
         foreach ($rows as $row) {
-            $formattedDate = DateTime::createFromFormat('Y-m-d', $row['date'])?->format('d.m.Y') ?? $row['date'];
+            $formattedDateObj = DateTime::createFromFormat('Y-m-d', $row['date']);
+            $formattedDate = false !== $formattedDateObj ? $formattedDateObj->format('d.m.Y') : $row['date'];
             $table .= '<tr>';
             $table .= '<td data-sort="' . htmlspecialchars($row['date'], ENT_QUOTES) . '">' . htmlspecialchars($formattedDate, ENT_QUOTES) . '</td>';
             $table .= '<td data-sort="' . htmlspecialchars((string) $row['count'], ENT_QUOTES) . '">' . htmlspecialchars((string) $row['count'], ENT_QUOTES) . '</td>';
@@ -77,7 +81,8 @@ class RefererDetails
 
         $values = [];
         foreach ($this->getDetailRows() as $row) {
-            $date = DateTime::createFromFormat('Y-m-d', $row['date'])?->format('d.m.Y') ?? $row['date'];
+            $dateObj = DateTime::createFromFormat('Y-m-d', $row['date']);
+            $date = false !== $dateObj ? $dateObj->format('d.m.Y') : $row['date'];
             $values[$date] = (string) $row['count'];
         }
 

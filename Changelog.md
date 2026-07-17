@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.4.0] - 17.07.2026
+
+-   Tracking-Identität umfassend überarbeitet: stateless Erkennung als Standard, optionaler Session-Modus, gekürzte/anonymisierte IP-Anteile, konfigurierbare Token-Rotation sowie klare Hinweise zu Vor- und Nachteilen
+-   Datenschutz und Laufzeitverhalten verbessert: kein Tracking-Cookie im Standardpfad, reduziertes Session-Locking und robustere Deduplizierung von Besuchen/Besuchern
+-   Einstellungsseite strukturell modernisiert: getrennte Panels für Tracking, Filter, Darstellung, Media und API mit sauber getrennten Formular-Speicherpfaden
+-   UX für Wartung deutlich verbessert: klare Trennung von Löschaktionen und Wartungsaufgaben, neutrales Button-Design für Wartung, präzisere Confirm-Mechanik und bessere Zuordnung über Scope-Hinweise
+-   Rücksprung nach Speichern verbessert: Formulare führen wieder zum zuletzt bearbeiteten Panel statt an den Seitenanfang
+-   Geo-Bereich erweitert: Statusanzeige der Geo-Datenbank inkl. „geladen/nicht geladen“, letzte Aktualisierung und Dateigröße; Fehlschläge beim Update werden korrekt als Fehler ausgegeben
+-   Copilot-Reviewpunkte vollständig adressiert und Threads aufgelöst (u. a. Confirm-Bindung, Panel-Rücksprunglogik, Fehlerunterdrückung entfernt)
+-   Codebasis technisch gehärtet: Typbereinigung, robustere Date/Array-Fallbacks, präzisere PHPDoc-Array-Shapes, abgesicherter `gzdecode()`-Pfad beim `ip2geo`-Download sowie sauberere Fragment-/Help-Verarbeitung
+-   Vollständiger RexStan-Lauf für `redaxo/src/addons/statistics` im `coreweb`-Container erfolgreich abgeschlossen: keine verbleibenden Fehler
+-   Restliche harte UI-Texte in Charts/Filtern/Tabs auf i18n umgestellt (inkl. Tooltip-Formattern, Serienlabels, ARIA-Texten und Kampagnen-Fallbacks), damit Issue #109 vollständig abgeschlossen ist
+
 ## [3.3.0] - 14.07.2026
 
 -   Neue Unterseite `Google-Kampagnen` zur Auflösung und Gruppierung von Kampagnen-Parametern aus Ziel-URLs (u. a. `gad_campaignid`, `gclid`, `gbraid`, `wbraid`, `utm_*`)

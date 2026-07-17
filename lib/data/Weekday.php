@@ -4,6 +4,7 @@ namespace AndiLeni\Statistics;
 
 use rex;
 use rex_addon;
+use rex_addon_interface;
 use rex_sql;
 use rex_view;
 use InvalidArgumentException;
@@ -17,7 +18,7 @@ use rex_sql_exception;
 class Weekday
 {
 
-    private rex_addon $addon;
+    private rex_addon_interface $addon;
     /** @var null|array<int, array{name: string, count: int}> */
     private ?array $rows = null;
 
@@ -58,11 +59,10 @@ class Weekday
 
 
     /**
-     * 
-     * 
-     * @return array 
-     * @throws InvalidArgumentException 
-     * @throws rex_sql_exception 
+     *
+     * @return array<int, int>
+     * @throws InvalidArgumentException
+     * @throws rex_sql_exception
      */
     public function getData(): array
     {

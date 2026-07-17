@@ -4,6 +4,7 @@ namespace AndiLeni\Statistics;
 
 use rex;
 use rex_addon;
+use rex_addon_interface;
 use rex_sql;
 use rex_view;
 use InvalidArgumentException;
@@ -16,7 +17,7 @@ use rex_sql_exception;
 class Pages
 {
 
-    private rex_addon $addon;
+    private rex_addon_interface $addon;
     private DateFilter $filter_date_helper;
 
 
@@ -35,11 +36,10 @@ class Pages
 
 
     /**
-     * 
-     * 
-     * @return array 
-     * @throws InvalidArgumentException 
-     * @throws rex_sql_exception 
+     *
+     * @return array<int, array<string, mixed>>
+     * @throws InvalidArgumentException
+     * @throws rex_sql_exception
      */
     public function sumPerPage(string $httpstatus, int $limit = 30): array
     {
@@ -123,7 +123,7 @@ class Pages
 
         $sql->setQuery('delete from ' . rex::getTable('pagestats_visits_per_url') . ' where url = :url', ['url' => $request_url]);
 
-        return $sql->getRows() ?? 0;
+        return $sql->getRows();
     }
 
 
@@ -225,6 +225,7 @@ class Pages
     }
 
     /**
+     * @param list<string> $favoriteUrls
      * @return array<int, array<string, mixed>>
      * @throws rex_sql_exception
      */
@@ -268,7 +269,7 @@ class Pages
 
         if ([] !== $favoriteUrls) {
             $favoritePlaceholders = [];
-            foreach (array_values($favoriteUrls) as $index => $favoriteUrl) {
+            foreach ($favoriteUrls as $index => $favoriteUrl) {
                 $key = 'fav' . $index;
                 $favoritePlaceholders[] = ':' . $key;
                 $params[$key] = $favoriteUrl;
