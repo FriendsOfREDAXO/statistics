@@ -1,57 +1,16 @@
 # Changelog
 
-## [3.3.10] - 17.07.2026
+## [3.4.0] - 17.07.2026
 
--   Geo-Bereich in den Einstellungen erweitert: zeigt jetzt Status, letzte Aktualisierung und Dateigröße der `ip2geo.mmdb`
--   Geo-Update meldet Fehlschläge jetzt als Fehler statt als Erfolgsmeldung
-
-## [3.3.9] - 17.07.2026
-
--   Einstellungs-Panels speichern jetzt sauber getrennt: jedes Formular hat eine eigene interne Form-ID
--   Fix für den Panel-Workflow: Absenden eines Bereichs triggert nicht mehr die Verarbeitung der anderen Einstellungs-Formulare
-
-## [3.3.8] - 17.07.2026
-
--   Einstellungsseite neu gegliedert: eigene Panels für „Tracking & Erkennung“, „Filter & Erfassung“, „Darstellung & UX“, „Media“ und „API“
--   Lange Konfigurationsstrecke in klar separierte Karten aufgeteilt, damit Themen schneller auffindbar und verständlicher bearbeitbar sind
-
-## [3.3.7] - 17.07.2026
-
--   Wartungsaufgaben-Buttons auf neutrales Default-Design umgestellt (ohne Farbmarkierung)
--   Confirm/Submit-Handling für Wartungsaufgaben robuster umgesetzt über `form[data-confirm]`, damit Aktionen zuverlässig ausgelöst werden
--   Visuelle Zuordnung geschärft: Löschaktionen bleiben rot, Wartungsaufgaben sind neutral gehalten
-
-## [3.3.6] - 17.07.2026
-
--   Statistikwartung UX überarbeitet: klare Trennung zwischen Löschaktionen und Wartungsaufgaben
--   Aktionen sind jetzt pro Karte mit „betroffene Daten“-Hinweis dargestellt, damit Button-Zuordnung und Auswirkungen schneller verständlich sind
-
-## [3.3.5] - 17.07.2026
-
--   Erkennungsmodus ist jetzt umschaltbar: stateless (Standard) oder klassisch per Session
--   Session-Modus wurde für geringeres Lock-Risiko optimiert: Session wird nur kurz für Token-Zugriff geöffnet und direkt wieder geschlossen
--   Einstellungen zeigen jetzt einen Hinweis mit Vor- und Nachteilen beider Modi
-
-## [3.3.4] - 17.07.2026
-
--   Token-Rotation für die stateless Erkennung ist jetzt in den Einstellungen konfigurierbar (1-24 Stunden)
--   Token-Bildung nutzt ein konfigurierbares Zeitfenster statt starrer Tagesrotation
-
-## [3.3.3] - 17.07.2026
-
--   Visitor-Erkennung nachgeschärft: stateless Token nutzt jetzt eine gekürzte IP (IPv4 `/24`, IPv6 `/64`) statt gar keiner IP
--   Datenschutzfreundliche Deduplizierung vereinheitlicht: auch die tägliche Besucher-Logik arbeitet mit derselben gekürzten IP statt mit voller IP
-
-## [3.3.2] - 17.07.2026
-
--   Privacy-Härtung für stateless Tracking: IP-Adresse ist nicht mehr Teil des Visitor-Tokens
--   Token-Ableitung intern auf installationsspezifisches Pepper + Tagesrotation umgestellt, damit keine direkte IP-Reproduzierbarkeit entsteht
-
-## [3.3.1] - 17.07.2026
-
--   Frontend-Tracking weiter entlastet: der Visitor-Token wird jetzt stateless aus vorhandenen Request-Merkmalen gebildet, ganz ohne Cookie und ohne PHP-Session
--   Consent-Fußabdruck reduziert: kein Tracking-Cookie mehr nötig, dadurch entfällt der Consent-Dialog für die Statistik-Erkennung
--   Session-Locking im Frontend weiter minimiert, weil die Statistik-Erfassung keine Session mehr für den Token-Pfad anlegt
+-   Tracking-Identität umfassend überarbeitet: stateless Erkennung als Standard, optionaler Session-Modus, gekürzte/anonymisierte IP-Anteile, konfigurierbare Token-Rotation sowie klare Hinweise zu Vor- und Nachteilen
+-   Datenschutz und Laufzeitverhalten verbessert: kein Tracking-Cookie im Standardpfad, reduziertes Session-Locking und robustere Deduplizierung von Besuchen/Besuchern
+-   Einstellungsseite strukturell modernisiert: getrennte Panels für Tracking, Filter, Darstellung, Media und API mit sauber getrennten Formular-Speicherpfaden
+-   UX für Wartung deutlich verbessert: klare Trennung von Löschaktionen und Wartungsaufgaben, neutrales Button-Design für Wartung, präzisere Confirm-Mechanik und bessere Zuordnung über Scope-Hinweise
+-   Rücksprung nach Speichern verbessert: Formulare führen wieder zum zuletzt bearbeiteten Panel statt an den Seitenanfang
+-   Geo-Bereich erweitert: Statusanzeige der Geo-Datenbank inkl. „geladen/nicht geladen“, letzte Aktualisierung und Dateigröße; Fehlschläge beim Update werden korrekt als Fehler ausgegeben
+-   Copilot-Reviewpunkte vollständig adressiert und Threads aufgelöst (u. a. Confirm-Bindung, Panel-Rücksprunglogik, Fehlerunterdrückung entfernt)
+-   Codebasis technisch gehärtet: Typbereinigung, robustere Date/Array-Fallbacks, präzisere PHPDoc-Array-Shapes, abgesicherter `gzdecode()`-Pfad beim `ip2geo`-Download sowie sauberere Fragment-/Help-Verarbeitung
+-   Vollständiger RexStan-Lauf für `redaxo/src/addons/statistics` im `coreweb`-Container erfolgreich abgeschlossen: keine verbleibenden Fehler
 
 ## [3.3.0] - 14.07.2026
 
