@@ -64,16 +64,20 @@ if (rex::isFrontend()) {
         $statistics_has_backend_login = false;
     }
 
-    rex_login::startSession();
-
-    $token = rex_session("statistics_token", "string", null);
-
-    if ($token === null) {
-        $bytes = random_bytes(20);
-        $token = bin2hex($bytes);
-
-        rex_set_session('statistics_token', $token);
-    }
+    $clientAddress = rex::getRequest()->getClientIp();
+    $clientAddress = $clientAddress ? $clientAddress : '0.0.0.0';
+    $userAgent = rex_server('HTTP_USER_AGENT', 'string', '');
+    $acceptLanguage = rex_server('HTTP_ACCEPT_LANGUAGE', 'string', '');
+    $token = hash(
+        'sha256',
+        implode('|', [
+            rex::getServer(),
+            date('Y-m-d'),
+            $clientAddress,
+            $userAgent,
+            $acceptLanguage,
+        ])
+    );
 } else {
     $statistics_has_backend_login = true;
     $token = "";

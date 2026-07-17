@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.3.1] - 17.07.2026
+
+-   Frontend-Tracking weiter entlastet: der Visitor-Token wird jetzt stateless aus vorhandenen Request-Merkmalen gebildet, ganz ohne Cookie und ohne PHP-Session
+-   Consent-Fußabdruck reduziert: kein Tracking-Cookie mehr nötig, dadurch entfällt der Consent-Dialog für die Statistik-Erkennung
+-   Session-Locking im Frontend weiter minimiert, weil die Statistik-Erfassung keine Session mehr für den Token-Pfad anlegt
+
 ## [3.3.0] - 14.07.2026
 
 -   Neue Unterseite `Google-Kampagnen` zur Auflösung und Gruppierung von Kampagnen-Parametern aus Ziel-URLs (u. a. `gad_campaignid`, `gclid`, `gbraid`, `wbraid`, `utm_*`)
