@@ -27,6 +27,34 @@ use Matomo\Network\IP;
 class Visit
 {
 
+    public static function anonymizeIpAddress(string $ipAddress): string
+    {
+        if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $parts = explode('.', $ipAddress);
+            if (4 === count($parts)) {
+                $parts[3] = '0';
+                return implode('.', $parts);
+            }
+
+            return '0.0.0.0';
+        }
+
+        if (filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $packed = @inet_pton($ipAddress);
+            if (false !== $packed) {
+                $masked = substr($packed, 0, 8) . str_repeat("\0", 8);
+                $expanded = @inet_ntop($masked);
+                if (false !== $expanded) {
+                    return strtolower($expanded);
+                }
+            }
+
+            return '::';
+        }
+
+        return '0.0.0.0';
+    }
+
     const IGNORE_WHEN_STARTS = [
         '/robots.txt',
         '/sitemap.xml',
@@ -569,7 +597,8 @@ class Visit
     {
         $save_visitor = true;
 
-        $hash_string = $this->clientIPAddress . $this->userAgent;
+        $anonymizedClientIp = self::anonymizeIpAddress($this->clientIPAddress);
+        $hash_string = $anonymizedClientIp . $this->userAgent;
         $hash = hash('sha1', $hash_string);
 
         $sql = rex_sql::factory();

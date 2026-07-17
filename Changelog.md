@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.3.3] - 17.07.2026
+
+-   Visitor-Erkennung nachgeschärft: stateless Token nutzt jetzt eine gekürzte IP (IPv4 `/24`, IPv6 `/64`) statt gar keiner IP
+-   Datenschutzfreundliche Deduplizierung vereinheitlicht: auch die tägliche Besucher-Logik arbeitet mit derselben gekürzten IP statt mit voller IP
+
+## [3.3.2] - 17.07.2026
+
+-   Privacy-Härtung für stateless Tracking: IP-Adresse ist nicht mehr Teil des Visitor-Tokens
+-   Token-Ableitung intern auf installationsspezifisches Pepper + Tagesrotation umgestellt, damit keine direkte IP-Reproduzierbarkeit entsteht
+
 ## [3.3.1] - 17.07.2026
 
 -   Frontend-Tracking weiter entlastet: der Visitor-Token wird jetzt stateless aus vorhandenen Request-Merkmalen gebildet, ganz ohne Cookie und ohne PHP-Session

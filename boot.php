@@ -64,16 +64,19 @@ if (rex::isFrontend()) {
         $statistics_has_backend_login = false;
     }
 
+    $instancePepper = (string) rex::getProperty('instname');
     $clientAddress = rex::getRequest()->getClientIp();
     $clientAddress = $clientAddress ? $clientAddress : '0.0.0.0';
+    $anonymizedClientAddress = Visit::anonymizeIpAddress($clientAddress);
     $userAgent = rex_server('HTTP_USER_AGENT', 'string', '');
     $acceptLanguage = rex_server('HTTP_ACCEPT_LANGUAGE', 'string', '');
     $token = hash(
         'sha256',
         implode('|', [
-            rex::getServer(),
+            'statistics_stateless_token_v3',
+            $instancePepper,
             date('Y-m-d'),
-            $clientAddress,
+            $anonymizedClientAddress,
             $userAgent,
             $acceptLanguage,
         ])
