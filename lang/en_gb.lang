@@ -383,6 +383,7 @@ statistics_google_campaigns_params = Parameters
 statistics_google_campaigns_urls = Matching URLs
 statistics_google_campaigns_click_id_only = No campaign ID (click ID only)
 statistics_google_campaigns_no_hits = No campaign links were detected in the selected period.
+statistics_google_campaigns_disabled = Google campaigns are disabled. Please enable campaigns first in Settings under API.
 statistics_google_campaigns_open_ads = Check campaigns in Google Ads
 statistics_google_campaigns_status_found = Campaign links were called. Detected Google Ads calls: %s
 statistics_google_campaigns_status_only_click_ids = Only click IDs were detected, but no direct Google Ads campaign ID.

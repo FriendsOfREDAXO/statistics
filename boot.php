@@ -11,6 +11,16 @@ if (rex::isBackend()) {
     $addon = rex_addon::get('statistics');
     $currentPage = (string) rex_be_controller::getCurrentPage();
 
+    // Hide campaign page unless campaign/API tracking is explicitly enabled.
+    $page = $addon->getProperty('page');
+    if (is_array($page) && isset($page['subpages']) && is_array($page['subpages'])) {
+        $campaignTrackingEnabled = (bool) $addon->getConfig('statistics_api_enable', false);
+        if (!$campaignTrackingEnabled && isset($page['subpages']['google_campaigns'])) {
+            unset($page['subpages']['google_campaigns']);
+            $addon->setProperty('page', $page);
+        }
+    }
+
 
     // permissions
     rex_perm::register('statistics[]', null);

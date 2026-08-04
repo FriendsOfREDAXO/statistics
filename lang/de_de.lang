@@ -381,6 +381,7 @@ statistics_google_campaigns_params = Parameter
 statistics_google_campaigns_urls = Betroffene URLs
 statistics_google_campaigns_click_id_only = Ohne Kampagnen-ID (nur Klick-ID)
 statistics_google_campaigns_no_hits = Es wurden im gewählten Zeitraum keine Kampagnen-Links erkannt.
+statistics_google_campaigns_disabled = Google-Kampagnen sind deaktiviert. Bitte in den Einstellungen unter API zuerst Kampagnen aktivieren.
 statistics_google_campaigns_open_ads = Kampagnen in Google Ads prüfen
 statistics_google_campaigns_status_found = Kampagnen-Links wurden aufgerufen. Erkannte Google-Ads-Aufrufe: %s
 statistics_google_campaigns_status_only_click_ids = Es wurden nur Klick-IDs erkannt, aber keine direkte Google-Ads-Kampagnen-ID.

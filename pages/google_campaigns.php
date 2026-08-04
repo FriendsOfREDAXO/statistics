@@ -5,6 +5,11 @@ use AndiLeni\Statistics\StatsSubpageRenderer;
 
 $addon = rex_addon::get('statistics');
 
+if (!(bool) $addon->getConfig('statistics_api_enable', false)) {
+    echo rex_view::warning($addon->i18n('statistics_google_campaigns_disabled'));
+    return;
+}
+
 $currentBackendPage = rex_get('page', 'string', '');
 $requestDateStart = htmlspecialchars_decode(rex_request('date_start', 'string', ''));
 $requestDateEnd = htmlspecialchars_decode(rex_request('date_end', 'string', ''));
