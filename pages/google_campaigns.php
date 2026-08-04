@@ -5,7 +5,7 @@ use AndiLeni\Statistics\StatsSubpageRenderer;
 
 $addon = rex_addon::get('statistics');
 
-if (!(bool) $addon->getConfig('statistics_api_enable', false)) {
+if (!(bool) $addon->getConfig('statistics_google_campaigns_enable', false)) {
     echo rex_view::warning($addon->i18n('statistics_google_campaigns_disabled'));
     return;
 }

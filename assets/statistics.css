@@ -2,6 +2,47 @@
     word-break: break-all;
 }
 
+body[id^="rex-page-statistics"] {
+    --statistics-surface: #f9fbfd;
+    --statistics-card-bg: #ffffff;
+    --statistics-border: #d7dde3;
+    --statistics-text: #2f3f52;
+    --statistics-muted: #66717d;
+    --statistics-accent: #5ca2de;
+    --statistics-meter-bg: #eef2f6;
+    --statistics-favorite-row-bg: #fff9e6;
+    --statistics-weekday-active-bg: #2f80c8;
+    --statistics-weekday-active-text: #ffffff;
+}
+
+body[id^="rex-page-statistics"].rex-theme-dark {
+    --statistics-surface: #2b3a47;
+    --statistics-card-bg: #334452;
+    --statistics-border: #465a6d;
+    --statistics-text: #e4edf4;
+    --statistics-muted: #b2c2d1;
+    --statistics-accent: #86c1f3;
+    --statistics-meter-bg: #425567;
+    --statistics-favorite-row-bg: #5a4a22;
+    --statistics-weekday-active-bg: #2f5f86;
+    --statistics-weekday-active-text: #e8f1f8;
+}
+
+@media (prefers-color-scheme: dark) {
+    body[id^="rex-page-statistics"].rex-has-theme:not(.rex-theme-light) {
+        --statistics-surface: #2b3a47;
+        --statistics-card-bg: #334452;
+        --statistics-border: #465a6d;
+        --statistics-text: #e4edf4;
+        --statistics-muted: #b2c2d1;
+        --statistics-accent: #86c1f3;
+        --statistics-meter-bg: #425567;
+        --statistics-favorite-row-bg: #5a4a22;
+        --statistics-weekday-active-bg: #2f5f86;
+        --statistics-weekday-active-text: #e8f1f8;
+    }
+}
+
 body#rex-page-statistics-pages {
     --statistics-surface: #f9fbfd;
     --statistics-card-bg: #ffffff;
@@ -70,7 +111,7 @@ body#rex-page-statistics-pages.rex-theme-dark .statistics-pages-filter-bar {
     align-items: flex-end;
     padding: 10px;
     border: 1px solid var(--statistics-border);
-    border-radius: 4px;
+    border-radius: 0;
     background: var(--statistics-surface);
     margin-bottom: 12px;
 }
@@ -128,7 +169,7 @@ body#rex-page-statistics-pages.rex-theme-dark .statistics-pages-filter-bar {
     align-items: center;
     width: 100%;
     border: 1px solid var(--statistics-border);
-    border-radius: 4px;
+    border-radius: 0;
     background: var(--statistics-card-bg);
     padding: 12px;
     margin-bottom: 12px;
@@ -171,7 +212,7 @@ body#rex-page-statistics-pages.rex-theme-dark .statistics-pages-filter-bar {
 .statistics-ref-top-card {
     display: block;
     border: 1px solid var(--statistics-border);
-    border-radius: 6px;
+    border-radius: 0;
     background: var(--statistics-card-bg);
     padding: 10px 12px;
     margin-bottom: 12px;
@@ -209,7 +250,7 @@ body#rex-page-statistics-pages.rex-theme-dark .statistics-pages-filter-bar {
 .statistics-ref-meter {
     height: 6px;
     background: var(--statistics-meter-bg);
-    border-radius: 999px;
+    border-radius: 0;
     overflow: hidden;
 }
 
@@ -220,4 +261,53 @@ body#rex-page-statistics-pages.rex-theme-dark .statistics-pages-filter-bar {
 
 .statistics-row-favorite > td {
     background-color: var(--statistics-favorite-row-bg) !important;
+}
+
+/* Hide auto-generated rex_config_form legends to avoid duplicate section titles. */
+body#rex-page-statistics-settings [id^="statistics-settings-panel-"] form > fieldset > legend {
+    display: none !important;
+}
+
+.statistics-weekday-card {
+    border: 0;
+    border-radius: 0;
+    padding: 8px 0;
+    background: transparent;
+    color: var(--statistics-text);
+    border-bottom: 1px solid var(--statistics-border);
+}
+
+.statistics-weekday-card__label {
+    font-size: 12px;
+    color: var(--statistics-muted);
+}
+
+.statistics-weekday-card__value {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--statistics-text);
+}
+
+.statistics-weekday-card--active {
+    border-bottom-color: var(--statistics-accent);
+    background: var(--statistics-weekday-active-bg);
+    padding: 8px 10px;
+}
+
+.statistics-weekday-card--active .statistics-weekday-card__label,
+.statistics-weekday-card--active .statistics-weekday-card__value {
+    color: var(--statistics-weekday-active-text);
+}
+
+/* Keep statistics backend containers and panel boxes sharp-edged. */
+body[id^="rex-page-statistics"] .panel,
+body[id^="rex-page-statistics"] .panel-heading,
+body[id^="rex-page-statistics"] .panel-footer,
+body[id^="rex-page-statistics"] .panel-body,
+body[id^="rex-page-statistics"] .well,
+body[id^="rex-page-statistics"] .box,
+body[id^="rex-page-statistics"] .container,
+body[id^="rex-page-statistics"] .container-fluid {
+    border-radius: 0 !important;
 }

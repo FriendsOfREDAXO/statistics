@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.5.2] - 04.08.2026
+
+-   Strukturübersicht aus `statistics` ausgelagert und als separates AddOn (`klxm_sitemap`) vorbereitet
+-   Google-Kampagnen von API-Events getrennt: eigener Schalter, klare Beschriftung in den Einstellungen und angepasste Sichtbarkeit der Unterseite
+-   UI-Feinschliff im Backend: eckiger Flat-Style ohne Rundungen sowie verbesserte Darkmode-Darstellung im Bereich „Aufrufe nach Wochentagen“
+
 ## [3.5.1] - 04.08.2026
 
 -   Darkmode auf der Seite „Seitenaufrufe“ weiter stabilisiert: helle Restflächen in Filter-/Kartenbereichen entfernt und Theme-Variablen inklusive Light/Dark/Auto konsistent nachgezogen

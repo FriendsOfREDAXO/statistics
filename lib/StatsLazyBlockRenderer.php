@@ -312,20 +312,18 @@ class StatsLazyBlockRenderer
             $this->addon->i18n('statistics_sunday'),
         ];
 
-        $max = [] === $data ? 0 : max($data);
-        $max = $max > 0 ? $max : 1;
-
-        $cards = '<div class="row">';
+        $cards = '<div class="row statistics-weekday-grid">';
         foreach ($labels as $index => $label) {
             $value = isset($data[$index]) ? (int) $data[$index] : 0;
-            $ratio = $value / $max;
-            $lightness = 95 - (int) round($ratio * 45);
-            $bg = 'hsl(205, 72%, ' . $lightness . '%)';
+            $cardClass = 'statistics-weekday-card';
+            if ($value > 0) {
+                $cardClass .= ' statistics-weekday-card--active';
+            }
 
             $cards .= '<div class="col-xs-6 col-sm-4 col-md-3" style="margin-bottom:10px;">';
-            $cards .= '<div style="border:1px solid #d9e2ec;border-radius:8px;padding:10px;background:' . $bg . ';">';
-            $cards .= '<div style="font-size:12px;opacity:.85;">' . htmlspecialchars($label, ENT_QUOTES) . '</div>';
-            $cards .= '<div style="font-size:20px;font-weight:700;line-height:1.2;">' . htmlspecialchars((string) $value, ENT_QUOTES) . '</div>';
+            $cards .= '<div class="' . htmlspecialchars($cardClass, ENT_QUOTES) . '">';
+            $cards .= '<div class="statistics-weekday-card__label">' . htmlspecialchars($label, ENT_QUOTES) . '</div>';
+            $cards .= '<div class="statistics-weekday-card__value">' . htmlspecialchars((string) $value, ENT_QUOTES) . '</div>';
             $cards .= '</div></div>';
         }
         $cards .= '</div>';
@@ -680,7 +678,7 @@ class StatsLazyBlockRenderer
                 'barMaxWidth' => 28,
                 'showBackground' => true,
                 'itemStyle' => [
-                    'borderRadius' => [0, 8, 8, 0],
+                    'borderRadius' => [0, 0, 0, 0],
                 ],
                 'emphasis' => [
                     'itemStyle' => [
@@ -772,7 +770,7 @@ class StatsLazyBlockRenderer
             $entry['data'] = array_map(static fn ($value): float => (float) $value, $entry['data']);
             $entry['itemStyle'] = [
                 'color' => $palette[$index % count($palette)],
-                'borderRadius' => [3, 3, 3, 3],
+                'borderRadius' => [0, 0, 0, 0],
             ];
             $entry['label'] = [
                 'show' => true,

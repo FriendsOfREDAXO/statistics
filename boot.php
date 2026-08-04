@@ -11,10 +11,10 @@ if (rex::isBackend()) {
     $addon = rex_addon::get('statistics');
     $currentPage = (string) rex_be_controller::getCurrentPage();
 
-    // Hide campaign page unless campaign/API tracking is explicitly enabled.
+    // Hide campaign page unless campaign tracking is explicitly enabled.
     $page = $addon->getProperty('page');
     if (is_array($page) && isset($page['subpages']) && is_array($page['subpages'])) {
-        $campaignTrackingEnabled = (bool) $addon->getConfig('statistics_api_enable', false);
+        $campaignTrackingEnabled = (bool) $addon->getConfig('statistics_google_campaigns_enable', false);
         if (!$campaignTrackingEnabled && isset($page['subpages']['google_campaigns'])) {
             unset($page['subpages']['google_campaigns']);
             $addon->setProperty('page', $page);
@@ -41,14 +41,6 @@ if (rex::isBackend()) {
     rex_view::addJsFile($addon->getAssetsUrl('datatables.min.js'));
 
     rex_view::addJsFile($addon->getAssetsUrl('statistics.js'));
-
-    if ('statistics/structure_insights' === $currentPage) {
-        $assetVersion = rawurlencode((string) $addon->getVersion());
-        rex_view::addCssFile($addon->getAssetsUrl('structure_insights_graph.css') . '?v=' . $assetVersion);
-        rex_view::addJsFile($addon->getAssetsUrl('exceljs.min.js') . '?v=' . $assetVersion);
-        rex_view::addJsFile($addon->getAssetsUrl('structure_insights_export.js') . '?v=' . $assetVersion);
-        rex_view::addJsFile($addon->getAssetsUrl('structure_insights_graph.js') . '?v=' . $assetVersion);
-    }
 
     if ('statistics/reports' === $currentPage || str_starts_with($currentPage, 'statistics/reports/')) {
         $assetVersion = rawurlencode((string) $addon->getVersion());

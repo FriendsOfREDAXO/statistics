@@ -61,9 +61,88 @@ $(document).on("rex:ready", function (event, container) {
         return /Safari\//.test(ua) && !/Chrome\//.test(ua) && !/Chromium\//.test(ua) && !/CriOS\//.test(ua) && !/Edg\//.test(ua);
     }
 
+    function toneDownHexColorForDarkMode(color) {
+        if (typeof color !== 'string') {
+            return color;
+        }
+
+        var hex = color.trim();
+        var match = /^#([0-9a-fA-F]{6})$/.exec(hex);
+        if (!match) {
+            return color;
+        }
+
+        var raw = match[1];
+        var r = parseInt(raw.slice(0, 2), 16);
+        var g = parseInt(raw.slice(2, 4), 16);
+        var b = parseInt(raw.slice(4, 6), 16);
+
+        // Mix 35% original with 65% dark-surface color for less glare in dark mode.
+        var mixR = Math.round((r * 0.35) + (43 * 0.65));
+        var mixG = Math.round((g * 0.35) + (58 * 0.65));
+        var mixB = Math.round((b * 0.35) + (71 * 0.65));
+
+        var toHex = function (value) {
+            return value.toString(16).padStart(2, '0');
+        };
+
+        return '#' + toHex(mixR) + toHex(mixG) + toHex(mixB);
+    }
+
     function normalizeChartOption(option) {
         if (!option || typeof option !== 'object') {
             return option;
+        }
+
+        if (Array.isArray(option.series)) {
+            var isDarkTheme = getTheme() === 'dark';
+            option.series.forEach(function (series) {
+                if (!series) {
+                    return;
+                }
+
+                if (isDarkTheme && Array.isArray(series.data)) {
+                    series.data = series.data.map(function (item) {
+                        if (!item || typeof item !== 'object' || Array.isArray(item)) {
+                            return item;
+                        }
+
+                        if (!item.itemStyle || typeof item.itemStyle !== 'object') {
+                            return item;
+                        }
+
+                        if (typeof item.itemStyle.color === 'string') {
+                            item.itemStyle.color = toneDownHexColorForDarkMode(item.itemStyle.color);
+                        }
+
+                        return item;
+                    });
+                }
+
+                if (isDarkTheme && series.itemStyle && typeof series.itemStyle === 'object' && typeof series.itemStyle.color === 'string') {
+                    series.itemStyle.color = toneDownHexColorForDarkMode(series.itemStyle.color);
+                }
+
+                if (series.type !== 'bar') {
+                    return;
+                }
+
+                if (!series.itemStyle || typeof series.itemStyle !== 'object') {
+                    series.itemStyle = {};
+                }
+                series.itemStyle.borderRadius = 0;
+
+                if (series.emphasis && typeof series.emphasis === 'object') {
+                    if (!series.emphasis.itemStyle || typeof series.emphasis.itemStyle !== 'object') {
+                        series.emphasis.itemStyle = {};
+                    }
+                    series.emphasis.itemStyle.borderRadius = 0;
+                }
+
+                if (series.backgroundStyle && typeof series.backgroundStyle === 'object') {
+                    series.backgroundStyle.borderRadius = 0;
+                }
+            });
         }
 
         if (isSafariBrowser()) {

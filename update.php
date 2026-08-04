@@ -79,6 +79,16 @@ if (rex_config::has("statistics/api", "statistics_api_enable")) {
     rex_config::set("statistics", "statistics_api_enable", rex_config::get("statistics/api", "statistics_api_enable"));
 }
 
+// Keep backward compatibility: when the new dedicated campaign setting does not exist yet,
+// initialize it from the previous shared API toggle.
+if (!rex_config::has('statistics', 'statistics_google_campaigns_enable')) {
+    rex_config::set(
+        'statistics',
+        'statistics_google_campaigns_enable',
+        (bool) rex_config::get('statistics', 'statistics_api_enable', false)
+    );
+}
+
 if (rex_config::has("statistics/media", "statistics_media_log_all")) {
     rex_config::set("statistics", "statistics_media_log_all", rex_config::get("statistics/media", "statistics_media_log_all"));
 }

@@ -721,6 +721,11 @@ if (rex_request_method() == 'post') {
 
 
 $renderConfigPanel = static function (string $panelKey, string $title, string $formBody): void {
+    $normalizedFormBody = preg_replace('~<legend[^>]*>[^<]*</legend>~i', '', $formBody);
+    if (is_string($normalizedFormBody) && '' !== $normalizedFormBody) {
+        $formBody = $normalizedFormBody;
+    }
+
     $fragment = new rex_fragment();
     $fragment->setVar('class', 'edit', false);
     $fragment->setVar('title', $title, false);
@@ -880,12 +885,22 @@ $renderConfigPanel('media', rex_i18n::rawMsg('statistics_settings_panel_media'),
 // API
 $apiForm = rex_config_form::factory('statistics', 'api');
 $field = $apiForm->addRadioField('statistics_api_enable');
-$field->setLabel($addon->i18n('statistics_api_enable_campaigns'));
+$field->setLabel($addon->i18n('statistics_api_enable'));
 $field->addOption($addon->i18n('statistics_api_yes'), 1);
 $field->addOption($addon->i18n('statistics_api_no'), 0);
-$field->setNotice($addon->i18n('statistics_api_enable_campaigns_note'));
+$field->setNotice($addon->i18n('statistics_api_enable_note'));
 
 $renderConfigPanel('api', rex_i18n::rawMsg('statistics_settings_panel_api'), $apiForm->get());
+
+// Google
+$googleForm = rex_config_form::factory('statistics', 'google');
+$field = $googleForm->addRadioField('statistics_google_campaigns_enable');
+$field->setLabel($addon->i18n('statistics_google_campaigns_enable'));
+$field->addOption($addon->i18n('statistics_api_yes'), 1);
+$field->addOption($addon->i18n('statistics_api_no'), 0);
+$field->setNotice($addon->i18n('statistics_google_campaigns_enable_note'));
+
+$renderConfigPanel('google', rex_i18n::rawMsg('statistics_settings_panel_campaigns'), $googleForm->get());
 
 
 

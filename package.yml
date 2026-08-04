@@ -1,5 +1,5 @@
 package: statistics
-version: 3.5.1
+version: 3.5.2
 author: Andreas Lenhardt
 supportpage: https://github.com/AndiLeni/statistics
 
@@ -14,10 +14,6 @@ page:
         pages:
             title: "translate:statistics_pages"
             icon: rex-icon fa-file-text-o
-        structure_insights:
-            title: "translate:statistics_structure_insights"
-            icon: rex-icon fa-sitemap
-            itemclass: pull-right
         google_campaigns:
             title: "translate:statistics_google_campaigns"
             icon: rex-icon fa-bullseye
@@ -74,6 +70,7 @@ default_config:
     statistics_media_log_all: false
     statistics_media_log_mm: true
 
+    statistics_google_campaigns_enable: false
     statistics_api_enable: false
 
 
