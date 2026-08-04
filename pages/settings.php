@@ -235,7 +235,7 @@ if (rex_request_method() == 'post') {
     };
 
     $renderBatchContinueForm = static function (string $func, array $hiddenFields = []) use ($addon): string {
-        $html = '<form style="margin-top:10px" action="' . rex_url::currentBackendPage() . '" method="post">';
+        $html = '<form style="margin-top:10px" action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post">';
         $html .= '<input type="hidden" name="func" value="' . htmlspecialchars($func, ENT_QUOTES) . '">';
 
         foreach ($hiddenFields as $name => $value) {
@@ -605,7 +605,7 @@ if (rex_request_method() == 'post') {
             }
 
             if ($nextOffset < $totalTables) {
-                $continueHtml = '<form style="margin-top:10px" action="' . rex_url::currentBackendPage() . '" method="post">';
+                $continueHtml = '<form style="margin-top:10px" action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post">';
                 $continueHtml .= '<input type="hidden" name="func" value="optimize_tables">';
                 $continueHtml .= '<input type="hidden" name="optimize_offset" value="' . (string) $nextOffset . '">';
                 $continueHtml .= '<button class="btn btn-default" type="submit">' . htmlspecialchars($addon->i18n('statistics_optimize_tables_continue'), ENT_QUOTES) . '</button>';
@@ -827,7 +827,7 @@ $geoIpHtml = '
 <strong>' . htmlspecialchars($addon->i18n('statistics_geo_last_update'), ENT_QUOTES) . ':</strong> ' . htmlspecialchars($geoDbLastUpdated, ENT_QUOTES) . '<br>
 <strong>' . htmlspecialchars($addon->i18n('statistics_geo_file_size'), ENT_QUOTES) . ':</strong> ' . htmlspecialchars($geoDbSizeFormatted, ENT_QUOTES) . '
 </div>
-<form style="margin:5px" action="' . rex_url::currentBackendPage() . '" method="post">
+<form style="margin:5px" action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post">
 <input type="hidden" name="func" value="updateGeo2Ip">
 <button class="btn btn-primary" type="submit">' . htmlspecialchars($addon->i18n('statistics_geo_update_button'), ENT_QUOTES) . '</button>
 </form>
@@ -944,7 +944,7 @@ $deleteActionsHtml = '';
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_hashes'),
     $addon->i18n('statistics_maintenance_scope_hashes'),
-    '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_delete_hashes') . '">'
+    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_delete_hashes'), ENT_QUOTES) . '">'
     . '<input type="hidden" name="func" value="delete_hash">'
     . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_delete_hashes') . '</button>'
     . '</form>'
@@ -952,7 +952,7 @@ $deleteActionsHtml .= $renderActionCard(
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_visits'),
     $addon->i18n('statistics_maintenance_scope_all'),
-    '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_delete_dump') . '">'
+    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_delete_dump'), ENT_QUOTES) . '">'
     . '<input type="hidden" name="func" value="delete_dump">'
     . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_delete_visits') . '</button>'
     . '</form>'
@@ -960,7 +960,7 @@ $deleteActionsHtml .= $renderActionCard(
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_bots'),
     $addon->i18n('statistics_maintenance_scope_bot'),
-    '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_delete_bots') . '">'
+    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_delete_bots'), ENT_QUOTES) . '">'
     . '<input type="hidden" name="func" value="delete_bot">'
     . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_delete_bots') . '</button>'
     . '</form>'
@@ -968,7 +968,7 @@ $deleteActionsHtml .= $renderActionCard(
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_referer'),
     $addon->i18n('statistics_maintenance_scope_referer'),
-    '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_delete_referer') . '">'
+    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_delete_referer'), ENT_QUOTES) . '">'
     . '<input type="hidden" name="func" value="delete_referer">'
     . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_delete_referer') . '</button>'
     . '</form>'
@@ -976,7 +976,7 @@ $deleteActionsHtml .= $renderActionCard(
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_media_delete_media'),
     $addon->i18n('statistics_maintenance_scope_media'),
-    '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_media_delete_media_confirm') . '">'
+    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_media_delete_media_confirm'), ENT_QUOTES) . '">'
     . '<input type="hidden" name="func" value="delete_media">'
     . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_media_delete_media') . '</button>'
     . '</form>'
@@ -984,7 +984,7 @@ $deleteActionsHtml .= $renderActionCard(
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_api_delete_api'),
     $addon->i18n('statistics_maintenance_scope_api'),
-    '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_api_delete_api_confirm') . '">'
+    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_api_delete_api_confirm'), ENT_QUOTES) . '">'
     . '<input type="hidden" name="func" value="delete_campaigns">'
     . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_api_delete_api') . '</button>'
     . '</form>'
@@ -994,7 +994,7 @@ $maintenanceTasksHtml = '';
 $maintenanceTasksHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_noise'),
     $addon->i18n('statistics_maintenance_scope_noise'),
-    '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_delete_noise') . '">'
+    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_delete_noise'), ENT_QUOTES) . '">'
     . '<input type="hidden" name="func" value="delete_noise">'
     . '<button class="btn btn-default" type="submit">' . $addon->i18n('statistics_delete_noise') . '</button>'
     . '</form>'
@@ -1002,7 +1002,7 @@ $maintenanceTasksHtml .= $renderActionCard(
 $maintenanceTasksHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_old'),
     $addon->i18n('statistics_maintenance_scope_keep_days'),
-    '<form style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_delete_old') . '">'
+    '<form style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_delete_old'), ENT_QUOTES) . '">'
     . '<input type="hidden" name="func" value="delete_old">'
     . '<label for="statistics-keep-days" style="margin:0;">' . $addon->i18n('statistics_cleanup_keep_days') . '</label>'
     . '<input id="statistics-keep-days" class="form-control" style="width:110px" type="number" min="1" step="1" name="keep_days" value="365">'
@@ -1012,7 +1012,7 @@ $maintenanceTasksHtml .= $renderActionCard(
 $maintenanceTasksHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_raw_old'),
     $addon->i18n('statistics_maintenance_scope_keep_days_raw'),
-    '<form style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_delete_raw_old') . '">'
+    '<form style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_delete_raw_old'), ENT_QUOTES) . '">'
     . '<input type="hidden" name="func" value="delete_raw_old">'
     . '<label for="statistics-keep-days-raw" style="margin:0;">' . $addon->i18n('statistics_cleanup_keep_days_raw') . '</label>'
     . '<input id="statistics-keep-days-raw" class="form-control" style="width:110px" type="number" min="1" step="1" name="keep_days_raw" value="120">'
@@ -1022,7 +1022,7 @@ $maintenanceTasksHtml .= $renderActionCard(
 $maintenanceTasksHtml .= $renderActionCard(
     $addon->i18n('statistics_optimize_tables'),
     $addon->i18n('statistics_maintenance_scope_optimize'),
-    '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_optimize_tables') . '">'
+    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_optimize_tables'), ENT_QUOTES) . '">'
     . '<input type="hidden" name="func" value="optimize_tables">'
     . '<button class="btn btn-default" type="submit">' . $addon->i18n('statistics_optimize_tables') . '</button>'
     . '</form>'
