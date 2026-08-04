@@ -4,15 +4,14 @@ namespace AndiLeni\Statistics;
 
 use DateTime;
 use DateTimeImmutable;
+use DeviceDetector\Cache\StaticCache;
 use DeviceDetector\ClientHints;
 use DeviceDetector\DeviceDetector;
 use DeviceDetector\Yaml\Symfony as DeviceDetectorSymfonyYamlParser;
 use rex;
 use rex_addon;
 use rex_addon_interface;
-use rex_path;
 use rex_sql;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use InvalidArgumentException;
 use rex_sql_exception;
 use Exception;
@@ -725,12 +724,12 @@ class Visit
      */
     public function parseUA(): void
     {
-        $cache = new FilesystemAdapter('', 0, rex_path::addonCache('statistics', 'devicedetector'));
+        $cache = new StaticCache();
         $clientHints = ClientHints::factory($_SERVER);
         $this->DeviceDetector = new DeviceDetector($this->userAgent, $clientHints);
         // $this->DeviceDetector = new DeviceDetector($this->userAgent);
         $this->DeviceDetector->setYamlParser(new DeviceDetectorSymfonyYamlParser());
-        $this->DeviceDetector->setCache(new \DeviceDetector\Cache\PSR6Bridge($cache));
+        $this->DeviceDetector->setCache($cache);
         $this->DeviceDetector->parse();
     }
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.5.1] - 04.08.2026
+
+-   Darkmode auf der Seite „Seitenaufrufe“ weiter stabilisiert: helle Restflächen in Filter-/Kartenbereichen entfernt und Theme-Variablen inklusive Light/Dark/Auto konsistent nachgezogen
+-   Favoriten-Markierung in der Seitenaufrufe-Tabelle von hartem Inline-Style auf CSS-Klasse umgestellt, damit die Hervorhebung in Darkmode korrekt dargestellt wird
+-   Wartungs-Cronjob gegen Lock-Konflikte gehärtet: erweiterter Retry bei SQL-Locks (1205/1213), betroffene Lösch-Batches werden bei andauerndem Lock nicht mehr als harter Fehler abgebrochen, sondern als vertagt behandelt
+-   Neuer Cronjob-Parameter „Tracking während Wartung pausieren“ ergänzt (standardmäßig aktiv) inklusive sicherem Restore des vorherigen Runtime-Status nach dem Lauf
+-   PHP-8.3-Fatal im Zusammenspiel mehrerer AddOn-Vendors behoben (CacheItem-/PSR-Signaturkonflikt): DeviceDetector-Cachepfad in `Visit` und `EventRequest` auf internen `StaticCache` umgestellt
+-   Vendor-Abhängigkeit bereinigt: direkte Abhängigkeit `symfony/cache` aus dem AddOn entfernt, um erneute Signaturkonflikte durch gemischte PSR-Cache-Versionen zu vermeiden
+
 ## [3.5.0] - 04.08.2026
 
 -   Neue Unterseite „Reports“ ergänzt: Bei installiertem AddOn `pdfout` lassen sich Wochen-, Monats- und Jahresberichte als PDF erzeugen

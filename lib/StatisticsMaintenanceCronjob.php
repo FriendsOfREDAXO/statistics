@@ -9,6 +9,7 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
     public function execute(): bool
     {
         $daysToKeepRaw = max(1, (int) $this->getParam('days_to_keep_raw', 120));
+        $pauseTrackingDuringMaintenance = (int) $this->getParam('pause_tracking_during_maintenance', 1) === 1;
         $optimizeTables = (int) $this->getParam('optimize_tables', 0) === 1;
         $optimizeBatchSize = max(1, (int) $this->getParam('optimize_batch_size', 2));
         $cleanupNoise = (int) $this->getParam('cleanup_noise', 0) === 1;
@@ -17,60 +18,70 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
         $cutoffDatetime = $cutoffDate . ' 00:00:00';
 
         $deleted = 0;
+        $previousRuntimePause = (bool) rex_config::get('statistics', 'statistics_pause_tracking_runtime', false);
+        if ($pauseTrackingDuringMaintenance) {
+            rex_config::set('statistics', 'statistics_pause_tracking_runtime', true);
+        }
 
         try {
-            $deleted += $this->deleteChunked(rex::getTable('pagestats_visits_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $deleted += $this->deleteChunked(rex::getTable('pagestats_visitors_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $deleted += $this->deleteChunked(rex::getTable('pagestats_referer'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $deleted += $this->deleteChunked(rex::getTable('pagestats_media'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $deleted += $this->deleteChunked(rex::getTable('pagestats_api'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $deleted += $this->deleteChunked(rex::getTable('pagestats_sessionstats'), 'lastvisit < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
-            $deleted += $this->deleteChunked(rex::getTable('pagestats_hash'), 'datetime < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
+            try {
+                $deleted += $this->deleteChunked(rex::getTable('pagestats_visits_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+                $deleted += $this->deleteChunked(rex::getTable('pagestats_visitors_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+                $deleted += $this->deleteChunked(rex::getTable('pagestats_referer'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+                $deleted += $this->deleteChunked(rex::getTable('pagestats_media'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+                $deleted += $this->deleteChunked(rex::getTable('pagestats_api'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
+                $deleted += $this->deleteChunked(rex::getTable('pagestats_sessionstats'), 'lastvisit < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
+                $deleted += $this->deleteChunked(rex::getTable('pagestats_hash'), 'datetime < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
 
-            $deleted += $this->deleteOrphanUrlStatusChunked();
+                $deleted += $this->deleteOrphanUrlStatusChunked();
 
-            $noiseDeleted = 0;
-            $noiseHasMore = false;
-            if ($cleanupNoise) {
-                $noiseResult = $this->cleanupNoiseBatch();
-                $noiseDeleted = $noiseResult['deleted'];
-                $noiseHasMore = $noiseResult['has_more'];
-                $deleted += $noiseDeleted;
-            }
-
-            $optimized = 0;
-            $optimizedTotal = 0;
-            $optimizedRemaining = 0;
-            if ($optimizeTables) {
-                $optimizeResult = $this->optimizeTablesBatch($this->getTablesToOptimize(), $optimizeBatchSize);
-                $optimized = $optimizeResult['optimized'];
-                $optimizedTotal = $optimizeResult['total'];
-                $optimizedRemaining = $optimizeResult['remaining'];
-            }
-
-            $message = 'Statistics-Wartung: ' . $deleted . ' Rohdaten-Einträge bereinigt (älter als ' . $daysToKeepRaw . ' Tage)';
-            if ($cleanupNoise) {
-                $message .= ', ' . $noiseDeleted . ' Störanfragen bereinigt';
-                if ($noiseHasMore) {
-                    $message .= ' (weitere vorhanden)';
+                $noiseDeleted = 0;
+                $noiseHasMore = false;
+                if ($cleanupNoise) {
+                    $noiseResult = $this->cleanupNoiseBatch();
+                    $noiseDeleted = $noiseResult['deleted'];
+                    $noiseHasMore = $noiseResult['has_more'];
+                    $deleted += $noiseDeleted;
                 }
-            }
-            if ($optimizeTables) {
-                $message .= ', ' . $optimized . ' Tabellen optimiert (Batchgröße: ' . $optimizeBatchSize . ')';
-                if ($optimizedTotal > 0) {
-                    $message .= ', verbleibend bis Vollzyklus: ' . $optimizedRemaining . ' von ' . $optimizedTotal;
+
+                $optimized = 0;
+                $optimizedTotal = 0;
+                $optimizedRemaining = 0;
+                if ($optimizeTables) {
+                    $optimizeResult = $this->optimizeTablesBatch($this->getTablesToOptimize(), $optimizeBatchSize);
+                    $optimized = $optimizeResult['optimized'];
+                    $optimizedTotal = $optimizeResult['total'];
+                    $optimizedRemaining = $optimizeResult['remaining'];
                 }
-            }
-            if ($this->deferredDeleteBatches > 0) {
-                $message .= ', ' . $this->deferredDeleteBatches . ' Lösch-Batches wegen DB-Locks vertagt';
-            }
-            $this->setMessage($message);
 
-            return true;
-        } catch (rex_sql_exception $exception) {
-            $this->setMessage('Statistics-Wartung fehlgeschlagen: ' . $exception->getMessage());
+                $message = 'Statistics-Wartung: ' . $deleted . ' Rohdaten-Einträge bereinigt (älter als ' . $daysToKeepRaw . ' Tage)';
+                if ($cleanupNoise) {
+                    $message .= ', ' . $noiseDeleted . ' Störanfragen bereinigt';
+                    if ($noiseHasMore) {
+                        $message .= ' (weitere vorhanden)';
+                    }
+                }
+                if ($optimizeTables) {
+                    $message .= ', ' . $optimized . ' Tabellen optimiert (Batchgröße: ' . $optimizeBatchSize . ')';
+                    if ($optimizedTotal > 0) {
+                        $message .= ', verbleibend bis Vollzyklus: ' . $optimizedRemaining . ' von ' . $optimizedTotal;
+                    }
+                }
+                if ($this->deferredDeleteBatches > 0) {
+                    $message .= ', ' . $this->deferredDeleteBatches . ' Lösch-Batches wegen DB-Locks vertagt';
+                }
+                $this->setMessage($message);
 
-            return false;
+                return true;
+            } catch (rex_sql_exception $exception) {
+                $this->setMessage('Statistics-Wartung fehlgeschlagen: ' . $exception->getMessage());
+
+                return false;
+            }
+        } finally {
+            if ($pauseTrackingDuringMaintenance) {
+                rex_config::set('statistics', 'statistics_pause_tracking_runtime', $previousRuntimePause);
+            }
         }
     }
 
@@ -98,6 +109,16 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
                     180 => '180',
                     365 => '365',
                     730 => '730',
+                ],
+            ],
+            [
+                'label' => rex_i18n::msg('statistics_cron_maintenance_pause_tracking_during_run'),
+                'name' => 'pause_tracking_during_maintenance',
+                'type' => 'select',
+                'default' => 1,
+                'options' => [
+                    0 => rex_i18n::msg('statistics_no'),
+                    1 => rex_i18n::msg('statistics_yes'),
                 ],
             ],
             [

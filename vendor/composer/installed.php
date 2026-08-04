@@ -3,17 +3,17 @@
         'name' => '__root__',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'f0dd0b41b56bf947914e065d3b7173fc40e61734',
+        'reference' => '4aa7a8db18be259c01a9e003a6a1f45644bbdec1',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
-        'dev' => true,
+        'dev' => false,
     ),
     'versions' => array(
         '__root__' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'f0dd0b41b56bf947914e065d3b7173fc40e61734',
+            'reference' => '4aa7a8db18be259c01a9e003a6a1f45644bbdec1',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -59,9 +59,9 @@
             'dev_requirement' => false,
         ),
         'jaybizzle/crawler-detect' => array(
-            'pretty_version' => 'v1.3.11',
-            'version' => '1.3.11.0',
-            'reference' => '484792759de89fe94ea6a192065ea7cd99f1eaa2',
+            'pretty_version' => 'v1.4.1',
+            'version' => '1.4.1.0',
+            'reference' => '770e00e5bcd35054871a6f790f380123cc3b8b0c',
             'type' => 'library',
             'install_path' => __DIR__ . '/../jaybizzle/crawler-detect',
             'aliases' => array(),
@@ -178,21 +178,6 @@
                 0 => '*',
             ),
         ),
-        'psr/cache' => array(
-            'pretty_version' => '1.0.1',
-            'version' => '1.0.1.0',
-            'reference' => 'd11b50ad223250cf17b86e38383413f5a6764bf8',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../psr/cache',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
-        'psr/cache-implementation' => array(
-            'dev_requirement' => false,
-            'provided' => array(
-                0 => '1.0|2.0',
-            ),
-        ),
         'psr/container' => array(
             'dev_requirement' => false,
             'replaced' => array(
@@ -219,36 +204,6 @@
             'install_path' => __DIR__ . '/../psr/simple-cache',
             'aliases' => array(),
             'dev_requirement' => false,
-        ),
-        'psr/simple-cache-implementation' => array(
-            'dev_requirement' => false,
-            'provided' => array(
-                0 => '1.0|2.0',
-            ),
-        ),
-        'symfony/cache' => array(
-            'pretty_version' => 'v5.4.53',
-            'version' => '5.4.53.0',
-            'reference' => 'bf581474737420d5c932ae80b868e253f465ee5b',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../symfony/cache',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
-        'symfony/cache-contracts' => array(
-            'pretty_version' => 'v2.5.4',
-            'version' => '2.5.4.0',
-            'reference' => '517c3a3619dadfa6952c4651767fcadffb4df65e',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../symfony/cache-contracts',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
-        'symfony/cache-implementation' => array(
-            'dev_requirement' => false,
-            'provided' => array(
-                0 => '1.0|2.0',
-            ),
         ),
         'symfony/deprecation-contracts' => array(
             'dev_requirement' => false,
@@ -321,15 +276,6 @@
             'replaced' => array(
                 0 => '*',
             ),
-        ),
-        'symfony/var-exporter' => array(
-            'pretty_version' => 'v5.4.45',
-            'version' => '5.4.45.0',
-            'reference' => '862700068db0ddfd8c5b850671e029a90246ec75',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../symfony/var-exporter',
-            'aliases' => array(),
-            'dev_requirement' => false,
         ),
     ),
 );

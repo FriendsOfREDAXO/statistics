@@ -1,6 +1,5 @@
 {
     "require": {
-        "symfony/cache": "^5.4",
         "geoip2/geoip2": "~2.0",
         "matomo/device-detector": "^6.2",
         "jaybizzle/crawler-detect": "^1.2",
