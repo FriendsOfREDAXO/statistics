@@ -40,7 +40,7 @@ if (rex::isBackend()) {
         rex_view::addJsFile($addon->getAssetsUrl('structure_insights_graph.js') . '?v=' . $assetVersion);
     }
 
-    if ('statistics/reports' === $currentPage) {
+    if ('statistics/reports' === $currentPage || str_starts_with($currentPage, 'statistics/reports/')) {
         $assetVersion = rawurlencode((string) $addon->getVersion());
         rex_view::addCssFile($addon->getAssetsUrl('reports.css') . '?v=' . $assetVersion);
         rex_view::addJsFile($addon->getAssetsUrl('reports.js') . '?v=' . $assetVersion);
