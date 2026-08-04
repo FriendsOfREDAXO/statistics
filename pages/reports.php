@@ -6,10 +6,6 @@ use DateTimeImmutable;
 $addon = rex_addon::get('statistics');
 $pdfoutAvailable = rex_addon::get('pdfout')->isAvailable() && class_exists('FriendsOfRedaxo\\PdfOut\\PdfOut');
 
-$assetVersion = rawurlencode((string) $addon->getVersion());
-rex_view::addCssFile($addon->getAssetsUrl('reports.css') . '?v=' . $assetVersion);
-rex_view::addJsFile($addon->getAssetsUrl('reports.js') . '?v=' . $assetVersion);
-
 $message = '';
 $periodType = rex_request('period_type', 'string', 'month');
 $periodMonth = rex_request('period_month', 'string', date('Y-m'));
@@ -57,24 +53,21 @@ $waitStatus1 = htmlspecialchars($addon->i18n('statistics_report_wait_status_1'),
 $waitStatus2 = htmlspecialchars($addon->i18n('statistics_report_wait_status_2'), ENT_QUOTES);
 $waitStatus3 = htmlspecialchars($addon->i18n('statistics_report_wait_status_3'), ENT_QUOTES);
 $waitStatus4 = htmlspecialchars($addon->i18n('statistics_report_wait_status_4'), ENT_QUOTES);
+$waitButtonLabel = htmlspecialchars($addon->i18n('statistics_report_wait_button'), ENT_QUOTES);
 
 $formHtml = '';
-$formHtml .= '<div id="statistics-report-root" class="statistics-report" data-wait-status-1="' . $waitStatus1 . '" data-wait-status-2="' . $waitStatus2 . '" data-wait-status-3="' . $waitStatus3 . '" data-wait-status-4="' . $waitStatus4 . '">';
-$formHtml .= '<div class="statistics-report__hero">';
-$formHtml .= '<div class="statistics-report__hero-icon"><i class="fa fa-file-pdf-o" aria-hidden="true"></i></div>';
-$formHtml .= '<div class="statistics-report__hero-content">';
-$formHtml .= '<h3>' . htmlspecialchars($addon->i18n('statistics_report_title'), ENT_QUOTES) . '</h3>';
-$formHtml .= '<p>' . htmlspecialchars($addon->i18n('statistics_report_description'), ENT_QUOTES) . '</p>';
-$formHtml .= '</div>';
-$formHtml .= '</div>';
+$formHtml .= '<div id="statistics-report-root" class="statistics-report" data-wait-status-1="' . $waitStatus1 . '" data-wait-status-2="' . $waitStatus2 . '" data-wait-status-3="' . $waitStatus3 . '" data-wait-status-4="' . $waitStatus4 . '" data-wait-button-label="' . $waitButtonLabel . '">';
+$formHtml .= '<h3 class="statistics-report__title"><i class="fa fa-file-pdf-o" aria-hidden="true"></i> ' . htmlspecialchars($addon->i18n('statistics_report_title'), ENT_QUOTES) . '</h3>';
+$formHtml .= '<p class="statistics-report__intro">' . htmlspecialchars($addon->i18n('statistics_report_description'), ENT_QUOTES) . '</p>';
 
 $formHtml .= '<div class="statistics-report__quick">';
-$formHtml .= '<p class="statistics-report__quick-label"><i class="fa fa-magic" aria-hidden="true"></i> ' . htmlspecialchars($addon->i18n('statistics_report_quick_title'), ENT_QUOTES) . '</p>';
+$formHtml .= '<p class="statistics-report__step">1. ' . htmlspecialchars($addon->i18n('statistics_report_quick_title'), ENT_QUOTES) . '</p>';
 $formHtml .= '<div class="statistics-report__quick-buttons">';
 $formHtml .= '<button type="button" class="btn btn-default" data-report-quick="last_week" data-week-value="' . htmlspecialchars($lastWeek, ENT_QUOTES) . '">' . htmlspecialchars($addon->i18n('statistics_report_quick_last_week'), ENT_QUOTES) . '</button>';
 $formHtml .= '<button type="button" class="btn btn-default" data-report-quick="last_month" data-month-value="' . htmlspecialchars($lastMonth, ENT_QUOTES) . '">' . htmlspecialchars($addon->i18n('statistics_report_quick_last_month'), ENT_QUOTES) . '</button>';
 $formHtml .= '<button type="button" class="btn btn-default" data-report-quick="last_year" data-year-value="' . htmlspecialchars($lastYear, ENT_QUOTES) . '">' . htmlspecialchars($addon->i18n('statistics_report_quick_last_year'), ENT_QUOTES) . '</button>';
 $formHtml .= '</div>';
+$formHtml .= '<p class="help-block">' . htmlspecialchars($addon->i18n('statistics_report_quick_autostart_note'), ENT_QUOTES) . '</p>';
 $formHtml .= '</div>';
 
 $formHtml .= '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-report-form>';
@@ -82,42 +75,30 @@ $formHtml .= rex_csrf_token::factory('statistics_report_generate')->getHiddenFie
 $formHtml .= '<input type="hidden" name="func" value="generate_report">';
 
 $formHtml .= '<div class="form-group statistics-report__type">';
-$formHtml .= '<label>' . htmlspecialchars($addon->i18n('statistics_report_period_label'), ENT_QUOTES) . '</label>';
-$formHtml .= '<div class="statistics-report__type-grid">';
-$formHtml .= '<label class="statistics-report__type-card' . ('week' === $periodType ? ' is-active' : '') . '">';
-$formHtml .= '<input type="radio" name="period_type" value="week"' . ('week' === $periodType ? ' checked' : '') . '>';
-$formHtml .= '<i class="fa fa-calendar-o" aria-hidden="true"></i>';
-$formHtml .= '<span>' . htmlspecialchars($addon->i18n('statistics_report_period_week'), ENT_QUOTES) . '</span>';
-$formHtml .= '</label>';
-$formHtml .= '<label class="statistics-report__type-card' . ('month' === $periodType ? ' is-active' : '') . '">';
-$formHtml .= '<input type="radio" name="period_type" value="month"' . ('month' === $periodType ? ' checked' : '') . '>';
-$formHtml .= '<i class="fa fa-calendar" aria-hidden="true"></i>';
-$formHtml .= '<span>' . htmlspecialchars($addon->i18n('statistics_report_period_month'), ENT_QUOTES) . '</span>';
-$formHtml .= '</label>';
-$formHtml .= '<label class="statistics-report__type-card' . ('year' === $periodType ? ' is-active' : '') . '">';
-$formHtml .= '<input type="radio" name="period_type" value="year"' . ('year' === $periodType ? ' checked' : '') . '>';
-$formHtml .= '<i class="fa fa-calendar-check-o" aria-hidden="true"></i>';
-$formHtml .= '<span>' . htmlspecialchars($addon->i18n('statistics_report_period_year'), ENT_QUOTES) . '</span>';
-$formHtml .= '</label>';
+$formHtml .= '<p class="statistics-report__step">2. ' . htmlspecialchars($addon->i18n('statistics_report_period_label'), ENT_QUOTES) . '</p>';
+$formHtml .= '<div class="statistics-report__radios">';
+$formHtml .= '<label class="radio-inline"><input type="radio" name="period_type" value="week"' . ('week' === $periodType ? ' checked' : '') . '> ' . htmlspecialchars($addon->i18n('statistics_report_period_week'), ENT_QUOTES) . '</label>';
+$formHtml .= '<label class="radio-inline"><input type="radio" name="period_type" value="month"' . ('month' === $periodType ? ' checked' : '') . '> ' . htmlspecialchars($addon->i18n('statistics_report_period_month'), ENT_QUOTES) . '</label>';
+$formHtml .= '<label class="radio-inline"><input type="radio" name="period_type" value="year"' . ('year' === $periodType ? ' checked' : '') . '> ' . htmlspecialchars($addon->i18n('statistics_report_period_year'), ENT_QUOTES) . '</label>';
 $formHtml .= '</div>';
 $formHtml .= '</div>';
 
 $formHtml .= '<div class="row statistics-report__inputs">';
-$formHtml .= '<div class="col-md-4 statistics-report__panel' . ('week' === $periodType ? ' is-active' : '') . '" data-period-panel="week">';
+$formHtml .= '<div class="col-md-4 statistics-report__panel' . ('week' === $periodType ? ' is-active' : ' hidden') . '" data-period-panel="week">';
 $formHtml .= '<div class="form-group">';
 $formHtml .= '<label for="statistics-report-period-week">' . htmlspecialchars($addon->i18n('statistics_report_week_label'), ENT_QUOTES) . '</label>';
 $formHtml .= '<input id="statistics-report-period-week" type="week" class="form-control" name="period_week" value="' . htmlspecialchars($periodWeek, ENT_QUOTES) . '">';
 $formHtml .= '</div>';
 $formHtml .= '</div>';
 
-$formHtml .= '<div class="col-md-4 statistics-report__panel' . ('month' === $periodType ? ' is-active' : '') . '" data-period-panel="month">';
+$formHtml .= '<div class="col-md-4 statistics-report__panel' . ('month' === $periodType ? ' is-active' : ' hidden') . '" data-period-panel="month">';
 $formHtml .= '<div class="form-group">';
 $formHtml .= '<label for="statistics-report-period-month">' . htmlspecialchars($addon->i18n('statistics_report_month_label'), ENT_QUOTES) . '</label>';
 $formHtml .= '<input id="statistics-report-period-month" type="month" class="form-control" name="period_month" value="' . htmlspecialchars($periodMonth, ENT_QUOTES) . '">';
 $formHtml .= '</div>';
 $formHtml .= '</div>';
 
-$formHtml .= '<div class="col-md-4 statistics-report__panel' . ('year' === $periodType ? ' is-active' : '') . '" data-period-panel="year">';
+$formHtml .= '<div class="col-md-4 statistics-report__panel' . ('year' === $periodType ? ' is-active' : ' hidden') . '" data-period-panel="year">';
 $formHtml .= '<div class="form-group">';
 $formHtml .= '<label for="statistics-report-period-year">' . htmlspecialchars($addon->i18n('statistics_report_year_label'), ENT_QUOTES) . '</label>';
 $formHtml .= '<input id="statistics-report-period-year" type="number" min="2000" max="2100" class="form-control" name="period_year" value="' . htmlspecialchars((string) $periodYear, ENT_QUOTES) . '">';
@@ -129,7 +110,7 @@ $formHtml .= '<div class="alert alert-info statistics-report__runtime-hint">';
 $formHtml .= '<i class="fa fa-info-circle" aria-hidden="true"></i> ' . htmlspecialchars($addon->i18n('statistics_report_runtime_hint'), ENT_QUOTES);
 $formHtml .= '</div>';
 
-$formHtml .= '<div class="statistics-report__wait" data-report-wait aria-live="polite">';
+$formHtml .= '<div class="statistics-report__wait" data-report-wait aria-live="polite" style="display:none">';
 $formHtml .= '<div class="statistics-report__wait-spinner" aria-hidden="true"></div>';
 $formHtml .= '<div class="statistics-report__wait-content">';
 $formHtml .= '<strong>' . htmlspecialchars($addon->i18n('statistics_report_wait_title'), ENT_QUOTES) . '</strong>';
@@ -140,6 +121,7 @@ $formHtml .= '</div>';
 $formHtml .= '</div>';
 $formHtml .= '</div>';
 
+$formHtml .= '<p class="statistics-report__step">3. ' . htmlspecialchars($addon->i18n('statistics_report_generate_button'), ENT_QUOTES) . '</p>';
 $formHtml .= '<button class="btn btn-primary statistics-report__submit" data-report-submit type="submit"' . (!$pdfoutAvailable ? ' disabled' : '') . '>';
 $formHtml .= '<i class="fa fa-file-pdf-o" aria-hidden="true"></i> ' . htmlspecialchars($addon->i18n('statistics_report_generate_button'), ENT_QUOTES);
 $formHtml .= '</button>';

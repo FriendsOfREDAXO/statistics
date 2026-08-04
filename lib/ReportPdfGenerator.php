@@ -215,8 +215,13 @@ class ReportPdfGenerator
         );
 
         return array_map(function (array $row): array {
+            $item = trim((string) ($row['item'] ?? ''));
+            if ('' === $item) {
+                $item = $this->addon->i18n('statistics_report_unknown_label');
+            }
+
             return [
-                'item' => $this->normalizeTopItem((string) ($row['item'] ?? ''), false),
+                'item' => $item,
                 'count' => (int) ($row['total'] ?? 0),
             ];
         }, $rows);
@@ -284,20 +289,22 @@ class ReportPdfGenerator
         $html .= '.graphics-card{flex:1;border:1px solid #e2e8f0;background:#fbfdff;border-radius:10px;padding:10px;}';
         $html .= '.graphics-card-full{flex:1 1 100%;}';
         $html .= '.graphics-card h3{margin:0 0 8px 0;font-size:13px;color:#334155;}';
-        $html .= '.mini-bars{display:flex;gap:8px;align-items:flex-end;height:88px;padding:6px 0;}';
-        $html .= '.mini-bar{flex:1;min-width:8px;background:linear-gradient(180deg,#7cc0ff 0%,#2f80c8 100%);border-radius:4px 4px 0 0;}';
-        $html .= '.mini-axis{display:flex;justify-content:space-between;color:#64748b;font-size:10px;}';
+        $html .= '.legend{font-size:10px;color:#475569;margin:0 0 8px 0;}';
+        $html .= '.legend-item{display:inline-block;margin-right:12px;}';
+        $html .= '.legend-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle;}';
         $html .= '.compare-row{margin-bottom:9px;}';
         $html .= '.compare-label{font-size:11px;color:#475569;margin-bottom:4px;}';
         $html .= '.compare-track{background:#e8edf3;height:11px;border-radius:999px;overflow:hidden;}';
         $html .= '.compare-fill{height:11px;border-radius:999px;background:linear-gradient(90deg,#2f80c8 0%,#5ea9ea 100%);}';
         $html .= '.compare-fill-alt{height:11px;border-radius:999px;background:linear-gradient(90deg,#20a39e 0%,#61c7c2 100%);}';
-        $html .= '.barlist{margin:0;padding:0;list-style:none;}';
-        $html .= '.barlist li{margin:0 0 8px 0;}';
-        $html .= '.barlist-top{display:flex;justify-content:space-between;gap:10px;font-size:11px;}';
-        $html .= '.barlist-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#334155;max-width:75%;}';
-        $html .= '.barlist-track{margin-top:3px;height:7px;border-radius:999px;background:#e8edf3;overflow:hidden;}';
-        $html .= '.barlist-fill{height:7px;background:#2f80c8;border-radius:999px;}';
+        $html .= '.hbar-table{width:100%;border-collapse:collapse;}';
+        $html .= '.hbar-table td{padding:4px 0;vertical-align:middle;}';
+        $html .= '.hbar-label{width:34%;font-size:10px;color:#334155;padding-right:8px;word-break:break-word;}';
+        $html .= '.hbar-track-cell{width:50%;}';
+        $html .= '.hbar-track{height:8px;border-radius:999px;background:#e8edf3;overflow:hidden;}';
+        $html .= '.hbar-fill{height:8px;border-radius:999px;background:#2f80c8;}';
+        $html .= '.hbar-count{width:16%;text-align:right;font-size:10px;color:#334155;padding-left:8px;white-space:nowrap;}';
+        $html .= '.chart-note{font-size:10px;color:#64748b;margin:4px 0 8px 0;}';
         $html .= 'table.list{width:100%;border-collapse:collapse;}';
         $html .= 'table.list th, table.list td{border:1px solid #e2e8f0;padding:6px 8px;text-align:left;vertical-align:top;}';
         $html .= 'table.list th{background:#f1f5f9;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:#475569;}';
@@ -387,7 +394,12 @@ class ReportPdfGenerator
         $visitsWidth = (int) round(($visits / $max) * 100);
         $visitorsWidth = (int) round(($visitors / $max) * 100);
 
-        $html = '<div class="compare-row">';
+        $html = '<p class="legend">';
+        $html .= '<span class="legend-item"><span class="legend-dot" style="background:#2f80c8"></span>' . htmlspecialchars($this->addon->i18n('statistics_report_kpi_visits'), ENT_QUOTES) . '</span>';
+        $html .= '<span class="legend-item"><span class="legend-dot" style="background:#20a39e"></span>' . htmlspecialchars($this->addon->i18n('statistics_report_kpi_visitors'), ENT_QUOTES) . '</span>';
+        $html .= '</p>';
+
+        $html .= '<div class="compare-row">';
         $html .= '<div class="compare-label">' . htmlspecialchars($this->addon->i18n('statistics_report_kpi_visits'), ENT_QUOTES) . ': ' . $visits . '</div>';
         $html .= '<div class="compare-track"><div class="compare-fill" style="width:' . $visitsWidth . '%"></div></div>';
         $html .= '</div>';
@@ -414,17 +426,21 @@ class ReportPdfGenerator
             $max = 1;
         }
 
-        $bars = array_slice($dailyVisits, -18);
-        $html = '<div class="mini-bars">';
+        $bars = array_slice($dailyVisits, -10);
+        $html = '<p class="legend"><span class="legend-item"><span class="legend-dot" style="background:#2f80c8"></span>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_daily_series_label'), ENT_QUOTES) . '</span></p>';
+        $html .= '<p class="chart-note">' . htmlspecialchars($this->addon->i18n('statistics_report_graph_max_label') . ': ' . (string) $max, ENT_QUOTES) . '</p>';
+        $html .= '<table class="hbar-table">';
         foreach ($bars as $row) {
-            $height = max(8, (int) round(($row['count'] / $max) * 88));
-            $html .= '<div class="mini-bar" style="height:' . $height . 'px" title="' . htmlspecialchars($row['date'] . ': ' . $row['count'], ENT_QUOTES) . '"></div>';
+            $width = max(2, (int) round(($row['count'] / $max) * 100));
+            $date = (string) ($row['date'] ?? '');
+            $count = (int) ($row['count'] ?? 0);
+            $html .= '<tr>';
+            $html .= '<td class="hbar-label">' . htmlspecialchars($date, ENT_QUOTES) . '</td>';
+            $html .= '<td class="hbar-track-cell"><div class="hbar-track"><div class="hbar-fill" style="width:' . $width . '%"></div></div></td>';
+            $html .= '<td class="hbar-count">' . $count . '</td>';
+            $html .= '</tr>';
         }
-        $html .= '</div>';
-
-        $firstLabel = (string) ($bars[0]['date'] ?? '');
-        $lastLabel = (string) ($bars[count($bars) - 1]['date'] ?? '');
-        $html .= '<div class="mini-axis"><span>' . htmlspecialchars($firstLabel, ENT_QUOTES) . '</span><span>' . htmlspecialchars($lastLabel, ENT_QUOTES) . '</span></div>';
+        $html .= '</table>';
 
         return $html;
     }
@@ -444,18 +460,16 @@ class ReportPdfGenerator
             $max = 1;
         }
 
-        $html = '<ul class="barlist">';
+        $html = '<table class="hbar-table">';
         foreach ($list as $row) {
             $width = (int) round(($row['count'] / $max) * 100);
-            $html .= '<li>';
-            $html .= '<div class="barlist-top">';
-            $html .= '<span class="barlist-name">' . htmlspecialchars($row['item'], ENT_QUOTES) . '</span>';
-            $html .= '<span>' . $row['count'] . '</span>';
-            $html .= '</div>';
-            $html .= '<div class="barlist-track"><div class="barlist-fill" style="width:' . $width . '%;background:' . htmlspecialchars($color, ENT_QUOTES) . ';"></div></div>';
-            $html .= '</li>';
+            $html .= '<tr>';
+            $html .= '<td class="hbar-label">' . htmlspecialchars($row['item'], ENT_QUOTES) . '</td>';
+            $html .= '<td class="hbar-track-cell"><div class="hbar-track"><div class="hbar-fill" style="width:' . $width . '%;background:' . htmlspecialchars($color, ENT_QUOTES) . ';"></div></div></td>';
+            $html .= '<td class="hbar-count">' . $row['count'] . '</td>';
+            $html .= '</tr>';
         }
-        $html .= '</ul>';
+        $html .= '</table>';
 
         return $html;
     }

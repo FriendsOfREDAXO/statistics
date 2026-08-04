@@ -30,13 +30,14 @@
   }
 
   var periodRadios = root.querySelectorAll('input[name="period_type"]');
-  var periodCards = root.querySelectorAll('.statistics-report__type-card');
   var periodPanels = root.querySelectorAll('[data-period-panel]');
   var waitBox = root.querySelector('[data-report-wait]');
   var waitText = root.querySelector('[data-report-status-text]');
   var waitBar = root.querySelector('[data-report-progress-bar]');
   var submitButton = root.querySelector('[data-report-submit]');
   var quickButtons = root.querySelectorAll('[data-report-quick]');
+  var waitButtonLabel = root.getAttribute('data-wait-button-label') || '';
+  var submitButtonOriginalHtml = submitButton ? submitButton.innerHTML : '';
 
   var waitMessages = [
     root.getAttribute('data-wait-status-1') || 'Preparing data ...',
@@ -68,14 +69,24 @@
   function syncPeriodUi() {
     var type = currentType();
 
-    periodCards.forEach(function (card) {
-      var radio = card.querySelector('input[name="period_type"]');
-      card.classList.toggle('is-active', !!radio && radio.value === type);
-    });
-
     periodPanels.forEach(function (panel) {
-      panel.classList.toggle('is-active', panel.getAttribute('data-period-panel') === type);
+      var isActive = panel.getAttribute('data-period-panel') === type;
+      panel.classList.toggle('is-active', isActive);
+      panel.classList.toggle('hidden', !isActive);
     });
+  }
+
+  function startGenerateFromQuickSelection() {
+    if (!submitButton || submitButton.disabled) {
+      return;
+    }
+
+    if (typeof form.requestSubmit === 'function') {
+      form.requestSubmit(submitButton);
+      return;
+    }
+
+    submitButton.click();
   }
 
   periodRadios.forEach(function (radio) {
@@ -108,24 +119,32 @@
         }
         setType('year');
       }
+
+      startGenerateFromQuickSelection();
     });
   });
 
   var isSubmitting = false;
 
-  form.addEventListener('submit', function () {
+  form.addEventListener('submit', function (event) {
     if (isSubmitting) {
+      event.preventDefault();
       return;
     }
+
+    event.preventDefault();
 
     isSubmitting = true;
 
     if (submitButton) {
       submitButton.disabled = true;
+      if (waitButtonLabel !== '') {
+        submitButton.innerHTML = waitButtonLabel;
+      }
     }
 
     if (waitBox) {
-      waitBox.classList.add('is-visible');
+      waitBox.style.display = 'block';
     }
 
     var progress = 8;
@@ -155,6 +174,11 @@
         window.clearInterval(intervalId);
       }
     }, 850);
+
+    window.setTimeout(function () {
+      // Submit after a short delay so status UI is painted before download starts.
+      HTMLFormElement.prototype.submit.call(form);
+    }, 120);
   });
 
   syncPeriodUi();

@@ -40,6 +40,12 @@ if (rex::isBackend()) {
         rex_view::addJsFile($addon->getAssetsUrl('structure_insights_graph.js') . '?v=' . $assetVersion);
     }
 
+    if ('statistics/reports' === $currentPage) {
+        $assetVersion = rawurlencode((string) $addon->getVersion());
+        rex_view::addCssFile($addon->getAssetsUrl('reports.css') . '?v=' . $assetVersion);
+        rex_view::addJsFile($addon->getAssetsUrl('reports.js') . '?v=' . $assetVersion);
+    }
+
     if (rex_addon::get('cronjob')->isAvailable() && !rex::isSafeMode()) {
         rex_cronjob_manager::registerType('rex_statistics_hashremove_cronjob');
         rex_cronjob_manager::registerType('rex_statistics_maintenance_cronjob');
