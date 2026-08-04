@@ -1,5 +1,5 @@
 package: statistics
-version: 3.4.1
+version: 3.5.0
 author: Andreas Lenhardt
 supportpage: https://github.com/AndiLeni/statistics
 
@@ -34,6 +34,9 @@ page:
             title: "translate:statistics_settings"
             perm: statistics[settings]
             icon: rex-icon fa-cog
+        reports:
+            title: "translate:statistics_reports"
+            icon: rex-icon fa-file-pdf-o
         help:
             {
                 title: "translate:statistics_help",

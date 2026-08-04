@@ -16,80 +16,8 @@ if (rex_request_method() == 'post') {
     $hasMaintenanceBudgetLeft = static function () use ($maintenanceStartedAt, $maintenanceRuntimeBudgetSeconds): bool {
         return (microtime(true) - $maintenanceStartedAt) < $maintenanceRuntimeBudgetSeconds;
     };
-    $noiseLikePatterns = [
-        '%/wp-login.php%',
-        '%/wp-json%',
-        '%/wp-config%',
-        '%/wp-admin%',
-        '%/wp-includes/%',
-        '%/wp-content/%',
-        '%/xmlrpc.php%',
-        '%/wlwmanifest.xml%',
-        '%/drupal%',
-        '%/joomla%',
-        '%/magento%',
-        '%/prestashop%',
-        '%/typo3%',
-        '%/shopware%',
-        '%/administrator%',
-        '%/admin/login%',
-        '%/admin/%',
-        '%/api/%',
-        '%/api',
-        '%/adminer%',
-        '%/adminer.php%',
-        '%/phpmyadmin%',
-        '%/phpmyadmin2%',
-        '%/pma%',
-        '%/dbadmin%',
-        '%/myadmin%',
-        '%/webadmin%',
-        '%/mysql%',
-        '%/phpinfo.php%',
-        '%/server-status%',
-        '%/server-info%',
-        '%/cgi-bin/%',
-        '%/webmail%',
-        '%/roundcube%',
-        '%/.git/%',
-        '%/vendor/phpunit%',
-        '%apple-touch%',
-        '%/.well-known/security.txt%',
-        '%/.env%',
-        '%/.htaccess%',
-        '%.php%',
-        '%.json%',
-        '%.xml%',
-        '%.yml%',
-        '%.save%',
-        '%.ini%',
-        '%.log%',
-        '%.bak%',
-        '%.old%',
-        '%.sql%',
-    ];
-
-    $addConfigPatterns = static function (array &$patterns, string $configValue, string $mode): void {
-        $lines = explode("\n", str_replace("\r", "", $configValue));
-        foreach ($lines as $line) {
-            $rule = strtolower(trim((string) $line));
-            if ('' === $rule) {
-                continue;
-            }
-
-            if ('ends' === $mode) {
-                $patterns[] = '%' . $rule;
-                continue;
-            }
-
-            $patterns[] = '%' . $rule . '%';
-        }
-    };
-
-    $addConfigPatterns($noiseLikePatterns, (string) $addon->getConfig('statistics_ignored_paths', ''), 'contains');
-    $addConfigPatterns($noiseLikePatterns, (string) $addon->getConfig('statistics_ignored_path_contains', ''), 'contains');
-    $addConfigPatterns($noiseLikePatterns, (string) $addon->getConfig('statistics_ignored_path_ends', ''), 'ends');
-    $noiseLikePatterns = array_values(array_unique($noiseLikePatterns));
+    $noisePatternsClass = 'AndiLeni\\Statistics\\NoisePatterns';
+    $noiseLikePatterns = $noisePatternsClass::getMergedLikePatterns($addon);
 
     $buildLikeWhere = static function (string $column, array $patterns): array {
         $parts = [];
@@ -164,7 +92,7 @@ if (rex_request_method() == 'post') {
             $hasMore = $affected >= $chunkSize;
         } while ($hasMore && $round < $maxRounds);
 
-        if (!$timedOut && !$hasMaintenanceBudgetLeft()) {
+        if (!$timedOut && $hasMore && !$hasMaintenanceBudgetLeft()) {
             $timedOut = true;
         }
 
@@ -224,7 +152,7 @@ if (rex_request_method() == 'post') {
             $hasMore = $affected >= $chunkSize;
         } while ($hasMore && $round < $maxRounds);
 
-        if (!$timedOut && !$hasMaintenanceBudgetLeft()) {
+        if (!$timedOut && $hasMore && !$hasMaintenanceBudgetLeft()) {
             $timedOut = true;
         }
 
