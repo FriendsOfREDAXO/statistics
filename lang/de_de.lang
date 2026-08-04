@@ -132,6 +132,7 @@ statistics_optimized_tables_batch_progress = Batch abgeschlossen: %1$s von %2$s 
 statistics_cleanup_lock_timeout = Die Bereinigung konnte wegen aktiver Datenbank-Sperren nicht vollständig abgeschlossen werden. Bitte erneut ausführen oder den Zeitraum verkleinern.
 statistics_cron_maintenance_type = Statistikwartung (Rohdaten bereinigen)
 statistics_cron_maintenance_keep_days = Rohdaten behalten (Tage)
+statistics_cron_maintenance_pause_tracking_during_run = Tracking während Wartung pausieren
 statistics_cron_maintenance_cleanup_noise = Störanfragen automatisch bereinigen
 statistics_cron_maintenance_optimize = Tabellen nach der Bereinigung optimieren
 statistics_cron_maintenance_optimize_batch_size = Optimierungs-Batchgröße pro Cron-Lauf
