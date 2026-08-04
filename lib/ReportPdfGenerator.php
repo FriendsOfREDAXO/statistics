@@ -25,12 +25,14 @@ class ReportPdfGenerator
         [$start, $end, $label] = $this->resolvePeriod($periodType, $periodValue);
 
         $kpi = $this->loadKpiData($start, $end);
+        $dailyVisits = $this->loadDailyVisits($start, $end);
+        $deviceTypes = $this->loadDataTypeList('browsertype', 8);
         $topPages = $this->loadTopList('pagestats_visits_per_url', 'url', $start, $end, 20);
         $topReferers = $this->loadTopList('pagestats_referer', 'referer', $start, $end, 20);
 
         $title = $this->addon->i18n('statistics_report_title');
         $filename = \rex_string::normalize('statistics_' . $periodType . '_' . $start->format('Y-m-d'));
-        $html = $this->renderHtml($title, $label, $start, $end, $kpi, $topPages, $topReferers);
+        $html = $this->renderHtml($title, $label, $start, $end, $kpi, $dailyVisits, $deviceTypes, $topPages, $topReferers);
 
         $pdfClass = 'FriendsOfRedaxo\\PdfOut\\PdfOut';
         if (!class_exists($pdfClass)) {
@@ -198,7 +200,57 @@ class ReportPdfGenerator
     }
 
     /**
+     * @return array<int, array{item:string,count:int}>
+     */
+    private function loadDataTypeList(string $type, int $limit): array
+    {
+        $sql = rex_sql::factory();
+        $rows = $sql->getArray(
+            'SELECT name AS item, IFNULL(count,0) AS total'
+            . ' FROM ' . rex::getTable('pagestats_data')
+            . ' WHERE type = :type'
+            . ' ORDER BY total DESC'
+            . ' LIMIT ' . (int) $limit,
+            ['type' => $type]
+        );
+
+        return array_map(function (array $row): array {
+            return [
+                'item' => $this->normalizeTopItem((string) ($row['item'] ?? ''), false),
+                'count' => (int) ($row['total'] ?? 0),
+            ];
+        }, $rows);
+    }
+
+    /**
+     * @return array<int, array{date:string,count:int}>
+     */
+    private function loadDailyVisits(DateTimeImmutable $start, DateTimeImmutable $end): array
+    {
+        $sql = rex_sql::factory();
+        $rows = $sql->getArray(
+            'SELECT date, IFNULL(count,0) AS total'
+            . ' FROM ' . rex::getTable('pagestats_visits_per_day')
+            . ' WHERE date BETWEEN :start AND :end'
+            . ' ORDER BY date ASC',
+            [
+                'start' => $start->format('Y-m-d'),
+                'end' => $end->format('Y-m-d'),
+            ]
+        );
+
+        return array_map(static function (array $row): array {
+            return [
+                'date' => (string) ($row['date'] ?? ''),
+                'count' => (int) ($row['total'] ?? 0),
+            ];
+        }, $rows);
+    }
+
+    /**
      * @param array{visits:int, visitors:int, pagesPerSession:float, activeDays:int, topPage:string, topPageCount:int, topReferer:string, topRefererCount:int} $kpi
+     * @param array<int, array{date:string,count:int}> $dailyVisits
+    * @param array<int, array{item:string,count:int}> $deviceTypes
      * @param array<int, array{item:string,count:int}> $topPages
      * @param array<int, array{item:string,count:int}> $topReferers
      */
@@ -208,6 +260,8 @@ class ReportPdfGenerator
         DateTimeImmutable $start,
         DateTimeImmutable $end,
         array $kpi,
+        array $dailyVisits,
+        array $deviceTypes,
         array $topPages,
         array $topReferers
     ): string {
@@ -226,6 +280,24 @@ class ReportPdfGenerator
         $html .= '.kmeta{font-size:11px;color:#334155;margin-top:4px;}';
         $html .= '.section{margin-top:10px;}';
         $html .= '.section h2{font-size:16px;margin:0 0 8px 0;padding-bottom:4px;border-bottom:1px solid #e2e8f0;}';
+        $html .= '.graphics-grid{display:flex;gap:12px;align-items:stretch;margin:12px 0 6px 0;}';
+        $html .= '.graphics-card{flex:1;border:1px solid #e2e8f0;background:#fbfdff;border-radius:10px;padding:10px;}';
+        $html .= '.graphics-card-full{flex:1 1 100%;}';
+        $html .= '.graphics-card h3{margin:0 0 8px 0;font-size:13px;color:#334155;}';
+        $html .= '.mini-bars{display:flex;gap:8px;align-items:flex-end;height:88px;padding:6px 0;}';
+        $html .= '.mini-bar{flex:1;min-width:8px;background:linear-gradient(180deg,#7cc0ff 0%,#2f80c8 100%);border-radius:4px 4px 0 0;}';
+        $html .= '.mini-axis{display:flex;justify-content:space-between;color:#64748b;font-size:10px;}';
+        $html .= '.compare-row{margin-bottom:9px;}';
+        $html .= '.compare-label{font-size:11px;color:#475569;margin-bottom:4px;}';
+        $html .= '.compare-track{background:#e8edf3;height:11px;border-radius:999px;overflow:hidden;}';
+        $html .= '.compare-fill{height:11px;border-radius:999px;background:linear-gradient(90deg,#2f80c8 0%,#5ea9ea 100%);}';
+        $html .= '.compare-fill-alt{height:11px;border-radius:999px;background:linear-gradient(90deg,#20a39e 0%,#61c7c2 100%);}';
+        $html .= '.barlist{margin:0;padding:0;list-style:none;}';
+        $html .= '.barlist li{margin:0 0 8px 0;}';
+        $html .= '.barlist-top{display:flex;justify-content:space-between;gap:10px;font-size:11px;}';
+        $html .= '.barlist-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#334155;max-width:75%;}';
+        $html .= '.barlist-track{margin-top:3px;height:7px;border-radius:999px;background:#e8edf3;overflow:hidden;}';
+        $html .= '.barlist-fill{height:7px;background:#2f80c8;border-radius:999px;}';
         $html .= 'table.list{width:100%;border-collapse:collapse;}';
         $html .= 'table.list th, table.list td{border:1px solid #e2e8f0;padding:6px 8px;text-align:left;vertical-align:top;}';
         $html .= 'table.list th{background:#f1f5f9;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:#475569;}';
@@ -254,6 +326,35 @@ class ReportPdfGenerator
         $html .= '<p class="small"><strong>' . htmlspecialchars($this->addon->i18n('statistics_report_kpi_top_referer'), ENT_QUOTES) . ':</strong> '
             . htmlspecialchars($kpi['topReferer'], ENT_QUOTES) . ' (' . (int) $kpi['topRefererCount'] . ')</p>';
 
+        $html .= '<div class="graphics-grid">';
+        $html .= '<div class="graphics-card">';
+        $html .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_traffic_title'), ENT_QUOTES) . '</h3>';
+        $html .= $this->renderTrafficCompareBars($kpi['visits'], $kpi['visitors']);
+        $html .= '</div>';
+        $html .= '<div class="graphics-card">';
+        $html .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_daily_title'), ENT_QUOTES) . '</h3>';
+        $html .= $this->renderDailyBars($dailyVisits);
+        $html .= '</div>';
+        $html .= '</div>';
+
+        $html .= '<div class="graphics-grid">';
+        $html .= '<div class="graphics-card graphics-card-full">';
+        $html .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_device_types_title'), ENT_QUOTES) . '</h3>';
+        $html .= $this->renderTopBarList($deviceTypes, '#8a5cf6');
+        $html .= '</div>';
+        $html .= '</div>';
+
+        $html .= '<div class="graphics-grid">';
+        $html .= '<div class="graphics-card">';
+        $html .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_top_pages_title'), ENT_QUOTES) . '</h3>';
+        $html .= $this->renderTopBarList($topPages, '#2f80c8');
+        $html .= '</div>';
+        $html .= '<div class="graphics-card">';
+        $html .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_top_referers_title'), ENT_QUOTES) . '</h3>';
+        $html .= $this->renderTopBarList($topReferers, '#20a39e');
+        $html .= '</div>';
+        $html .= '</div>';
+
         $html .= '<div class="section">';
         $html .= '<h2>' . htmlspecialchars($this->addon->i18n('statistics_report_top_pages_title'), ENT_QUOTES) . '</h2>';
         $html .= $this->renderTopTable($topPages);
@@ -276,6 +377,85 @@ class ReportPdfGenerator
         $html .= '<div class="klabel">' . htmlspecialchars($label, ENT_QUOTES) . '</div>';
         $html .= '<div class="kvalue">' . htmlspecialchars($value, ENT_QUOTES) . '</div>';
         $html .= '</td>';
+
+        return $html;
+    }
+
+    private function renderTrafficCompareBars(int $visits, int $visitors): string
+    {
+        $max = max($visits, $visitors, 1);
+        $visitsWidth = (int) round(($visits / $max) * 100);
+        $visitorsWidth = (int) round(($visitors / $max) * 100);
+
+        $html = '<div class="compare-row">';
+        $html .= '<div class="compare-label">' . htmlspecialchars($this->addon->i18n('statistics_report_kpi_visits'), ENT_QUOTES) . ': ' . $visits . '</div>';
+        $html .= '<div class="compare-track"><div class="compare-fill" style="width:' . $visitsWidth . '%"></div></div>';
+        $html .= '</div>';
+
+        $html .= '<div class="compare-row">';
+        $html .= '<div class="compare-label">' . htmlspecialchars($this->addon->i18n('statistics_report_kpi_visitors'), ENT_QUOTES) . ': ' . $visitors . '</div>';
+        $html .= '<div class="compare-track"><div class="compare-fill-alt" style="width:' . $visitorsWidth . '%"></div></div>';
+        $html .= '</div>';
+
+        return $html;
+    }
+
+    /**
+     * @param array<int, array{date:string,count:int}> $dailyVisits
+     */
+    private function renderDailyBars(array $dailyVisits): string
+    {
+        if ([] === $dailyVisits) {
+            return '<p class="small">' . htmlspecialchars($this->addon->i18n('statistics_no_data'), ENT_QUOTES) . '</p>';
+        }
+
+        $max = max(array_column($dailyVisits, 'count'));
+        if ($max < 1) {
+            $max = 1;
+        }
+
+        $bars = array_slice($dailyVisits, -18);
+        $html = '<div class="mini-bars">';
+        foreach ($bars as $row) {
+            $height = max(8, (int) round(($row['count'] / $max) * 88));
+            $html .= '<div class="mini-bar" style="height:' . $height . 'px" title="' . htmlspecialchars($row['date'] . ': ' . $row['count'], ENT_QUOTES) . '"></div>';
+        }
+        $html .= '</div>';
+
+        $firstLabel = (string) ($bars[0]['date'] ?? '');
+        $lastLabel = (string) ($bars[count($bars) - 1]['date'] ?? '');
+        $html .= '<div class="mini-axis"><span>' . htmlspecialchars($firstLabel, ENT_QUOTES) . '</span><span>' . htmlspecialchars($lastLabel, ENT_QUOTES) . '</span></div>';
+
+        return $html;
+    }
+
+    /**
+     * @param array<int, array{item:string,count:int}> $rows
+     */
+    private function renderTopBarList(array $rows, string $color): string
+    {
+        if ([] === $rows) {
+            return '<p class="small">' . htmlspecialchars($this->addon->i18n('statistics_no_data'), ENT_QUOTES) . '</p>';
+        }
+
+        $list = array_slice($rows, 0, 8);
+        $max = max(array_column($list, 'count'));
+        if ($max < 1) {
+            $max = 1;
+        }
+
+        $html = '<ul class="barlist">';
+        foreach ($list as $row) {
+            $width = (int) round(($row['count'] / $max) * 100);
+            $html .= '<li>';
+            $html .= '<div class="barlist-top">';
+            $html .= '<span class="barlist-name">' . htmlspecialchars($row['item'], ENT_QUOTES) . '</span>';
+            $html .= '<span>' . $row['count'] . '</span>';
+            $html .= '</div>';
+            $html .= '<div class="barlist-track"><div class="barlist-fill" style="width:' . $width . '%;background:' . htmlspecialchars($color, ENT_QUOTES) . ';"></div></div>';
+            $html .= '</li>';
+        }
+        $html .= '</ul>';
 
         return $html;
     }
