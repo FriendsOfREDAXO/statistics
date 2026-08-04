@@ -36,6 +36,7 @@
     var waitText = root.querySelector('[data-report-status-text]');
     var waitBar = root.querySelector('[data-report-progress-bar]');
     var submitButton = root.querySelector('[data-report-submit]');
+    var submitButtonOriginalHtml = submitButton ? submitButton.innerHTML : '';
     var quickButtons = root.querySelectorAll('[data-report-quick]');
     var waitButtonLabel = root.getAttribute('data-wait-button-label') || '';
 
@@ -125,6 +126,68 @@
     });
 
     var isSubmitting = false;
+    var progressIntervalId = null;
+    var submitDelayId = null;
+    var resetFallbackId = null;
+
+    function clearSubmitTimers() {
+      if (progressIntervalId !== null) {
+        window.clearInterval(progressIntervalId);
+        progressIntervalId = null;
+      }
+      if (submitDelayId !== null) {
+        window.clearTimeout(submitDelayId);
+        submitDelayId = null;
+      }
+      if (resetFallbackId !== null) {
+        window.clearTimeout(resetFallbackId);
+        resetFallbackId = null;
+      }
+    }
+
+    function resetSubmitState() {
+      if (!isSubmitting) {
+        return;
+      }
+
+      isSubmitting = false;
+      clearSubmitTimers();
+
+      if (waitBox) {
+        waitBox.style.display = 'none';
+      }
+
+      if (waitBar) {
+        waitBar.style.width = '8%';
+      }
+
+      if (waitText) {
+        waitText.textContent = waitMessages[0];
+      }
+
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.innerHTML = submitButtonOriginalHtml;
+      }
+    }
+
+    function scheduleResetAfterReturn() {
+      if (!isSubmitting) {
+        return;
+      }
+
+      window.setTimeout(function () {
+        resetSubmitState();
+      }, 350);
+    }
+
+    window.addEventListener('focus', scheduleResetAfterReturn);
+    window.addEventListener('pageshow', scheduleResetAfterReturn);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') {
+        scheduleResetAfterReturn();
+      }
+    });
 
     form.addEventListener('submit', function (event) {
       if (isSubmitting) {
@@ -158,7 +221,7 @@
         waitText.textContent = waitMessages[messageIndex];
       }
 
-      var intervalId = window.setInterval(function () {
+      progressIntervalId = window.setInterval(function () {
         progress = Math.min(progress + 5, 93);
         messageIndex = Math.min(messageIndex + 1, waitMessages.length - 1);
 
@@ -171,14 +234,20 @@
         }
 
         if (progress >= 93) {
-          window.clearInterval(intervalId);
+          window.clearInterval(progressIntervalId);
+          progressIntervalId = null;
         }
       }, 850);
 
-      window.setTimeout(function () {
+      submitDelayId = window.setTimeout(function () {
         // Submit after a short delay so status UI is painted before download starts.
         HTMLFormElement.prototype.submit.call(form);
       }, 120);
+
+      // Fallback: even without focus/visibility changes, reset the UI after a grace period.
+      resetFallbackId = window.setTimeout(function () {
+        resetSubmitState();
+      }, 15000);
     });
 
     syncPeriodUi();

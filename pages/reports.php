@@ -1,7 +1,6 @@
 <?php
 
 use AndiLeni\Statistics\ReportPdfGenerator;
-use DateTimeImmutable;
 
 $addon = rex_addon::get('statistics');
 $pdfoutAvailable = rex_addon::get('pdfout')->isAvailable() && class_exists('FriendsOfRedaxo\\PdfOut\\PdfOut');
@@ -46,8 +45,8 @@ if (!$pdfoutAvailable) {
 
 echo $message;
 
-$lastWeek = (new DateTimeImmutable('monday last week'))->format('o-\\WW');
-$lastMonth = (new DateTimeImmutable('first day of last month'))->format('Y-m');
+$lastWeek = (new \DateTimeImmutable('monday last week'))->format('o-\\WW');
+$lastMonth = (new \DateTimeImmutable('first day of last month'))->format('Y-m');
 $lastYear = (string) ((int) date('Y') - 1);
 $waitStatus1 = htmlspecialchars($addon->i18n('statistics_report_wait_status_1'), ENT_QUOTES);
 $waitStatus2 = htmlspecialchars($addon->i18n('statistics_report_wait_status_2'), ENT_QUOTES);
