@@ -6,6 +6,7 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
     {
         $daysToKeepRaw = max(1, (int) $this->getParam('days_to_keep_raw', 120));
         $optimizeTables = (int) $this->getParam('optimize_tables', 0) === 1;
+        $optimizeBatchSize = max(1, (int) $this->getParam('optimize_batch_size', 2));
 
         $cutoffDate = (new DateTimeImmutable('today'))->modify('-' . $daysToKeepRaw . ' days')->format('Y-m-d');
         $cutoffDatetime = $cutoffDate . ' 00:00:00';
@@ -24,31 +25,21 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
             $deleted += $this->deleteOrphanUrlStatusChunked();
 
             $optimized = 0;
+            $optimizedTotal = 0;
+            $optimizedRemaining = 0;
             if ($optimizeTables) {
-                $tablesToOptimize = [
-                    rex::getTable('pagestats_hash'),
-                    rex::getTable('pagestats_visits_per_day'),
-                    rex::getTable('pagestats_visitors_per_day'),
-                    rex::getTable('pagestats_visits_per_url'),
-                    rex::getTable('pagestats_visitors_per_url'),
-                    rex::getTable('pagestats_urlstatus'),
-                    rex::getTable('pagestats_bot'),
-                    rex::getTable('pagestats_referer'),
-                    rex::getTable('pagestats_media'),
-                    rex::getTable('pagestats_api'),
-                    rex::getTable('pagestats_sessionstats'),
-                ];
-
-                foreach ($tablesToOptimize as $tableName) {
-                    $sql = rex_sql::factory();
-                    $sql->setQuery('OPTIMIZE TABLE ' . $tableName);
-                    ++$optimized;
-                }
+                $optimizeResult = $this->optimizeTablesBatch($this->getTablesToOptimize(), $optimizeBatchSize);
+                $optimized = $optimizeResult['optimized'];
+                $optimizedTotal = $optimizeResult['total'];
+                $optimizedRemaining = $optimizeResult['remaining'];
             }
 
             $message = 'Statistics-Wartung: ' . $deleted . ' Rohdaten-Einträge bereinigt (älter als ' . $daysToKeepRaw . ' Tage)';
             if ($optimizeTables) {
-                $message .= ', ' . $optimized . ' Tabellen optimiert';
+                $message .= ', ' . $optimized . ' Tabellen optimiert (Batchgröße: ' . $optimizeBatchSize . ')';
+                if ($optimizedTotal > 0) {
+                    $message .= ', verbleibend bis Vollzyklus: ' . $optimizedRemaining . ' von ' . $optimizedTotal;
+                }
             }
             $this->setMessage($message);
 
@@ -96,6 +87,91 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
                     1 => rex_i18n::msg('statistics_yes'),
                 ],
             ],
+            [
+                'label' => rex_i18n::msg('statistics_cron_maintenance_optimize_batch_size'),
+                'name' => 'optimize_batch_size',
+                'type' => 'select',
+                'default' => 2,
+                'options' => [
+                    1 => '1',
+                    2 => '2',
+                    3 => '3',
+                    4 => '4',
+                    5 => '5',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function getTablesToOptimize(): array
+    {
+        return [
+            rex::getTable('pagestats_hash'),
+            rex::getTable('pagestats_visits_per_day'),
+            rex::getTable('pagestats_visitors_per_day'),
+            rex::getTable('pagestats_visits_per_url'),
+            rex::getTable('pagestats_visitors_per_url'),
+            rex::getTable('pagestats_urlstatus'),
+            rex::getTable('pagestats_bot'),
+            rex::getTable('pagestats_referer'),
+            rex::getTable('pagestats_media'),
+            rex::getTable('pagestats_api'),
+            rex::getTable('pagestats_sessionstats'),
+        ];
+    }
+
+    /**
+     * @param array<int, string> $tablesToOptimize
+     *
+     * @return array{optimized: int, total: int, remaining: int}
+     */
+    private function optimizeTablesBatch(array $tablesToOptimize, int $batchSize): array
+    {
+        $total = count($tablesToOptimize);
+        if (0 === $total) {
+            return [
+                'optimized' => 0,
+                'total' => 0,
+                'remaining' => 0,
+            ];
+        }
+
+        $batchSize = max(1, min($batchSize, $total));
+        $addon = rex_addon::get('statistics');
+        $cursorKey = 'maintenance_optimize_cursor';
+        $cursor = max(0, (int) $addon->getConfig($cursorKey, 0));
+        if ($cursor >= $total) {
+            $cursor = 0;
+        }
+
+        $startCursor = $cursor;
+        $optimized = 0;
+
+        while ($optimized < $batchSize) {
+            $tableName = $tablesToOptimize[$cursor];
+            $sql = rex_sql::factory();
+            $sql->setQuery('OPTIMIZE TABLE ' . $tableName);
+
+            ++$optimized;
+            ++$cursor;
+
+            if ($cursor >= $total) {
+                $cursor = 0;
+            }
+        }
+
+        $addon->setConfig($cursorKey, $cursor);
+
+        $completedCycle = $cursor === $startCursor;
+        $remaining = $completedCycle ? 0 : $total - $optimized;
+
+        return [
+            'optimized' => $optimized,
+            'total' => $total,
+            'remaining' => max(0, $remaining),
         ];
     }
 

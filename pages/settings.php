@@ -177,46 +177,187 @@ if (rex_request_method() == 'post') {
         return $total;
     };
 
+    $deleteOrphanUrlStatusChunkedLimited = static function (int $chunkSize = 5000, int $maxRounds = 20) use ($runDeleteWithRetry): array {
+        $total = 0;
+        $round = 0;
+        $hasMore = false;
+
+        do {
+            ++$round;
+            $affected = $runDeleteWithRetry(
+                'DELETE FROM ' . rex::getTable('pagestats_urlstatus')
+                . ' WHERE url IN ('
+                . 'SELECT stale.url FROM ('
+                . 'SELECT us.url FROM ' . rex::getTable('pagestats_urlstatus') . ' us '
+                . 'LEFT JOIN ' . rex::getTable('pagestats_visits_per_url') . ' v ON v.url = us.url '
+                . 'WHERE v.url IS NULL '
+                . 'LIMIT ' . (int) $chunkSize
+                . ') stale'
+                . ')'
+            );
+            $total += $affected;
+
+            $hasMore = $affected >= $chunkSize;
+        } while ($hasMore && $round < $maxRounds);
+
+        return [
+            'deleted' => $total,
+            'has_more' => $hasMore,
+        ];
+    };
+
+    $renderBatchContinueForm = static function (string $func, array $hiddenFields = []) use ($addon): string {
+        $html = '<form style="margin-top:10px" action="' . rex_url::currentBackendPage() . '" method="post">';
+        $html .= '<input type="hidden" name="func" value="' . htmlspecialchars($func, ENT_QUOTES) . '">';
+
+        foreach ($hiddenFields as $name => $value) {
+            $html .= '<input type="hidden" name="' . htmlspecialchars((string) $name, ENT_QUOTES) . '" value="' . htmlspecialchars((string) $value, ENT_QUOTES) . '">';
+        }
+
+        $html .= '<button class="btn btn-default" type="submit">' . htmlspecialchars($addon->i18n('statistics_batch_continue'), ENT_QUOTES) . '</button>';
+        $html .= '</form>';
+
+        return $html;
+    };
+
     if ($function == 'delete_hash') {
-        $sql = rex_sql::factory();
-        $sql->setQuery('delete from ' . rex::getTable('pagestats_hash'));
-        echo rex_view::success($sql->getRows() . ' ' . $addon->i18n('statistics_deleted_hashes'));
+        try {
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_hash'), '1=1', [], 5000, 12);
+            $deleted = (int) $result['deleted'];
+            $hasMore = (bool) $result['has_more'];
+
+            echo rex_view::success($deleted . ' ' . $addon->i18n('statistics_deleted_hashes'));
+            if ($hasMore) {
+                echo rex_view::warning($addon->i18n('statistics_batch_more_data') . $renderBatchContinueForm('delete_hash'));
+            }
+        } catch (rex_sql_exception $exception) {
+            $message = strtolower($exception->getMessage());
+            $isLockTimeout = false !== strpos($message, '1205') || false !== strpos($message, 'lock wait timeout');
+
+            if ($isLockTimeout) {
+                echo rex_view::error($addon->i18n('statistics_cleanup_lock_timeout'));
+            } else {
+                rex_logger::logException($exception);
+                echo rex_view::error($exception->getMessage());
+            }
+        }
     } elseif ($function == 'delete_dump') {
-        $sql = rex_sql::factory();
-        $count = 0;
+        try {
+            $count = 0;
+            $hasMore = false;
+            $tables = [
+                rex::getTable('pagestats_data'),
+                rex::getTable('pagestats_visits_per_day'),
+                rex::getTable('pagestats_visitors_per_day'),
+                rex::getTable('pagestats_visits_per_url'),
+                rex::getTable('pagestats_visitors_per_url'),
+            ];
 
-        $sql->setQuery('delete from ' . rex::getTable('pagestats_data'));
-        $count += $sql->getRows();
+            foreach ($tables as $table) {
+                $result = $deleteChunkedLimited($table, '1=1', [], 5000, 8);
+                $count += (int) $result['deleted'];
+                $hasMore = $hasMore || (bool) $result['has_more'];
+            }
 
-        $sql->setQuery('delete from ' . rex::getTable('pagestats_visits_per_day'));
-        $count += $sql->getRows();
+            echo rex_view::success($count . ' ' . $addon->i18n('statistics_deleted_dump'));
+            if ($hasMore) {
+                echo rex_view::warning($addon->i18n('statistics_batch_more_data') . $renderBatchContinueForm('delete_dump'));
+            }
+        } catch (rex_sql_exception $exception) {
+            $message = strtolower($exception->getMessage());
+            $isLockTimeout = false !== strpos($message, '1205') || false !== strpos($message, 'lock wait timeout');
 
-        $sql->setQuery('delete from ' . rex::getTable('pagestats_visitors_per_day'));
-        $count += $sql->getRows();
-
-        $sql->setQuery('delete from ' . rex::getTable('pagestats_visits_per_url'));
-        $count += $sql->getRows();
-
-        $sql->setQuery('delete from ' . rex::getTable('pagestats_visitors_per_url'));
-        $count += $sql->getRows();
-
-        echo rex_view::success($count . ' ' . $addon->i18n('statistics_deleted_dump'));
+            if ($isLockTimeout) {
+                echo rex_view::error($addon->i18n('statistics_cleanup_lock_timeout'));
+            } else {
+                rex_logger::logException($exception);
+                echo rex_view::error($exception->getMessage());
+            }
+        }
     } elseif ($function == 'delete_media') {
-        $sql = rex_sql::factory();
-        $sql->setQuery('delete from ' . rex::getTable('pagestats_media'));
-        echo rex_view::success($sql->getRows() . ' ' . $addon->i18n('statistics_deleted_media'));
+        try {
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_media'), '1=1', [], 5000, 12);
+            $deleted = (int) $result['deleted'];
+            $hasMore = (bool) $result['has_more'];
+
+            echo rex_view::success($deleted . ' ' . $addon->i18n('statistics_deleted_media'));
+            if ($hasMore) {
+                echo rex_view::warning($addon->i18n('statistics_batch_more_data') . $renderBatchContinueForm('delete_media'));
+            }
+        } catch (rex_sql_exception $exception) {
+            $message = strtolower($exception->getMessage());
+            $isLockTimeout = false !== strpos($message, '1205') || false !== strpos($message, 'lock wait timeout');
+
+            if ($isLockTimeout) {
+                echo rex_view::error($addon->i18n('statistics_cleanup_lock_timeout'));
+            } else {
+                rex_logger::logException($exception);
+                echo rex_view::error($exception->getMessage());
+            }
+        }
     } elseif ($function == 'delete_bot') {
-        $sql = rex_sql::factory();
-        $sql->setQuery('delete from ' . rex::getTable('pagestats_bot'));
-        echo rex_view::success($sql->getRows() . ' ' . $addon->i18n('statistics_deleted_bots'));
+        try {
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_bot'), '1=1', [], 5000, 12);
+            $deleted = (int) $result['deleted'];
+            $hasMore = (bool) $result['has_more'];
+
+            echo rex_view::success($deleted . ' ' . $addon->i18n('statistics_deleted_bots'));
+            if ($hasMore) {
+                echo rex_view::warning($addon->i18n('statistics_batch_more_data') . $renderBatchContinueForm('delete_bot'));
+            }
+        } catch (rex_sql_exception $exception) {
+            $message = strtolower($exception->getMessage());
+            $isLockTimeout = false !== strpos($message, '1205') || false !== strpos($message, 'lock wait timeout');
+
+            if ($isLockTimeout) {
+                echo rex_view::error($addon->i18n('statistics_cleanup_lock_timeout'));
+            } else {
+                rex_logger::logException($exception);
+                echo rex_view::error($exception->getMessage());
+            }
+        }
     } elseif ($function == 'delete_referer') {
-        $sql = rex_sql::factory();
-        $sql->setQuery('delete from ' . rex::getTable('pagestats_referer'));
-        echo rex_view::success($sql->getRows() . ' ' . $addon->i18n('statistics_deleted_referer'));
+        try {
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_referer'), '1=1', [], 5000, 12);
+            $deleted = (int) $result['deleted'];
+            $hasMore = (bool) $result['has_more'];
+
+            echo rex_view::success($deleted . ' ' . $addon->i18n('statistics_deleted_referer'));
+            if ($hasMore) {
+                echo rex_view::warning($addon->i18n('statistics_batch_more_data') . $renderBatchContinueForm('delete_referer'));
+            }
+        } catch (rex_sql_exception $exception) {
+            $message = strtolower($exception->getMessage());
+            $isLockTimeout = false !== strpos($message, '1205') || false !== strpos($message, 'lock wait timeout');
+
+            if ($isLockTimeout) {
+                echo rex_view::error($addon->i18n('statistics_cleanup_lock_timeout'));
+            } else {
+                rex_logger::logException($exception);
+                echo rex_view::error($exception->getMessage());
+            }
+        }
     } elseif ($function == 'delete_campaigns') {
-        $sql = rex_sql::factory();
-        $sql->setQuery('delete from ' . rex::getTable('pagestats_api'));
-        echo rex_view::success(sprintf($addon->i18n('statistics_deleted_api'), (string) $sql->getRows()));
+        try {
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_api'), '1=1', [], 5000, 12);
+            $deleted = (int) $result['deleted'];
+            $hasMore = (bool) $result['has_more'];
+
+            echo rex_view::success(sprintf($addon->i18n('statistics_deleted_api'), (string) $deleted));
+            if ($hasMore) {
+                echo rex_view::warning($addon->i18n('statistics_batch_more_data') . $renderBatchContinueForm('delete_campaigns'));
+            }
+        } catch (rex_sql_exception $exception) {
+            $message = strtolower($exception->getMessage());
+            $isLockTimeout = false !== strpos($message, '1205') || false !== strpos($message, 'lock wait timeout');
+
+            if ($isLockTimeout) {
+                echo rex_view::error($addon->i18n('statistics_cleanup_lock_timeout'));
+            } else {
+                rex_logger::logException($exception);
+                echo rex_view::error($exception->getMessage());
+            }
+        }
     } elseif ($function == 'delete_noise') {
         try {
             $count = 0;
@@ -244,7 +385,10 @@ if (rex_request_method() == 'post') {
 
             echo rex_view::success(sprintf($addon->i18n('statistics_deleted_noise'), (string) $count));
             if ($hasMore) {
-                echo rex_view::warning(sprintf($addon->i18n('statistics_deleted_noise_partial'), (string) $count));
+                echo rex_view::warning(
+                    sprintf($addon->i18n('statistics_deleted_noise_partial'), (string) $count)
+                    . $renderBatchContinueForm('delete_noise')
+                );
             }
         } catch (rex_sql_exception $exception) {
             $message = strtolower($exception->getMessage());
@@ -268,20 +412,55 @@ if (rex_request_method() == 'post') {
             $cutoffDatetime = $cutoffDate . ' 00:00:00';
 
             $count = 0;
-            $count += $deleteChunked(rex::getTable('pagestats_visits_per_day'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $count += $deleteChunked(rex::getTable('pagestats_visitors_per_day'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $count += $deleteChunked(rex::getTable('pagestats_visits_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $count += $deleteChunked(rex::getTable('pagestats_visitors_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $count += $deleteChunked(rex::getTable('pagestats_referer'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $count += $deleteChunked(rex::getTable('pagestats_media'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $count += $deleteChunked(rex::getTable('pagestats_api'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $count += $deleteChunked(rex::getTable('pagestats_hash'), 'datetime < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
-            $count += $deleteChunked(rex::getTable('pagestats_sessionstats'), 'lastvisit < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
+            $hasMore = false;
+            $chunkSize = 5000;
+            $maxRoundsPerRun = 6;
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_visits_per_day'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_visitors_per_day'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_visits_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_visitors_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_referer'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_media'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_api'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_hash'), 'datetime < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime], $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_sessionstats'), 'lastvisit < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime], $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
 
             // Remove stale URL status records when no matching URL stats remain.
-            $count += $deleteOrphanUrlStatusChunked();
+            $result = $deleteOrphanUrlStatusChunkedLimited($chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
 
             echo rex_view::success(sprintf($addon->i18n('statistics_deleted_old'), (string) $count, (string) $keepDays));
+            if ($hasMore) {
+                echo rex_view::warning($addon->i18n('statistics_batch_more_data') . $renderBatchContinueForm('delete_old', ['keep_days' => $keepDays]));
+            }
         } catch (rex_sql_exception $exception) {
             $message = strtolower($exception->getMessage());
             $isLockTimeout = false !== strpos($message, '1205') || false !== strpos($message, 'lock wait timeout');
@@ -304,20 +483,48 @@ if (rex_request_method() == 'post') {
             $cutoffDatetime = $cutoffDate . ' 00:00:00';
 
             $count = 0;
+            $hasMore = false;
+            $chunkSize = 5000;
+            $maxRoundsPerRun = 8;
 
             // Reduce high-cardinality raw tables first.
-            $count += $deleteChunked(rex::getTable('pagestats_visits_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $count += $deleteChunked(rex::getTable('pagestats_visitors_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $count += $deleteChunked(rex::getTable('pagestats_referer'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $count += $deleteChunked(rex::getTable('pagestats_media'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $count += $deleteChunked(rex::getTable('pagestats_api'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate]);
-            $count += $deleteChunked(rex::getTable('pagestats_sessionstats'), 'lastvisit < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
-            $count += $deleteChunked(rex::getTable('pagestats_hash'), 'datetime < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime]);
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_visits_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_visitors_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_referer'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_media'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_api'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_sessionstats'), 'lastvisit < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime], $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
+
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_hash'), 'datetime < :cutoff_datetime', [':cutoff_datetime' => $cutoffDatetime], $chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
 
             // Remove stale URL status records without matching URL rows.
-            $count += $deleteOrphanUrlStatusChunked();
+            $result = $deleteOrphanUrlStatusChunkedLimited($chunkSize, $maxRoundsPerRun);
+            $count += (int) $result['deleted'];
+            $hasMore = $hasMore || (bool) $result['has_more'];
 
             echo rex_view::success(sprintf($addon->i18n('statistics_deleted_raw_old'), (string) $count, (string) $keepDaysRaw));
+            if ($hasMore) {
+                echo rex_view::warning($addon->i18n('statistics_batch_more_data') . $renderBatchContinueForm('delete_raw_old', ['keep_days_raw' => $keepDaysRaw]));
+            }
         } catch (rex_sql_exception $exception) {
             $message = strtolower($exception->getMessage());
             $isLockTimeout = false !== strpos($message, '1205') || false !== strpos($message, 'lock wait timeout');
@@ -331,6 +538,7 @@ if (rex_request_method() == 'post') {
         }
     } elseif ($function == 'optimize_tables') {
         $optimized = 0;
+        $batchSize = 2;
 
         $tablesToOptimize = [
             rex::getTable('pagestats_hash'),
@@ -348,13 +556,39 @@ if (rex_request_method() == 'post') {
         ];
 
         try {
-            foreach ($tablesToOptimize as $tableName) {
+            $totalTables = count($tablesToOptimize);
+            $startOffset = rex_post('optimize_offset', 'int', 0);
+            if ($startOffset < 0 || $startOffset >= $totalTables) {
+                $startOffset = 0;
+            }
+
+            $nextOffset = $startOffset;
+            while ($nextOffset < $totalTables && $optimized < $batchSize) {
+                $tableName = $tablesToOptimize[$nextOffset];
                 $sql = rex_sql::factory();
                 $sql->setQuery('OPTIMIZE TABLE ' . $tableName);
                 ++$optimized;
+                ++$nextOffset;
             }
 
-            echo rex_view::success(sprintf($addon->i18n('statistics_optimized_tables'), (string) $optimized));
+            if ($nextOffset < $totalTables) {
+                $continueHtml = '<form style="margin-top:10px" action="' . rex_url::currentBackendPage() . '" method="post">';
+                $continueHtml .= '<input type="hidden" name="func" value="optimize_tables">';
+                $continueHtml .= '<input type="hidden" name="optimize_offset" value="' . (string) $nextOffset . '">';
+                $continueHtml .= '<button class="btn btn-default" type="submit">' . htmlspecialchars($addon->i18n('statistics_optimize_tables_continue'), ENT_QUOTES) . '</button>';
+                $continueHtml .= '</form>';
+
+                echo rex_view::warning(
+                    sprintf(
+                        $addon->i18n('statistics_optimized_tables_batch_progress'),
+                        (string) $nextOffset,
+                        (string) $totalTables
+                    )
+                    . $continueHtml
+                );
+            } else {
+                echo rex_view::success(sprintf($addon->i18n('statistics_optimized_tables'), (string) $totalTables));
+            }
         } catch (rex_sql_exception $exception) {
             $message = strtolower($exception->getMessage());
             $isLockTimeout = false !== strpos($message, '1205') || false !== strpos($message, 'lock wait timeout');
@@ -677,49 +911,49 @@ $deleteActionsHtml = '';
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_hashes'),
     $addon->i18n('statistics_maintenance_scope_hashes'),
-    '<form action="' . rex_url::currentBackendPage() . '" method="post">'
+    '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_delete_hashes') . '">'
     . '<input type="hidden" name="func" value="delete_hash">'
-    . '<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_hashes') . '">' . $addon->i18n('statistics_delete_hashes') . '</button>'
+    . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_delete_hashes') . '</button>'
     . '</form>'
 );
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_visits'),
     $addon->i18n('statistics_maintenance_scope_all'),
-    '<form action="' . rex_url::currentBackendPage() . '" method="post">'
+    '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_delete_dump') . '">'
     . '<input type="hidden" name="func" value="delete_dump">'
-    . '<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_dump') . '">' . $addon->i18n('statistics_delete_visits') . '</button>'
+    . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_delete_visits') . '</button>'
     . '</form>'
 );
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_bots'),
     $addon->i18n('statistics_maintenance_scope_bot'),
-    '<form action="' . rex_url::currentBackendPage() . '" method="post">'
+    '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_delete_bots') . '">'
     . '<input type="hidden" name="func" value="delete_bot">'
-    . '<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_bots') . '">' . $addon->i18n('statistics_delete_bots') . '</button>'
+    . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_delete_bots') . '</button>'
     . '</form>'
 );
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_referer'),
     $addon->i18n('statistics_maintenance_scope_referer'),
-    '<form action="' . rex_url::currentBackendPage() . '" method="post">'
+    '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_delete_referer') . '">'
     . '<input type="hidden" name="func" value="delete_referer">'
-    . '<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_referer') . '">' . $addon->i18n('statistics_delete_referer') . '</button>'
+    . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_delete_referer') . '</button>'
     . '</form>'
 );
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_media_delete_media'),
     $addon->i18n('statistics_maintenance_scope_media'),
-    '<form action="' . rex_url::currentBackendPage() . '" method="post">'
+    '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_media_delete_media_confirm') . '">'
     . '<input type="hidden" name="func" value="delete_media">'
-    . '<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_media_delete_media_confirm') . '">' . $addon->i18n('statistics_media_delete_media') . '</button>'
+    . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_media_delete_media') . '</button>'
     . '</form>'
 );
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_api_delete_api'),
     $addon->i18n('statistics_maintenance_scope_api'),
-    '<form action="' . rex_url::currentBackendPage() . '" method="post">'
+    '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_api_delete_api_confirm') . '">'
     . '<input type="hidden" name="func" value="delete_campaigns">'
-    . '<button class="btn btn-danger" type="submit" data-confirm="' . $addon->i18n('statistics_api_delete_api_confirm') . '">' . $addon->i18n('statistics_api_delete_api') . '</button>'
+    . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_api_delete_api') . '</button>'
     . '</form>'
 );
 
@@ -729,7 +963,7 @@ $maintenanceTasksHtml .= $renderActionCard(
     $addon->i18n('statistics_maintenance_scope_noise'),
     '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_delete_noise') . '">'
     . '<input type="hidden" name="func" value="delete_noise">'
-    . '<button class="btn btn-default" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_noise') . '">' . $addon->i18n('statistics_delete_noise') . '</button>'
+    . '<button class="btn btn-default" type="submit">' . $addon->i18n('statistics_delete_noise') . '</button>'
     . '</form>'
 );
 $maintenanceTasksHtml .= $renderActionCard(
@@ -739,7 +973,7 @@ $maintenanceTasksHtml .= $renderActionCard(
     . '<input type="hidden" name="func" value="delete_old">'
     . '<label for="statistics-keep-days" style="margin:0;">' . $addon->i18n('statistics_cleanup_keep_days') . '</label>'
     . '<input id="statistics-keep-days" class="form-control" style="width:110px" type="number" min="1" step="1" name="keep_days" value="365">'
-    . '<button class="btn btn-default" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_old') . '">' . $addon->i18n('statistics_delete_old') . '</button>'
+    . '<button class="btn btn-default" type="submit">' . $addon->i18n('statistics_delete_old') . '</button>'
     . '</form>'
 );
 $maintenanceTasksHtml .= $renderActionCard(
@@ -749,7 +983,7 @@ $maintenanceTasksHtml .= $renderActionCard(
     . '<input type="hidden" name="func" value="delete_raw_old">'
     . '<label for="statistics-keep-days-raw" style="margin:0;">' . $addon->i18n('statistics_cleanup_keep_days_raw') . '</label>'
     . '<input id="statistics-keep-days-raw" class="form-control" style="width:110px" type="number" min="1" step="1" name="keep_days_raw" value="120">'
-    . '<button class="btn btn-default" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_delete_raw_old') . '">' . $addon->i18n('statistics_delete_raw_old') . '</button>'
+    . '<button class="btn btn-default" type="submit">' . $addon->i18n('statistics_delete_raw_old') . '</button>'
     . '</form>'
 );
 $maintenanceTasksHtml .= $renderActionCard(
@@ -757,7 +991,7 @@ $maintenanceTasksHtml .= $renderActionCard(
     $addon->i18n('statistics_maintenance_scope_optimize'),
     '<form action="' . rex_url::currentBackendPage() . '" method="post" data-confirm="' . $addon->i18n('statistics_confirm_optimize_tables') . '">'
     . '<input type="hidden" name="func" value="optimize_tables">'
-    . '<button class="btn btn-default" type="submit" data-confirm="' . $addon->i18n('statistics_confirm_optimize_tables') . '">' . $addon->i18n('statistics_optimize_tables') . '</button>'
+    . '<button class="btn btn-default" type="submit">' . $addon->i18n('statistics_optimize_tables') . '</button>'
     . '</form>'
 );
 

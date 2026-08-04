@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.1] - 04.08.2026
+
+-   Tabellen-Optimierung in den Einstellungen für große Datenbanken entschärft: `OPTIMIZE TABLE` läuft nun in kleinen Batches mit Fortschrittsanzeige und manuellem Weiterlauf statt als potenziell timeout-anfälliger Komplettlauf
+-   Vorhandenen Wartungs-Cronjob erweitert: optionale Tabellen-Optimierung arbeitet jetzt ebenfalls batchweise über mehrere Cron-Läufe mit persistentem Cursor und konfigurierbarer Batchgröße pro Lauf
+-   Batch-Verarbeitung auf weitere Wartungsaktionen ausgeweitet (u. a. Hashes, Gesamtdaten, Bots, Referer, Media, API, alte Daten und Störanfragen) inklusive „Nächsten Batch“-Weiterlauf, damit auch große Löschläufe ohne Request-Timeout abgearbeitet werden können
+-   Doppelten Confirm-Dialog bei Wartungsaktionen behoben: `data-confirm` wird nicht mehr gleichzeitig auf Formular und Button gesetzt, wodurch der Alert nur noch einmal erscheint
+
 ## [3.4.0] - 17.07.2026
 
 -   Tracking-Identität umfassend überarbeitet: stateless Erkennung als Standard, optionaler Session-Modus, gekürzte/anonymisierte IP-Anteile, konfigurierbare Token-Rotation sowie klare Hinweise zu Vor- und Nachteilen
