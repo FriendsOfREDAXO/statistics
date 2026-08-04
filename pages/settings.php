@@ -379,7 +379,7 @@ if (rex_request_method() == 'post') {
 
             $result = $deleteChunkedLimited(rex::getTable('pagestats_visits_per_day'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
             $count += (int) $result['deleted'];
-            $hasMore = $hasMore || (bool) $result['has_more'];
+            $hasMore = (bool) $result['has_more'];
 
             $result = $deleteChunkedLimited(rex::getTable('pagestats_visitors_per_day'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
             $count += (int) $result['deleted'];
@@ -387,7 +387,7 @@ if (rex_request_method() == 'post') {
 
             $result = $deleteChunkedLimited(rex::getTable('pagestats_visits_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
             $count += (int) $result['deleted'];
-            $hasMore = $hasMore || (bool) $result['has_more'];
+            $hasMore = (bool) $result['has_more'];
 
             $result = $deleteChunkedLimited(rex::getTable('pagestats_visitors_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
             $count += (int) $result['deleted'];
@@ -451,7 +451,7 @@ if (rex_request_method() == 'post') {
             // Reduce high-cardinality raw tables first.
             $result = $deleteChunkedLimited(rex::getTable('pagestats_visits_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
             $count += (int) $result['deleted'];
-            $hasMore = $hasMore || (bool) $result['has_more'];
+            $hasMore = (bool) $result['has_more'];
 
             $result = $deleteChunkedLimited(rex::getTable('pagestats_visitors_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
             $count += (int) $result['deleted'];

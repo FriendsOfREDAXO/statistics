@@ -248,6 +248,7 @@ statistics_hidden_domains = Domains in Auswertungen ausblenden
 statistics_hidden_domains_note = Eine Domain pro Zeile. Diese Domains werden in den Statistik-Charts und Haupttabellen ignoriert (z. B. Test-/Admin-Domains).
 
 statistics_report_title = Statistik-Report Generator
+statistics_report_pdf_title = Statistics Report
 statistics_report_panel_title = PDF-Reports
 statistics_report_description = Generiert einen PDF-Bericht für Woche, Monat oder Jahr mit KPI-Übersicht sowie Top-20 Seiten und Referern.
 statistics_report_generate_button = PDF-Report generieren

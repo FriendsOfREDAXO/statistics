@@ -5,6 +5,14 @@
   --report-text: #2f3f52;
   --report-muted: #61748a;
   --report-accent: #2f80c8;
+  --report-title: #2f3f52;
+  --report-spinner-ring: #d8e1ec;
+  --report-progress-track: #e6edf4;
+  --report-progress-from: #2f80c8;
+  --report-progress-to: #5ca7e7;
+  --report-hint-bg: #e9f2fb;
+  --report-hint-border: #b7cde4;
+  --report-hint-text: #2f3f52;
   background: var(--report-bg);
   border: 1px solid var(--report-border);
   border-radius: 6px;
@@ -18,6 +26,14 @@ body.rex-theme-dark #statistics-report-root {
   --report-text: #edf3f8;
   --report-muted: #b6c4d2;
   --report-accent: #74b8ff;
+  --report-title: #edf3f8;
+  --report-spinner-ring: #3b4b5c;
+  --report-progress-track: #334455;
+  --report-progress-from: #74b8ff;
+  --report-progress-to: #9fceff;
+  --report-hint-bg: #2a3948;
+  --report-hint-border: #3f5368;
+  --report-hint-text: #dce7f2;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -28,6 +44,14 @@ body.rex-theme-dark #statistics-report-root {
     --report-text: #edf3f8;
     --report-muted: #b6c4d2;
     --report-accent: #74b8ff;
+    --report-title: #edf3f8;
+    --report-spinner-ring: #3b4b5c;
+    --report-progress-track: #334455;
+    --report-progress-from: #74b8ff;
+    --report-progress-to: #9fceff;
+    --report-hint-bg: #2a3948;
+    --report-hint-border: #3f5368;
+    --report-hint-text: #dce7f2;
   }
 }
 
@@ -35,7 +59,7 @@ body.rex-theme-dark #statistics-report-root {
   margin: 0 0 4px;
   font-size: 31px;
   font-weight: 600;
-  color: #39973c;
+  color: var(--report-title);
 }
 
 .statistics-report__intro {
@@ -87,6 +111,9 @@ body.rex-theme-dark #statistics-report-root {
 
 .statistics-report__runtime-hint {
   margin-top: 8px;
+  background: var(--report-hint-bg);
+  border-color: var(--report-hint-border);
+  color: var(--report-hint-text);
 }
 
 .statistics-report__wait {
@@ -103,7 +130,7 @@ body.rex-theme-dark #statistics-report-root {
   height: 28px;
   margin-right: 10px;
   border-radius: 50%;
-  border: 3px solid #d8e1ec;
+  border: 3px solid var(--report-spinner-ring);
   border-top-color: var(--report-accent);
   animation: statistics-report-spin 1s linear infinite;
 }
@@ -121,7 +148,7 @@ body.rex-theme-dark #statistics-report-root {
   width: 100%;
   height: 10px;
   border-radius: 8px;
-  background: #e6edf4;
+  background: var(--report-progress-track);
   overflow: hidden;
 }
 
@@ -129,7 +156,7 @@ body.rex-theme-dark #statistics-report-root {
   height: 100%;
   border-radius: 8px;
   width: 8%;
-  background: linear-gradient(90deg, #2f80c8 0%, #5ca7e7 100%);
+  background: linear-gradient(90deg, var(--report-progress-from) 0%, var(--report-progress-to) 100%);
 }
 
 .statistics-report__submit {

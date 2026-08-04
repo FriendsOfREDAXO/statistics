@@ -145,7 +145,7 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
         [$whereUrl, $paramsUrl] = $this->buildLikeWhere('url', $patterns);
         $result = $this->deleteChunkedLimited(rex::getTable('pagestats_visits_per_url'), $whereUrl, $paramsUrl, $chunkSize, $maxRounds);
         $deleted += $result['deleted'];
-        $hasMore = $hasMore || $result['has_more'];
+        $hasMore = $result['has_more'];
 
         $result = $this->deleteChunkedLimited(rex::getTable('pagestats_visitors_per_url'), $whereUrl, $paramsUrl, $chunkSize, $maxRounds);
         $deleted += $result['deleted'];

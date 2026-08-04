@@ -9,7 +9,7 @@ use Jaybizzle\CrawlerDetect\CrawlerDetect;
 
 if (rex::isBackend()) {
     $addon = rex_addon::get('statistics');
-    $currentPage = rex_be_controller::getCurrentPage();
+    $currentPage = (string) rex_be_controller::getCurrentPage();
 
 
     // permissions

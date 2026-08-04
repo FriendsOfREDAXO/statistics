@@ -6,11 +6,12 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use rex;
 use rex_addon;
+use rex_addon_interface;
 use rex_sql;
 
 class ReportPdfGenerator
 {
-    private rex_addon $addon;
+    private rex_addon_interface $addon;
 
     public function __construct()
     {
@@ -30,7 +31,7 @@ class ReportPdfGenerator
         $topPages = $this->loadTopList('pagestats_visits_per_url', 'url', $start, $end, 20);
         $topReferers = $this->loadTopList('pagestats_referer', 'referer', $start, $end, 20);
 
-        $title = $this->addon->i18n('statistics_report_title');
+        $title = $this->addon->i18n('statistics_report_pdf_title');
         $filename = \rex_string::normalize('statistics_' . $periodType . '_' . $start->format('Y-m-d'));
         $html = $this->renderHtml($title, $label, $start, $end, $kpi, $dailyVisits, $deviceTypes, $topPages, $topReferers);
 
@@ -163,10 +164,15 @@ class ReportPdfGenerator
      */
     private function loadTopList(string $tableSuffix, string $column, DateTimeImmutable $start, DateTimeImmutable $end, int $limit): array
     {
+        if ('' === $tableSuffix) {
+            throw new InvalidArgumentException('Table suffix must not be empty');
+        }
+
+        $tableName = rex::getTable($tableSuffix);
         $sql = rex_sql::factory();
         $rows = $sql->getArray(
             'SELECT ' . $column . ' AS item, SUM(count) AS total'
-            . ' FROM ' . rex::getTable($tableSuffix)
+            . ' FROM ' . $tableName
             . ' WHERE date BETWEEN :start AND :end'
             . ' GROUP BY ' . $column
             . ' ORDER BY total DESC'
@@ -465,18 +471,15 @@ class ReportPdfGenerator
         }
 
         $bars = array_slice($dailyVisits, -10);
-        $max = max(array_column($bars, 'count'));
-        if ($max < 1) {
-            $max = 1;
-        }
+        $max = $this->resolveMaxCount($bars);
 
         $html = '<p class="legend"><span class="legend-item"><span class="legend-dot" style="background:#2f80c8"></span>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_daily_series_label'), ENT_QUOTES) . '</span></p>';
         $html .= '<p class="chart-note">' . htmlspecialchars($this->addon->i18n('statistics_report_graph_max_label') . ': ' . (string) $max, ENT_QUOTES) . '</p>';
         $html .= '<table class="hbar-table">';
         foreach ($bars as $row) {
             $width = max(2, (int) round(($row['count'] / $max) * 100));
-            $date = (string) ($row['date'] ?? '');
-            $count = (int) ($row['count'] ?? 0);
+            $date = $row['date'];
+            $count = $row['count'];
             $html .= '<tr>';
             $html .= '<td class="hbar-label">' . htmlspecialchars($date, ENT_QUOTES) . '</td>';
             $html .= '<td class="hbar-track-cell"><div class="hbar-track"><div class="hbar-fill" style="width:' . $width . '%"></div></div></td>';
@@ -498,10 +501,11 @@ class ReportPdfGenerator
         }
 
         $list = array_slice($rows, 0, $limit);
-        $max = max(array_column($list, 'count'));
-        if ($max < 1) {
-            $max = 1;
+        if ([] === $list) {
+            return '<p class="small">' . htmlspecialchars($this->addon->i18n('statistics_no_data'), ENT_QUOTES) . '</p>';
         }
+
+        $max = $this->resolveMaxCount($list);
 
         $sum = 0;
         foreach ($list as $entry) {
@@ -531,6 +535,21 @@ class ReportPdfGenerator
         $html .= '</table>';
 
         return $html;
+    }
+
+    /**
+     * @param array<int, array{count:int}> $rows
+     */
+    private function resolveMaxCount(array $rows): int
+    {
+        $max = 0;
+        foreach ($rows as $row) {
+            if ($row['count'] > $max) {
+                $max = $row['count'];
+            }
+        }
+
+        return max(1, $max);
     }
 
     /**

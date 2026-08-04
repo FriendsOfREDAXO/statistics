@@ -530,6 +530,9 @@ class Visit
         );
     }
 
+    /**
+     * @param array<string, mixed> $params
+     */
     private function executeWriteWithRetry(string $query, array $params = []): void
     {
         $maxAttempts = 3;
