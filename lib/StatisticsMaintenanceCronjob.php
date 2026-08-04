@@ -7,6 +7,7 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
         $daysToKeepRaw = max(1, (int) $this->getParam('days_to_keep_raw', 120));
         $optimizeTables = (int) $this->getParam('optimize_tables', 0) === 1;
         $optimizeBatchSize = max(1, (int) $this->getParam('optimize_batch_size', 2));
+        $cleanupNoise = (int) $this->getParam('cleanup_noise', 0) === 1;
 
         $cutoffDate = (new DateTimeImmutable('today'))->modify('-' . $daysToKeepRaw . ' days')->format('Y-m-d');
         $cutoffDatetime = $cutoffDate . ' 00:00:00';
@@ -24,6 +25,15 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
 
             $deleted += $this->deleteOrphanUrlStatusChunked();
 
+            $noiseDeleted = 0;
+            $noiseHasMore = false;
+            if ($cleanupNoise) {
+                $noiseResult = $this->cleanupNoiseBatch();
+                $noiseDeleted = $noiseResult['deleted'];
+                $noiseHasMore = $noiseResult['has_more'];
+                $deleted += $noiseDeleted;
+            }
+
             $optimized = 0;
             $optimizedTotal = 0;
             $optimizedRemaining = 0;
@@ -35,6 +45,12 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
             }
 
             $message = 'Statistics-Wartung: ' . $deleted . ' Rohdaten-Einträge bereinigt (älter als ' . $daysToKeepRaw . ' Tage)';
+            if ($cleanupNoise) {
+                $message .= ', ' . $noiseDeleted . ' Störanfragen bereinigt';
+                if ($noiseHasMore) {
+                    $message .= ' (weitere vorhanden)';
+                }
+            }
             if ($optimizeTables) {
                 $message .= ', ' . $optimized . ' Tabellen optimiert (Batchgröße: ' . $optimizeBatchSize . ')';
                 if ($optimizedTotal > 0) {
@@ -78,6 +94,16 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
                 ],
             ],
             [
+                'label' => rex_i18n::msg('statistics_cron_maintenance_cleanup_noise'),
+                'name' => 'cleanup_noise',
+                'type' => 'select',
+                'default' => 0,
+                'options' => [
+                    0 => rex_i18n::msg('statistics_no'),
+                    1 => rex_i18n::msg('statistics_yes'),
+                ],
+            ],
+            [
                 'label' => rex_i18n::msg('statistics_cron_maintenance_optimize'),
                 'name' => 'optimize_tables',
                 'type' => 'select',
@@ -101,6 +127,150 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
                 ],
             ],
         ];
+    }
+
+    /**
+     * @return array{deleted: int, has_more: bool}
+     */
+    private function cleanupNoiseBatch(): array
+    {
+        $chunkSize = 4000;
+        $maxRounds = 8;
+        $deleted = 0;
+        $hasMore = false;
+        $patterns = $this->getNoiseLikePatterns();
+
+        [$whereUrl, $paramsUrl] = $this->buildLikeWhere('url', $patterns);
+        $result = $this->deleteChunkedLimited(rex::getTable('pagestats_visits_per_url'), $whereUrl, $paramsUrl, $chunkSize, $maxRounds);
+        $deleted += $result['deleted'];
+        $hasMore = $hasMore || $result['has_more'];
+
+        $result = $this->deleteChunkedLimited(rex::getTable('pagestats_visitors_per_url'), $whereUrl, $paramsUrl, $chunkSize, $maxRounds);
+        $deleted += $result['deleted'];
+        $hasMore = $hasMore || $result['has_more'];
+
+        $result = $this->deleteChunkedLimited(rex::getTable('pagestats_urlstatus'), $whereUrl, $paramsUrl, $chunkSize, $maxRounds);
+        $deleted += $result['deleted'];
+        $hasMore = $hasMore || $result['has_more'];
+
+        [$whereLastpage, $paramsLastpage] = $this->buildLikeWhere('lastpage', $patterns);
+        $result = $this->deleteChunkedLimited(rex::getTable('pagestats_sessionstats'), $whereLastpage, $paramsLastpage, $chunkSize, $maxRounds);
+        $deleted += $result['deleted'];
+        $hasMore = $hasMore || $result['has_more'];
+
+        return [
+            'deleted' => $deleted,
+            'has_more' => $hasMore,
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function getNoiseLikePatterns(): array
+    {
+        $patterns = [
+            '%/wp-login.php%',
+            '%/wp-json%',
+            '%/wp-config%',
+            '%/wp-admin%',
+            '%/wp-includes/%',
+            '%/wp-content/%',
+            '%/xmlrpc.php%',
+            '%/wlwmanifest.xml%',
+            '%/drupal%',
+            '%/joomla%',
+            '%/magento%',
+            '%/prestashop%',
+            '%/typo3%',
+            '%/shopware%',
+            '%/administrator%',
+            '%/admin/login%',
+            '%/admin/%',
+            '%/api/%',
+            '%/api',
+            '%/adminer%',
+            '%/adminer.php%',
+            '%/phpmyadmin%',
+            '%/phpmyadmin2%',
+            '%/pma%',
+            '%/dbadmin%',
+            '%/myadmin%',
+            '%/webadmin%',
+            '%/mysql%',
+            '%/phpinfo.php%',
+            '%/server-status%',
+            '%/server-info%',
+            '%/cgi-bin/%',
+            '%/webmail%',
+            '%/roundcube%',
+            '%/.git/%',
+            '%/vendor/phpunit%',
+            '%apple-touch%',
+            '%/.well-known/security.txt%',
+            '%/.env%',
+            '%/.htaccess%',
+            '%.php%',
+            '%.json%',
+            '%.xml%',
+            '%.yml%',
+            '%.save%',
+            '%.ini%',
+            '%.log%',
+            '%.bak%',
+            '%.old%',
+            '%.sql%',
+        ];
+
+        $addon = rex_addon::get('statistics');
+        $patterns = $this->addConfigPatterns($patterns, (string) $addon->getConfig('statistics_ignored_paths', ''), 'contains');
+        $patterns = $this->addConfigPatterns($patterns, (string) $addon->getConfig('statistics_ignored_path_contains', ''), 'contains');
+        $patterns = $this->addConfigPatterns($patterns, (string) $addon->getConfig('statistics_ignored_path_ends', ''), 'ends');
+
+        return array_values(array_unique($patterns));
+    }
+
+    /**
+     * @param array<int, string> $patterns
+     *
+     * @return array<int, string>
+     */
+    private function addConfigPatterns(array $patterns, string $configValue, string $mode): array
+    {
+        $lines = explode("\n", str_replace("\r", '', $configValue));
+        foreach ($lines as $line) {
+            $rule = strtolower(trim((string) $line));
+            if ('' === $rule) {
+                continue;
+            }
+
+            if ('ends' === $mode) {
+                $patterns[] = '%' . $rule;
+            } else {
+                $patterns[] = '%' . $rule . '%';
+            }
+        }
+
+        return $patterns;
+    }
+
+    /**
+     * @param array<int, string> $patterns
+     *
+     * @return array{0: string, 1: array<string, scalar>}
+     */
+    private function buildLikeWhere(string $column, array $patterns): array
+    {
+        $parts = [];
+        $params = [];
+
+        foreach (array_values($patterns) as $index => $pattern) {
+            $paramKey = ':pattern' . $index;
+            $parts[] = $column . ' LIKE ' . $paramKey;
+            $params[$paramKey] = $pattern;
+        }
+
+        return [implode(' OR ', $parts), $params];
     }
 
     /**
@@ -191,6 +361,34 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
         } while ($affected >= $chunkSize);
 
         return $total;
+    }
+
+    /**
+     * @param array<string, scalar> $params
+     *
+     * @return array{deleted: int, has_more: bool}
+     */
+    private function deleteChunkedLimited(string $table, string $condition, array $params = [], int $chunkSize = 5000, int $maxRounds = 20): array
+    {
+        $total = 0;
+        $round = 0;
+        $hasMore = false;
+
+        do {
+            ++$round;
+            $affected = $this->runDeleteWithRetry(
+                'DELETE FROM ' . $table . ' WHERE ' . $condition . ' LIMIT ' . (int) $chunkSize,
+                $params
+            );
+            $total += $affected;
+
+            $hasMore = $affected >= $chunkSize;
+        } while ($hasMore && $round < $maxRounds);
+
+        return [
+            'deleted' => $total,
+            'has_more' => $hasMore,
+        ];
     }
 
     private function deleteOrphanUrlStatusChunked(int $chunkSize = 5000): int
