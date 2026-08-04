@@ -619,6 +619,12 @@ $field->addOption($addon->i18n('statistics_yes'), 1);
 $field->addOption($addon->i18n('statistics_no'), 0);
 $field->setNotice($addon->i18n('statistics_ignore_backend_loggedin_note'));
 
+$field = $trackingForm->addRadioField('statistics_pause_tracking_manual');
+$field->setLabel($addon->i18n('statistics_pause_tracking_manual_label'));
+$field->addOption($addon->i18n('statistics_yes'), 1);
+$field->addOption($addon->i18n('statistics_no'), 0);
+$field->setNotice($addon->i18n('statistics_pause_tracking_manual_note'));
+
 $field = $trackingForm->addRadioField('statistics_pages_visitors_enabled');
 $field->setLabel($addon->i18n('statistics_pages_visitors_enabled'));
 $field->addOption($addon->i18n('statistics_yes'), 1);

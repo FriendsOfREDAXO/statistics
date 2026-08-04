@@ -353,7 +353,12 @@ class Visit
             $ignored_regex = explode("\n", str_replace("\r", "", $ignored_regex));
 
             foreach ($ignored_regex as $regex) {
-                if (preg_match($regex, $this->url) === 1) {
+                $regex = trim((string) $regex);
+                if ('' === $regex) {
+                    continue;
+                }
+
+                if ($this->matchesIgnoredRegex($regex, $this->url)) {
                     return true;
                 }
             }
@@ -368,6 +373,46 @@ class Visit
 
 
         return false;
+    }
+
+    private function matchesIgnoredRegex(string $regex, string $subject): bool
+    {
+        $result = $this->safePregMatch($regex, $subject);
+        if (1 === $result) {
+            return true;
+        }
+
+        // Fallback: Treat invalid regex rules as literal snippets to avoid log spam.
+        if (false === $result) {
+            $literalPattern = '~' . preg_quote($regex, '~') . '~';
+
+            return 1 === $this->safePregMatch($literalPattern, $subject);
+        }
+
+        return false;
+    }
+
+    private function safePregMatch(string $pattern, string $subject): int|false
+    {
+        $hadWarning = false;
+
+        set_error_handler(static function () use (&$hadWarning): bool {
+            $hadWarning = true;
+
+            return true;
+        });
+
+        try {
+            $result = preg_match($pattern, $subject);
+        } finally {
+            restore_error_handler();
+        }
+
+        if ($hadWarning || false === $result) {
+            return false;
+        }
+
+        return $result;
     }
 
     private function normalizePathFromUrl(string $rawUrl): string
@@ -465,20 +510,58 @@ class Visit
      */
     public function updateVisitsPerUrl(): void
     {
-        $sql = rex_sql::factory();
-
         $sql_insert = 'INSERT INTO ' . rex::getTable('pagestats_visits_per_url') . ' (hash,date,url,count) VALUES 
         ("' . md5($this->datetime_now->format('Y-m-d') . $this->url) . '","' . $this->datetime_now->format('Y-m-d') . '","' . addslashes($this->url) . '",1) 
         ON DUPLICATE KEY UPDATE count = count + 1;';
 
-        $sql->setQuery($sql_insert);
+        $this->executeWriteWithRetry($sql_insert);
 
 
         // save url http status
         $hash = md5($this->url);
 
-        $sql = rex_sql::factory();
-        $sql->setQuery("insert into " . rex::getTable("pagestats_urlstatus") . " (hash, url, status) values (:hash, :url, :status) on duplicate key update status = values(status);", [":hash" => $hash, ":url" => $this->url, ":status" => $this->httpStatus]);
+        $this->executeWriteWithRetry(
+            'insert into ' . rex::getTable('pagestats_urlstatus') . ' (hash, url, status) values (:hash, :url, :status) on duplicate key update status = values(status);',
+            [
+                ':hash' => $hash,
+                ':url' => $this->url,
+                ':status' => $this->httpStatus,
+            ]
+        );
+    }
+
+    private function executeWriteWithRetry(string $query, array $params = []): void
+    {
+        $maxAttempts = 3;
+
+        for ($attempt = 1; $attempt <= $maxAttempts; ++$attempt) {
+            try {
+                $sql = rex_sql::factory();
+                $sql->setQuery($query, $params);
+
+                return;
+            } catch (rex_sql_exception $e) {
+                $isLockConflict = $this->isRetryableLockException($e);
+
+                if (!$isLockConflict) {
+                    throw $e;
+                }
+
+                if ($attempt === $maxAttempts) {
+                    // Statistik-Tracking darf bei kurzfristigen Lock-Konflikten den Request nicht abbrechen.
+                    return;
+                }
+
+                usleep(50_000 * $attempt);
+            }
+        }
+    }
+
+    private function isRetryableLockException(rex_sql_exception $exception): bool
+    {
+        $errorCode = $exception->getErrorCode();
+
+        return 1205 === $errorCode || 1213 === $errorCode;
     }
 
 

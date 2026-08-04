@@ -1,5 +1,9 @@
 <?php
 
+rex_config::set('statistics', 'statistics_pause_tracking_runtime', true);
+
+try {
+
 $sql = rex_sql::factory();
 
 $tableExists = static function (string $table): bool {
@@ -10,26 +14,58 @@ $tableExists = static function (string $table): bool {
     return rex_sql_table::get($table)->exists();
 };
 
-$deduplicateCountTable = static function (string $table, array $keyColumns, string $countColumn = 'count') use ($sql, $tableExists): void {
+$hasExpectedPrimaryKey = static function (string $table, array $keyColumns) use ($sql, $tableExists): bool {
     if (!$tableExists($table)) {
+        return false;
+    }
+
+    $rows = $sql->getArray(
+        'SHOW INDEX FROM ' . $sql->escapeIdentifier($table) . " WHERE Key_name = 'PRIMARY' ORDER BY Seq_in_index"
+    );
+
+    if ([] === $rows) {
+        return false;
+    }
+
+    $existing = array_map(static fn(array $row): string => (string) $row['Column_name'], $rows);
+
+    return $existing === $keyColumns;
+};
+
+$hasDuplicateKeys = static function (string $table, array $keyColumns) use ($sql, $tableExists): bool {
+    if (!$tableExists($table)) {
+        return false;
+    }
+
+    $quotedKeys = array_map([$sql, 'escapeIdentifier'], $keyColumns);
+    $groupBy = implode(', ', $quotedKeys);
+
+    $hasDuplicate = $sql->getValue(
+        'SELECT 1 FROM ' . $sql->escapeIdentifier($table)
+        . ' GROUP BY ' . $groupBy
+        . ' HAVING COUNT(*) > 1'
+        . ' LIMIT 1'
+    );
+
+    return null !== $hasDuplicate;
+};
+
+$deduplicateCountTable = static function (string $table, array $keyColumns, string $countColumn = 'count') use ($sql, $tableExists, $hasExpectedPrimaryKey, $hasDuplicateKeys): void {
+    if (!$tableExists($table)) {
+        return;
+    }
+
+    if ($hasExpectedPrimaryKey($table, $keyColumns)) {
+        return;
+    }
+
+    if (!$hasDuplicateKeys($table, $keyColumns)) {
         return;
     }
 
     $quotedKeys = array_map([$sql, 'escapeIdentifier'], $keyColumns);
     $groupBy = implode(', ', $quotedKeys);
     $columns = implode(', ', array_merge($quotedKeys, [$sql->escapeIdentifier($countColumn)]));
-
-    $duplicates = $sql->getValue(
-        'SELECT COUNT(*) FROM ('
-        . 'SELECT 1 FROM ' . $sql->escapeIdentifier($table)
-        . ' GROUP BY ' . $groupBy
-        . ' HAVING COUNT(*) > 1'
-        . ') AS duplicate_rows'
-    );
-
-    if ((int) $duplicates === 0) {
-        return;
-    }
 
     $tempTable = $table . '_dedup_install_tmp';
     $sql->setQuery('DROP TEMPORARY TABLE IF EXISTS ' . $sql->escapeIdentifier($tempTable));
@@ -47,6 +83,52 @@ $deduplicateCountTable = static function (string $table, array $keyColumns, stri
     );
 };
 
+$deduplicateByPrimaryKey = static function (string $table, array $keyColumns, array $aggregates) use ($sql, $tableExists, $hasExpectedPrimaryKey, $hasDuplicateKeys): void {
+    if (!$tableExists($table)) {
+        return;
+    }
+
+    if ($hasExpectedPrimaryKey($table, $keyColumns)) {
+        return;
+    }
+
+    if (!$hasDuplicateKeys($table, $keyColumns)) {
+        return;
+    }
+
+    $quotedKeys = array_map([$sql, 'escapeIdentifier'], $keyColumns);
+    $groupBy = implode(', ', $quotedKeys);
+
+    $tempTable = $table . '_dedup_pk_tmp';
+    $sql->setQuery('DROP TEMPORARY TABLE IF EXISTS ' . $sql->escapeIdentifier($tempTable));
+
+    $selectParts = $quotedKeys;
+    foreach ($aggregates as $column => $aggregateExpression) {
+        $selectParts[] = $aggregateExpression . ' AS ' . $sql->escapeIdentifier($column);
+    }
+
+    $insertColumns = array_merge(
+        array_map('strval', $keyColumns),
+        array_map('strval', array_keys($aggregates))
+    );
+    $insertColumns = implode(', ', array_map([$sql, 'escapeIdentifier'], $insertColumns));
+    $selectColumns = implode(', ', $selectParts);
+
+    $sql->setQuery(
+        'CREATE TEMPORARY TABLE ' . $sql->escapeIdentifier($tempTable) . ' AS '
+        . 'SELECT ' . $selectColumns
+        . ' FROM ' . $sql->escapeIdentifier($table)
+        . ' GROUP BY ' . $groupBy
+    );
+
+    $sql->setQuery('TRUNCATE TABLE ' . $sql->escapeIdentifier($table));
+    $sql->setQuery(
+        'INSERT INTO ' . $sql->escapeIdentifier($table)
+        . ' (' . $insertColumns . ') '
+        . 'SELECT ' . $insertColumns . ' FROM ' . $sql->escapeIdentifier($tempTable)
+    );
+};
+
 // Reinstall kann auf Alt-Daten mit Duplikaten laufen; vor PK-Setzung aggregieren.
 $deduplicateCountTable(rex::getTable('pagestats_data'), ['type', 'name']);
 $deduplicateCountTable(rex::getTable('pagestats_visits_per_day'), ['date', 'domain']);
@@ -54,6 +136,60 @@ $deduplicateCountTable(rex::getTable('pagestats_visitors_per_day'), ['date', 'do
 $deduplicateCountTable(rex::getTable('pagestats_bot'), ['name', 'category', 'producer']);
 $deduplicateCountTable(rex::getTable('pagestats_media'), ['url', 'date']);
 $deduplicateCountTable(rex::getTable('pagestats_api'), ['name', 'date']);
+
+// Legacy-Bestände können doppelte PK-Werte enthalten (z.B. nach früheren Schema-Ständen).
+$deduplicateByPrimaryKey(
+    rex::getTable('pagestats_visits_per_url'),
+    ['hash'],
+    [
+        'date' => 'MIN(`date`)',
+        'url' => 'MIN(`url`)',
+        'count' => 'SUM(`count`)',
+    ]
+);
+$deduplicateByPrimaryKey(
+    rex::getTable('pagestats_visitors_per_url'),
+    ['hash'],
+    [
+        'date' => 'MIN(`date`)',
+        'url' => 'MIN(`url`)',
+        'count' => 'SUM(`count`)',
+    ]
+);
+$deduplicateByPrimaryKey(
+    rex::getTable('pagestats_urlstatus'),
+    ['hash'],
+    [
+        'url' => 'MIN(`url`)',
+        'status' => 'MIN(`status`)',
+    ]
+);
+$deduplicateByPrimaryKey(
+    rex::getTable('pagestats_hash'),
+    ['hash'],
+    [
+        'datetime' => 'MAX(`datetime`)',
+    ]
+);
+$deduplicateByPrimaryKey(
+    rex::getTable('pagestats_referer'),
+    ['hash'],
+    [
+        'referer' => 'MIN(`referer`)',
+        'date' => 'MIN(`date`)',
+        'count' => 'SUM(`count`)',
+    ]
+);
+$deduplicateByPrimaryKey(
+    rex::getTable('pagestats_sessionstats'),
+    ['token'],
+    [
+        'lastpage' => 'MIN(`lastpage`)',
+        'lastvisit' => 'MAX(`lastvisit`)',
+        'visitduration' => 'MAX(`visitduration`)',
+        'pagecount' => 'MAX(`pagecount`)',
+    ]
+);
 
 
 rex_sql_table::get(rex::getTable('pagestats_data'))
@@ -198,4 +334,8 @@ try {
 } catch (Throwable $e) {
     // Geo-Download ist optional und darf eine Reinstallation nicht abbrechen.
     rex_logger::logException($e);
+}
+
+} finally {
+    rex_config::set('statistics', 'statistics_pause_tracking_runtime', false);
 }

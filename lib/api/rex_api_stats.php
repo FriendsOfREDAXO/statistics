@@ -25,6 +25,12 @@ class rex_api_stats extends rex_api_function
     {
 
         $addon = rex_addon::get('statistics');
+        $trackingPaused = (bool) $addon->getConfig('statistics_pause_tracking_manual', false)
+            || (bool) $addon->getConfig('statistics_pause_tracking_runtime', false)
+            || (bool) $addon->getConfig('statistics_pause_tracking', false);
+        if ($trackingPaused) {
+            return new rex_api_result(true);
+        }
 
         if ($addon->getConfig('statistics_api_enable') == true) {
 

@@ -133,6 +133,12 @@ rex_extension::register('RESPONSE_SHUTDOWN', function () use ($statistics_has_ba
     if (rex::isFrontend()) {
 
         $addon = rex_addon::get('statistics');
+        $trackingPaused = (bool) $addon->getConfig('statistics_pause_tracking_manual', false)
+            || (bool) $addon->getConfig('statistics_pause_tracking_runtime', false)
+            || (bool) $addon->getConfig('statistics_pause_tracking', false);
+        if ($trackingPaused) {
+            return;
+        }
         $log_all = $addon->getConfig('statistics_log_all');
         $ignore_backend_loggedin = $addon->getConfig('statistics_ignore_backend_loggedin');
 
@@ -256,6 +262,13 @@ if (rex::isBackend()) {
 
     rex_extension::register('MEDIA_MANAGER_AFTER_SEND', function () {
         $addon = rex_addon::get('statistics');
+
+        $trackingPaused = (bool) $addon->getConfig('statistics_pause_tracking_manual', false)
+            || (bool) $addon->getConfig('statistics_pause_tracking_runtime', false)
+            || (bool) $addon->getConfig('statistics_pause_tracking', false);
+        if ($trackingPaused) {
+            return;
+        }
 
         if ($addon->getConfig('statistics_media_log_all') == true) {
 

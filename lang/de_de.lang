@@ -155,6 +155,8 @@ statistics_no = Nein
 statistics_log_404_note = Dadurch werden auch Aufrufe mit einem Statuscode != 200 geloggt.
 statistics_ignore_backend_loggedin_label = Eigene Seitenaufrufe ignorieren
 statistics_ignore_backend_loggedin_note = Aktivieren, um Seitenaufrufe durch eingeloggte User zu verwerfen.
+statistics_pause_tracking_manual_label = Tracking pausieren
+statistics_pause_tracking_manual_note = Pausiert die komplette Statistik-Erfassung (Seiten, Media, API) bis zur Reaktivierung.
 statistics_rec_onlyok_label = Nur 200er Aufrufe erfassen
 statistics_rec_onlyok_note = Dadurch werden nur Aufrufe mit einem HTTP-Status 200 OK erfasst. Die Statistik Seitenaufrufe loggt trotzdem auch Aufrufe ungleich 200.
 statistics_combine_all_domains_label = Fasse alle Domains zusammen

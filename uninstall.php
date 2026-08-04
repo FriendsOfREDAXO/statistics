@@ -1,5 +1,9 @@
 <?php
 
+rex_config::set('statistics', 'statistics_pause_tracking_runtime', true);
+
+try {
+
 rex_sql_table::get(rex::getTable('pagestats_dump'))->drop();
 rex_sql_table::get(rex::getTable('pagestats_data'))->drop();
 rex_sql_table::get(rex::getTable('pagestats_visits_per_day'))->drop();
@@ -15,3 +19,7 @@ rex_sql_table::get(rex::getTable('pagestats_media'))->drop();
 
 // api
 rex_sql_table::get(rex::getTable('pagestats_api'))->drop();
+
+} finally {
+	rex_config::set('statistics', 'statistics_pause_tracking_runtime', false);
+}
