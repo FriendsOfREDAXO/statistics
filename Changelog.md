@@ -10,6 +10,13 @@
 -   Batch-Verarbeitung auf weitere Wartungsaktionen ausgeweitet (u. a. Hashes, Gesamtdaten, Bots, Referer, Media, API, alte Daten und Störanfragen) inklusive „Nächsten Batch“-Weiterlauf, damit auch große Löschläufe ohne Request-Timeout abgearbeitet werden können
 -   Doppelten Confirm-Dialog bei Wartungsaktionen behoben: `data-confirm` wird nicht mehr gleichzeitig auf Formular und Button gesetzt, wodurch der Alert nur noch einmal erscheint
 -   Nachgeschärfte Copilot-Reviewpunkte umgesetzt: Timeout-Budget-Flag meldet nur noch bei echtem Restbestand „weitere Batches nötig“, und die Störer-Pattern-Logik wurde als gemeinsame Helper-Quelle für Settings und Wartungs-Cronjob zentralisiert
+-   Reinstall/Install für Bestandsdaten robuster gemacht: Deduplizierung für Altbestände vor Primary-Key-Sicherung erweitert und PK-Prüfungen MariaDB-kompatibel überarbeitet
+-   Reinstall-Performance verbessert: aufwändige Deduplizierungsroutinen laufen nur noch bei tatsächlichem Bedarf (Schema-/Duplikat-Guards)
+-   Lock-Timeouts beim Schreiben von URL-Statusdaten entschärft: Retry-Mechanismus bei MySQL-Lockkonflikten (u. a. Fehlercode 1205/1213), damit Frontend-Requests nicht durch Statistikschreibzugriffe abbrechen
+-   Statistik-Erfassung kann jetzt explizit pausiert werden: neuer manueller Schalter in den Einstellungen sowie technischer Runtime-Pause-Mechanismus während Install/Update/Uninstall
+-   Reports für Redakteure mit Addon-Recht freigeschaltet und explizit über `statistics[]` abgesichert
+-   PDF-Report „Tagesverlauf“ skaliert jetzt auf den tatsächlich angezeigten Ausschnitt, wodurch das Balkenverhältnis der letzten Tage deutlich realistischer dargestellt wird
+-   Geo-Download aus Install/Reinstall entfernt: Geo-Datenbank-Aktualisierung erfolgt optional über die Settings-Seite; Install/Reinstall zeigt dazu nun einen Hinweis an
 
 ## [3.4.0] - 17.07.2026
 
