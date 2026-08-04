@@ -123,8 +123,14 @@ statistics_geo_update_success = Geo database updated.
 statistics_geo_update_error = Geo database could not be updated.
 statistics_deleted_noise = %s noise requests were deleted.
 statistics_deleted_noise_partial = %s noise requests were cleaned in this run. Please run it again to continue.
+<<<<<<< Updated upstream
+=======
+statistics_deleted_non200_urls = %s URL-based entries for non-200 URLs were cleaned.
+statistics_deleted_non200_urls_rebuilt_days = Daily totals were rebuilt from the remaining URL-based data after cleanup.
+>>>>>>> Stashed changes
 statistics_deleted_old = %s old entries were deleted (older than %s days).
 statistics_deleted_raw_old = %s old raw-data entries were deleted (older than %s days).
+statistics_cleanup_runtime_pause_restore_failed = Temporary tracking pause could not be restored automatically. Please verify the setting.
 statistics_batch_continue = Run next batch
 statistics_batch_more_data = This operation runs in batches. Please start the next batch to process remaining records.
 statistics_optimize_tables = Optimize statistics tables

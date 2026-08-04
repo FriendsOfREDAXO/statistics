@@ -362,6 +362,123 @@ if (rex_request_method() == 'post') {
                 echo rex_view::error($exception->getMessage());
             }
         }
+<<<<<<< Updated upstream
+=======
+    } elseif ($function == 'delete_non200_urls') {
+        $previousRuntimePause = false;
+        $runtimePauseActive = false;
+
+        try {
+            $previousRuntimePause = (bool) rex_config::get('statistics', 'statistics_pause_tracking_runtime', false);
+            rex_config::set('statistics', 'statistics_pause_tracking_runtime', true);
+            $runtimePauseActive = true;
+
+            $count = 0;
+            $hasMore = false;
+            $timedOut = false;
+            $chunkSize = $maintenanceChunkSize;
+            $maxRoundsPerRun = $maintenanceMaxRounds;
+            $round = 0;
+
+            $statusTable = rex::getTable('pagestats_urlstatus');
+            $visitsTable = rex::getTable('pagestats_visits_per_url');
+            $visitorsTable = rex::getTable('pagestats_visitors_per_url');
+            $continueLoop = false;
+
+            do {
+                if (!$hasMaintenanceBudgetLeft()) {
+                    $timedOut = true;
+                    break;
+                }
+
+                ++$round;
+
+                $affectedVisits = $runDeleteWithRetry(
+                    'DELETE FROM ' . $visitsTable
+                    . ' WHERE url IN ('
+                    . 'SELECT stale.url FROM ('
+                    . 'SELECT us.url FROM ' . $statusTable . ' us '
+                    . 'WHERE us.status <> :status_ok '
+                    . 'LIMIT ' . (int) $chunkSize
+                    . ') stale'
+                    . ')',
+                    [':status_ok' => '200']
+                );
+
+                $affectedVisitors = $runDeleteWithRetry(
+                    'DELETE FROM ' . $visitorsTable
+                    . ' WHERE url IN ('
+                    . 'SELECT stale.url FROM ('
+                    . 'SELECT us.url FROM ' . $statusTable . ' us '
+                    . 'WHERE us.status <> :status_ok '
+                    . 'LIMIT ' . (int) $chunkSize
+                    . ') stale'
+                    . ')',
+                    [':status_ok' => '200']
+                );
+
+                $affectedStatus = $runDeleteWithRetry(
+                    'DELETE FROM ' . $statusTable . ' WHERE status <> :status_ok LIMIT ' . (int) $chunkSize,
+                    [':status_ok' => '200']
+                );
+
+                $count += $affectedVisits + $affectedVisitors + $affectedStatus;
+                $continueLoop = $affectedStatus >= $chunkSize || $affectedVisits >= $chunkSize || $affectedVisitors >= $chunkSize;
+                $hasMore = $continueLoop;
+            } while ($continueLoop && $round < $maxRoundsPerRun);
+
+            if (!$timedOut && $hasMore && !$hasMaintenanceBudgetLeft()) {
+                $timedOut = true;
+            }
+            $hasMore = $hasMore || $timedOut;
+
+            // Rebuild daily aggregates only after the final batch, so dashboard numbers reflect the cleaned URL base.
+            if (!$hasMore) {
+                $sql = rex_sql::factory();
+                $sql->setQuery('TRUNCATE TABLE ' . rex::getTable('pagestats_visits_per_day'));
+                $sql->setQuery(
+                    'INSERT INTO ' . rex::getTable('pagestats_visits_per_day') . ' (date, domain, count) '
+                    . 'SELECT date, SUBSTRING_INDEX(url, "/", 1) AS domain, SUM(count) AS count '
+                    . 'FROM ' . $visitsTable . ' '
+                    . 'GROUP BY date, domain'
+                );
+
+                $sql->setQuery('TRUNCATE TABLE ' . rex::getTable('pagestats_visitors_per_day'));
+                $sql->setQuery(
+                    'INSERT INTO ' . rex::getTable('pagestats_visitors_per_day') . ' (date, domain, count) '
+                    . 'SELECT date, SUBSTRING_INDEX(url, "/", 1) AS domain, SUM(count) AS count '
+                    . 'FROM ' . $visitorsTable . ' '
+                    . 'GROUP BY date, domain'
+                );
+            }
+
+            echo rex_view::success(sprintf($addon->i18n('statistics_deleted_non200_urls'), (string) $count));
+            if ($hasMore) {
+                echo rex_view::warning($addon->i18n('statistics_batch_more_data') . $renderBatchContinueForm('delete_non200_urls'));
+            } else {
+                echo rex_view::info($addon->i18n('statistics_deleted_non200_urls_rebuilt_days'));
+            }
+        } catch (rex_sql_exception $exception) {
+            $message = strtolower($exception->getMessage());
+            $isLockTimeout = false !== strpos($message, '1205') || false !== strpos($message, 'lock wait timeout');
+
+            if ($isLockTimeout) {
+                echo rex_view::error($addon->i18n('statistics_cleanup_lock_timeout'));
+            } else {
+                rex_logger::logException($exception);
+                echo rex_view::error($exception->getMessage());
+            }
+        } finally {
+            if ($runtimePauseActive) {
+                try {
+                    rex_config::set('statistics', 'statistics_pause_tracking_runtime', $previousRuntimePause);
+                } catch (\Throwable $throwable) {
+                    rex_logger::logException($throwable);
+                    echo rex_view::error($addon->i18n('statistics_cleanup_runtime_pause_restore_failed'));
+                }
+            }
+        }
+>>>>>>> Stashed changes
     } elseif ($function == 'delete_old') {
         try {
             $keepDays = rex_post('keep_days', 'int', 365);

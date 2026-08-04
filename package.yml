@@ -69,7 +69,7 @@ default_config:
     statistics_hidden_domains: ""
     statistics_show_chart_toolbox: false
     statistics_ignore_backend_loggedin: true
-    statistics_rec_onlyok: false
+    statistics_rec_onlyok: true
 
     statistics_media_log_all: false
     statistics_media_log_mm: true

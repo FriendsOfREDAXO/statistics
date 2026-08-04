@@ -121,8 +121,14 @@ statistics_geo_update_success = Geo-Datenbank aktualisiert.
 statistics_geo_update_error = Geo-Datenbank konnte nicht aktualisiert werden.
 statistics_deleted_noise = Es wurden %s Störanfragen gelöscht.
 statistics_deleted_noise_partial = Es wurden %s Störanfragen in diesem Lauf bereinigt. Für den Rest bitte den Vorgang erneut starten.
+<<<<<<< Updated upstream
+=======
+statistics_deleted_non200_urls = Es wurden %s URL-basierte Einträge für Nicht-200-URLs bereinigt.
+statistics_deleted_non200_urls_rebuilt_days = Tageswerte wurden nach Abschluss aus den verbleibenden URL-Daten neu aufgebaut.
+>>>>>>> Stashed changes
 statistics_deleted_old = Es wurden %s alte Einträge gelöscht (älter als %s Tage).
 statistics_deleted_raw_old = Es wurden %s alte Rohdaten-Einträge gelöscht (älter als %s Tage).
+statistics_cleanup_runtime_pause_restore_failed = Die temporäre Tracking-Pause konnte nicht automatisch zurückgesetzt werden. Bitte Einstellung prüfen.
 statistics_batch_continue = Nächsten Batch ausführen
 statistics_batch_more_data = Dieser Vorgang läuft batchweise. Bitte den nächsten Batch starten, um weitere Datensätze zu verarbeiten.
 statistics_optimize_tables = Statistik-Tabellen optimieren
