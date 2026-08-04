@@ -464,12 +464,12 @@ class ReportPdfGenerator
             return '<p class="small">' . htmlspecialchars($this->addon->i18n('statistics_no_data'), ENT_QUOTES) . '</p>';
         }
 
-        $max = max(array_column($dailyVisits, 'count'));
+        $bars = array_slice($dailyVisits, -10);
+        $max = max(array_column($bars, 'count'));
         if ($max < 1) {
             $max = 1;
         }
 
-        $bars = array_slice($dailyVisits, -10);
         $html = '<p class="legend"><span class="legend-item"><span class="legend-dot" style="background:#2f80c8"></span>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_daily_series_label'), ENT_QUOTES) . '</span></p>';
         $html .= '<p class="chart-note">' . htmlspecialchars($this->addon->i18n('statistics_report_graph_max_label') . ': ' . (string) $max, ENT_QUOTES) . '</p>';
         $html .= '<table class="hbar-table">';

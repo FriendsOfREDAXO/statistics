@@ -37,6 +37,7 @@ page:
         reports:
             title: "translate:statistics_reports"
             icon: rex-icon fa-file-pdf-o
+            perm: statistics[]
         help:
             {
                 title: "translate:statistics_help",
