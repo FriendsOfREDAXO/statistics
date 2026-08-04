@@ -4,6 +4,8 @@ use AndiLeni\Statistics\NoisePatterns;
 
 class rex_statistics_maintenance_cronjob extends rex_cronjob
 {
+    private int $deferredDeleteBatches = 0;
+
     public function execute(): bool
     {
         $daysToKeepRaw = max(1, (int) $this->getParam('days_to_keep_raw', 120));
@@ -58,6 +60,9 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
                 if ($optimizedTotal > 0) {
                     $message .= ', verbleibend bis Vollzyklus: ' . $optimizedRemaining . ' von ' . $optimizedTotal;
                 }
+            }
+            if ($this->deferredDeleteBatches > 0) {
+                $message .= ', ' . $this->deferredDeleteBatches . ' Lösch-Batches wegen DB-Locks vertagt';
             }
             $this->setMessage($message);
 
@@ -338,7 +343,7 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
      */
     private function runDeleteWithRetry(string $query, array $params = []): int
     {
-        $maxRetries = 3;
+        $maxRetries = 5;
 
         for ($attempt = 1; $attempt <= $maxRetries; ++$attempt) {
             try {
@@ -347,17 +352,36 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
 
                 return (int) $sql->getRows();
             } catch (rex_sql_exception $exception) {
-                $message = $exception->getMessage();
-                $isLockTimeout = false !== strpos($message, '1205') || false !== strpos(strtolower($message), 'lock wait timeout');
-
-                if (!$isLockTimeout || $attempt >= $maxRetries) {
+                if (!$this->isRetryableLockException($exception)) {
                     throw $exception;
                 }
 
-                usleep(250000);
+                if ($attempt >= $maxRetries) {
+                    // Wartung darf bei kurzfristigen DB-Locks nicht vollständig fehlschlagen.
+                    ++$this->deferredDeleteBatches;
+
+                    return 0;
+                }
+
+                usleep(100000 * $attempt);
             }
         }
 
         return 0;
+    }
+
+    private function isRetryableLockException(rex_sql_exception $exception): bool
+    {
+        $errorCode = $exception->getErrorCode();
+        if (1205 === $errorCode || 1213 === $errorCode) {
+            return true;
+        }
+
+        $message = strtolower($exception->getMessage());
+
+        return false !== strpos($message, '1205')
+            || false !== strpos($message, '1213')
+            || false !== strpos($message, 'lock wait timeout')
+            || false !== strpos($message, 'deadlock found');
     }
 }
