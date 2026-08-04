@@ -171,6 +171,7 @@ statistics_settings_panel_api = API
 statistics_geo_title = IP 2 Geo
 statistics_geo_intro = Geo-Datenbank updaten, damit IP-Adressen Ländern zugeordnet werden können.
 statistics_geo_update_button = Geo-Datenbank updaten
+statistics_geo_install_notice = Hinweis: Die Geo-Datenbank wird nicht automatisch geladen. Bitte bei Bedarf in den Einstellungen über "Geo-Datenbank updaten" aktualisieren.
 statistics_list_visits_heading = Besuche:
 statistics_list_visitors_heading = Besucher:
 statistics_date = Datum

@@ -320,24 +320,16 @@ $ensurePrefixIndex(rex::getTable('pagestats_urlstatus'), 'url_status', '`url`(19
 $ensurePrefixIndex(rex::getTable('pagestats_referer'), 'date_referer', '`date`, `referer`(191)');
 $ensurePrefixIndex(rex::getTable('pagestats_referer'), 'referer_date', '`referer`(191), `date`');
 
-// ip 2 geo database installation
-$today = new DateTimeImmutable();
-$dbUrl = "https://download.db-ip.com/free/dbip-country-lite-{$today->format('Y-m')}.mmdb.gz";
-
-try {
-    $socket = rex_socket::factoryUrl($dbUrl);
-
-    $response = $socket->doGet();
-    if ($response->isOk()) {
-        $body = $response->getBody();
-        $decodedBody = function_exists('gzdecode') ? gzdecode($body) : false;
-        if (false !== $decodedBody) {
-            rex_file::put(rex_path::addonData("statistics", "ip2geo.mmdb"), $decodedBody);
-        }
-    }
-} catch (Throwable $e) {
-    // Geo-Download ist optional und darf eine Reinstallation nicht abbrechen.
-    rex_logger::logException($e);
+// Geo-Datenbank wird bewusst nicht mehr automatisch im Install/Reinstall geladen.
+// Die Aktualisierung erfolgt manuell ueber die Settings-Seite.
+$addon = rex_addon::get('statistics');
+$geoInstallNotice = trim((string) $addon->i18n('statistics_geo_install_notice'));
+if ('' !== $geoInstallNotice) {
+    $existingSuccessMessage = trim((string) $addon->getProperty('successmsg', ''));
+    $addon->setProperty(
+        'successmsg',
+        '' !== $existingSuccessMessage ? $existingSuccessMessage . ' ' . $geoInstallNotice : $geoInstallNotice
+    );
 }
 
 } finally {

@@ -173,6 +173,7 @@ statistics_settings_panel_api = API
 statistics_geo_title = IP 2 Geo
 statistics_geo_intro = Update the geo database to map IP addresses to countries.
 statistics_geo_update_button = Update geo database
+statistics_geo_install_notice = Note: The geo database is no longer downloaded automatically. If needed, update it in Settings via "Update geo database".
 statistics_list_visits_heading = Visits:
 statistics_list_visitors_heading = Visitors:
 statistics_date = Date
