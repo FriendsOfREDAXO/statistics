@@ -204,7 +204,7 @@ class Pages
                 $favoriteTitle = $isFavorite
                     ? $this->addon->i18n('statistics_favorite_toggle_remove')
                     : $this->addon->i18n('statistics_favorite_toggle_add');
-                $rowClass = $isFavorite ? ' style="background-color:#fff9e6;"' : '';
+                $rowClass = $isFavorite ? ' class="statistics-row-favorite"' : '';
 
                 $table .= '<tr' . $rowClass . '>';
                 $table .= '<td data-sort="' . ($isFavorite ? '0' : '1') . '"><a href="' . htmlspecialchars($toggleFavoriteUrl, ENT_QUOTES) . '" title="' . htmlspecialchars($favoriteTitle, ENT_QUOTES) . '" style="text-decoration:none;font-size:18px;line-height:1;">' . $star . '</a></td>';

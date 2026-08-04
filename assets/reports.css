@@ -1,0 +1,181 @@
+#statistics-report-root {
+  --report-bg: #f4f8fc;
+  --report-panel: #ffffff;
+  --report-border: #d8e1ec;
+  --report-text: #2f3f52;
+  --report-muted: #61748a;
+  --report-accent: #2f80c8;
+  --report-title: #2f3f52;
+  --report-spinner-ring: #d8e1ec;
+  --report-progress-track: #e6edf4;
+  --report-progress-from: #2f80c8;
+  --report-progress-to: #5ca7e7;
+  --report-hint-bg: #e9f2fb;
+  --report-hint-border: #b7cde4;
+  --report-hint-text: #2f3f52;
+  background: var(--report-bg);
+  border: 1px solid var(--report-border);
+  border-radius: 6px;
+  padding: 14px;
+}
+
+body.rex-theme-dark #statistics-report-root {
+  --report-bg: #23303d;
+  --report-panel: #2c3b49;
+  --report-border: #3b4b5c;
+  --report-text: #edf3f8;
+  --report-muted: #b6c4d2;
+  --report-accent: #74b8ff;
+  --report-title: #edf3f8;
+  --report-spinner-ring: #3b4b5c;
+  --report-progress-track: #334455;
+  --report-progress-from: #74b8ff;
+  --report-progress-to: #9fceff;
+  --report-hint-bg: #2a3948;
+  --report-hint-border: #3f5368;
+  --report-hint-text: #dce7f2;
+}
+
+@media (prefers-color-scheme: dark) {
+  body.rex-has-theme:not(.rex-theme-light) #statistics-report-root {
+    --report-bg: #23303d;
+    --report-panel: #2c3b49;
+    --report-border: #3b4b5c;
+    --report-text: #edf3f8;
+    --report-muted: #b6c4d2;
+    --report-accent: #74b8ff;
+    --report-title: #edf3f8;
+    --report-spinner-ring: #3b4b5c;
+    --report-progress-track: #334455;
+    --report-progress-from: #74b8ff;
+    --report-progress-to: #9fceff;
+    --report-hint-bg: #2a3948;
+    --report-hint-border: #3f5368;
+    --report-hint-text: #dce7f2;
+  }
+}
+
+.statistics-report__title {
+  margin: 0 0 4px;
+  font-size: 31px;
+  font-weight: 600;
+  color: var(--report-title);
+}
+
+.statistics-report__intro {
+  margin-bottom: 12px;
+  color: var(--report-text);
+  font-size: 23px;
+}
+
+.statistics-report__step {
+  margin: 14px 0 8px;
+  font-weight: 700;
+  color: var(--report-text);
+  font-size: 21px;
+}
+
+.statistics-report__quick-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.statistics-report__quick-buttons .btn {
+  background: var(--report-panel);
+  border-color: var(--report-border);
+  color: var(--report-text);
+}
+
+.statistics-report__quick-buttons .btn:hover,
+.statistics-report__quick-buttons .btn:focus {
+  border-color: var(--report-accent);
+}
+
+.statistics-report__radios {
+  padding: 10px;
+  border: 1px solid var(--report-border);
+  border-radius: 4px;
+  background: var(--report-panel);
+}
+
+.statistics-report__radios .radio-inline {
+  margin-right: 18px;
+  font-weight: 600;
+  color: var(--report-text);
+}
+
+.statistics-report__inputs {
+  margin-top: 10px;
+}
+
+.statistics-report__runtime-hint {
+  margin-top: 8px;
+  background: var(--report-hint-bg);
+  border-color: var(--report-hint-border);
+  color: var(--report-hint-text);
+}
+
+.statistics-report__wait {
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid var(--report-border);
+  border-radius: 4px;
+  background: var(--report-panel);
+}
+
+.statistics-report__wait-spinner {
+  float: left;
+  width: 28px;
+  height: 28px;
+  margin-right: 10px;
+  border-radius: 50%;
+  border: 3px solid var(--report-spinner-ring);
+  border-top-color: var(--report-accent);
+  animation: statistics-report-spin 1s linear infinite;
+}
+
+.statistics-report__wait-content {
+  overflow: hidden;
+}
+
+.statistics-report__wait-content p {
+  margin: 4px 0 8px;
+  color: var(--report-muted);
+}
+
+.statistics-report__progress {
+  width: 100%;
+  height: 10px;
+  border-radius: 8px;
+  background: var(--report-progress-track);
+  overflow: hidden;
+}
+
+.statistics-report__progress-bar {
+  height: 100%;
+  border-radius: 8px;
+  width: 8%;
+  background: linear-gradient(90deg, var(--report-progress-from) 0%, var(--report-progress-to) 100%);
+}
+
+.statistics-report__submit {
+  min-width: 280px;
+}
+
+@keyframes statistics-report-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 991px) {
+  .statistics-report__submit {
+    min-width: 0;
+    width: 100%;
+  }
+}

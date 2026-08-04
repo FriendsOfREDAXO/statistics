@@ -9,7 +9,7 @@ use Jaybizzle\CrawlerDetect\CrawlerDetect;
 
 if (rex::isBackend()) {
     $addon = rex_addon::get('statistics');
-    $currentPage = rex_be_controller::getCurrentPage();
+    $currentPage = (string) rex_be_controller::getCurrentPage();
 
 
     // permissions
@@ -38,6 +38,12 @@ if (rex::isBackend()) {
         rex_view::addJsFile($addon->getAssetsUrl('exceljs.min.js') . '?v=' . $assetVersion);
         rex_view::addJsFile($addon->getAssetsUrl('structure_insights_export.js') . '?v=' . $assetVersion);
         rex_view::addJsFile($addon->getAssetsUrl('structure_insights_graph.js') . '?v=' . $assetVersion);
+    }
+
+    if ('statistics/reports' === $currentPage || str_starts_with($currentPage, 'statistics/reports/')) {
+        $assetVersion = rawurlencode((string) $addon->getVersion());
+        rex_view::addCssFile($addon->getAssetsUrl('reports.css') . '?v=' . $assetVersion);
+        rex_view::addJsFile($addon->getAssetsUrl('reports.js') . '?v=' . $assetVersion);
     }
 
     if (rex_addon::get('cronjob')->isAvailable() && !rex::isSafeMode()) {
@@ -127,6 +133,12 @@ rex_extension::register('RESPONSE_SHUTDOWN', function () use ($statistics_has_ba
     if (rex::isFrontend()) {
 
         $addon = rex_addon::get('statistics');
+        $trackingPaused = (bool) $addon->getConfig('statistics_pause_tracking_manual', false)
+            || (bool) $addon->getConfig('statistics_pause_tracking_runtime', false)
+            || (bool) $addon->getConfig('statistics_pause_tracking', false);
+        if ($trackingPaused) {
+            return;
+        }
         $log_all = $addon->getConfig('statistics_log_all');
         $ignore_backend_loggedin = $addon->getConfig('statistics_ignore_backend_loggedin');
 
@@ -250,6 +262,13 @@ if (rex::isBackend()) {
 
     rex_extension::register('MEDIA_MANAGER_AFTER_SEND', function () {
         $addon = rex_addon::get('statistics');
+
+        $trackingPaused = (bool) $addon->getConfig('statistics_pause_tracking_manual', false)
+            || (bool) $addon->getConfig('statistics_pause_tracking_runtime', false)
+            || (bool) $addon->getConfig('statistics_pause_tracking', false);
+        if ($trackingPaused) {
+            return;
+        }
 
         if ($addon->getConfig('statistics_media_log_all') == true) {
 

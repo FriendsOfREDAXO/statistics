@@ -1,11 +1,15 @@
 <?php
 
+use AndiLeni\Statistics\NoisePatterns;
+
 class rex_statistics_maintenance_cronjob extends rex_cronjob
 {
     public function execute(): bool
     {
         $daysToKeepRaw = max(1, (int) $this->getParam('days_to_keep_raw', 120));
         $optimizeTables = (int) $this->getParam('optimize_tables', 0) === 1;
+        $optimizeBatchSize = max(1, (int) $this->getParam('optimize_batch_size', 2));
+        $cleanupNoise = (int) $this->getParam('cleanup_noise', 0) === 1;
 
         $cutoffDate = (new DateTimeImmutable('today'))->modify('-' . $daysToKeepRaw . ' days')->format('Y-m-d');
         $cutoffDatetime = $cutoffDate . ' 00:00:00';
@@ -23,32 +27,37 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
 
             $deleted += $this->deleteOrphanUrlStatusChunked();
 
-            $optimized = 0;
-            if ($optimizeTables) {
-                $tablesToOptimize = [
-                    rex::getTable('pagestats_hash'),
-                    rex::getTable('pagestats_visits_per_day'),
-                    rex::getTable('pagestats_visitors_per_day'),
-                    rex::getTable('pagestats_visits_per_url'),
-                    rex::getTable('pagestats_visitors_per_url'),
-                    rex::getTable('pagestats_urlstatus'),
-                    rex::getTable('pagestats_bot'),
-                    rex::getTable('pagestats_referer'),
-                    rex::getTable('pagestats_media'),
-                    rex::getTable('pagestats_api'),
-                    rex::getTable('pagestats_sessionstats'),
-                ];
+            $noiseDeleted = 0;
+            $noiseHasMore = false;
+            if ($cleanupNoise) {
+                $noiseResult = $this->cleanupNoiseBatch();
+                $noiseDeleted = $noiseResult['deleted'];
+                $noiseHasMore = $noiseResult['has_more'];
+                $deleted += $noiseDeleted;
+            }
 
-                foreach ($tablesToOptimize as $tableName) {
-                    $sql = rex_sql::factory();
-                    $sql->setQuery('OPTIMIZE TABLE ' . $tableName);
-                    ++$optimized;
-                }
+            $optimized = 0;
+            $optimizedTotal = 0;
+            $optimizedRemaining = 0;
+            if ($optimizeTables) {
+                $optimizeResult = $this->optimizeTablesBatch($this->getTablesToOptimize(), $optimizeBatchSize);
+                $optimized = $optimizeResult['optimized'];
+                $optimizedTotal = $optimizeResult['total'];
+                $optimizedRemaining = $optimizeResult['remaining'];
             }
 
             $message = 'Statistics-Wartung: ' . $deleted . ' Rohdaten-Einträge bereinigt (älter als ' . $daysToKeepRaw . ' Tage)';
+            if ($cleanupNoise) {
+                $message .= ', ' . $noiseDeleted . ' Störanfragen bereinigt';
+                if ($noiseHasMore) {
+                    $message .= ' (weitere vorhanden)';
+                }
+            }
             if ($optimizeTables) {
-                $message .= ', ' . $optimized . ' Tabellen optimiert';
+                $message .= ', ' . $optimized . ' Tabellen optimiert (Batchgröße: ' . $optimizeBatchSize . ')';
+                if ($optimizedTotal > 0) {
+                    $message .= ', verbleibend bis Vollzyklus: ' . $optimizedRemaining . ' von ' . $optimizedTotal;
+                }
             }
             $this->setMessage($message);
 
@@ -87,6 +96,16 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
                 ],
             ],
             [
+                'label' => rex_i18n::msg('statistics_cron_maintenance_cleanup_noise'),
+                'name' => 'cleanup_noise',
+                'type' => 'select',
+                'default' => 0,
+                'options' => [
+                    0 => rex_i18n::msg('statistics_no'),
+                    1 => rex_i18n::msg('statistics_yes'),
+                ],
+            ],
+            [
                 'label' => rex_i18n::msg('statistics_cron_maintenance_optimize'),
                 'name' => 'optimize_tables',
                 'type' => 'select',
@@ -96,6 +115,153 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
                     1 => rex_i18n::msg('statistics_yes'),
                 ],
             ],
+            [
+                'label' => rex_i18n::msg('statistics_cron_maintenance_optimize_batch_size'),
+                'name' => 'optimize_batch_size',
+                'type' => 'select',
+                'default' => 2,
+                'options' => [
+                    1 => '1',
+                    2 => '2',
+                    3 => '3',
+                    4 => '4',
+                    5 => '5',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{deleted: int, has_more: bool}
+     */
+    private function cleanupNoiseBatch(): array
+    {
+        $chunkSize = 4000;
+        $maxRounds = 8;
+        $deleted = 0;
+        $hasMore = false;
+        $patterns = $this->getNoiseLikePatterns();
+
+        [$whereUrl, $paramsUrl] = $this->buildLikeWhere('url', $patterns);
+        $result = $this->deleteChunkedLimited(rex::getTable('pagestats_visits_per_url'), $whereUrl, $paramsUrl, $chunkSize, $maxRounds);
+        $deleted += $result['deleted'];
+        $hasMore = $result['has_more'];
+
+        $result = $this->deleteChunkedLimited(rex::getTable('pagestats_visitors_per_url'), $whereUrl, $paramsUrl, $chunkSize, $maxRounds);
+        $deleted += $result['deleted'];
+        $hasMore = $hasMore || $result['has_more'];
+
+        $result = $this->deleteChunkedLimited(rex::getTable('pagestats_urlstatus'), $whereUrl, $paramsUrl, $chunkSize, $maxRounds);
+        $deleted += $result['deleted'];
+        $hasMore = $hasMore || $result['has_more'];
+
+        [$whereLastpage, $paramsLastpage] = $this->buildLikeWhere('lastpage', $patterns);
+        $result = $this->deleteChunkedLimited(rex::getTable('pagestats_sessionstats'), $whereLastpage, $paramsLastpage, $chunkSize, $maxRounds);
+        $deleted += $result['deleted'];
+        $hasMore = $hasMore || $result['has_more'];
+
+        return [
+            'deleted' => $deleted,
+            'has_more' => $hasMore,
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function getNoiseLikePatterns(): array
+    {
+        return NoisePatterns::getMergedLikePatterns(rex_addon::get('statistics'));
+    }
+
+    /**
+     * @param array<int, string> $patterns
+     *
+     * @return array{0: string, 1: array<string, scalar>}
+     */
+    private function buildLikeWhere(string $column, array $patterns): array
+    {
+        $parts = [];
+        $params = [];
+
+        foreach (array_values($patterns) as $index => $pattern) {
+            $paramKey = ':pattern' . $index;
+            $parts[] = $column . ' LIKE ' . $paramKey;
+            $params[$paramKey] = $pattern;
+        }
+
+        return [implode(' OR ', $parts), $params];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function getTablesToOptimize(): array
+    {
+        return [
+            rex::getTable('pagestats_hash'),
+            rex::getTable('pagestats_visits_per_day'),
+            rex::getTable('pagestats_visitors_per_day'),
+            rex::getTable('pagestats_visits_per_url'),
+            rex::getTable('pagestats_visitors_per_url'),
+            rex::getTable('pagestats_urlstatus'),
+            rex::getTable('pagestats_bot'),
+            rex::getTable('pagestats_referer'),
+            rex::getTable('pagestats_media'),
+            rex::getTable('pagestats_api'),
+            rex::getTable('pagestats_sessionstats'),
+        ];
+    }
+
+    /**
+     * @param array<int, string> $tablesToOptimize
+     *
+     * @return array{optimized: int, total: int, remaining: int}
+     */
+    private function optimizeTablesBatch(array $tablesToOptimize, int $batchSize): array
+    {
+        $total = count($tablesToOptimize);
+        if (0 === $total) {
+            return [
+                'optimized' => 0,
+                'total' => 0,
+                'remaining' => 0,
+            ];
+        }
+
+        $batchSize = max(1, min($batchSize, $total));
+        $addon = rex_addon::get('statistics');
+        $cursorKey = 'maintenance_optimize_cursor';
+        $cursor = max(0, (int) $addon->getConfig($cursorKey, 0));
+        if ($cursor >= $total) {
+            $cursor = 0;
+        }
+
+        $startCursor = $cursor;
+        $optimized = 0;
+
+        while ($optimized < $batchSize) {
+            $tableName = $tablesToOptimize[$cursor];
+            $sql = rex_sql::factory();
+            $sql->setQuery('OPTIMIZE TABLE ' . $tableName);
+
+            ++$optimized;
+            ++$cursor;
+
+            if ($cursor >= $total) {
+                $cursor = 0;
+            }
+        }
+
+        $addon->setConfig($cursorKey, $cursor);
+
+        $completedCycle = $cursor === $startCursor;
+        $remaining = $completedCycle || 0 === $cursor ? 0 : $total - $cursor;
+
+        return [
+            'optimized' => $optimized,
+            'total' => $total,
+            'remaining' => max(0, $remaining),
         ];
     }
 
@@ -115,6 +281,34 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
         } while ($affected >= $chunkSize);
 
         return $total;
+    }
+
+    /**
+     * @param array<string, scalar> $params
+     *
+     * @return array{deleted: int, has_more: bool}
+     */
+    private function deleteChunkedLimited(string $table, string $condition, array $params = [], int $chunkSize = 5000, int $maxRounds = 20): array
+    {
+        $total = 0;
+        $round = 0;
+        $hasMore = false;
+
+        do {
+            ++$round;
+            $affected = $this->runDeleteWithRetry(
+                'DELETE FROM ' . $table . ' WHERE ' . $condition . ' LIMIT ' . (int) $chunkSize,
+                $params
+            );
+            $total += $affected;
+
+            $hasMore = $affected >= $chunkSize;
+        } while ($hasMore && $round < $maxRounds);
+
+        return [
+            'deleted' => $total,
+            'has_more' => $hasMore,
+        ];
     }
 
     private function deleteOrphanUrlStatusChunked(int $chunkSize = 5000): int
