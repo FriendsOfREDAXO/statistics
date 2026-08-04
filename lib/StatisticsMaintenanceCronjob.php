@@ -256,7 +256,7 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
         $addon->setConfig($cursorKey, $cursor);
 
         $completedCycle = $cursor === $startCursor;
-        $remaining = $completedCycle ? 0 : $total - $optimized;
+        $remaining = $completedCycle || 0 === $cursor ? 0 : $total - $cursor;
 
         return [
             'optimized' => $optimized,

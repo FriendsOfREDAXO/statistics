@@ -1,6 +1,7 @@
 <?php
 
 $addon = rex_addon::get('statistics');
+$previousRuntimePause = (bool) rex_config::get('statistics', 'statistics_pause_tracking_runtime', false);
 rex_config::set('statistics', 'statistics_pause_tracking_runtime', true);
 
 try {
@@ -91,5 +92,5 @@ rex_dir::delete(rex_path::addon('statistics', 'plugins'));
 rex_package_manager::synchronizeWithFileSystem();
 
 } finally {
-    rex_config::set('statistics', 'statistics_pause_tracking_runtime', false);
+    rex_config::set('statistics', 'statistics_pause_tracking_runtime', $previousRuntimePause);
 }
