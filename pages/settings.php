@@ -8,6 +8,14 @@ $addon = rex_addon::get('statistics');
 // post request which handles deletion of stats data
 if (rex_request_method() == 'post') {
     $function = rex_post('func', 'string', '');
+    $maintenanceChunkSize = 1200;
+    $maintenanceMaxRounds = 2;
+    $maintenanceRuntimeBudgetSeconds = 2.0;
+    $maintenanceStartedAt = microtime(true);
+
+    $hasMaintenanceBudgetLeft = static function () use ($maintenanceStartedAt, $maintenanceRuntimeBudgetSeconds): bool {
+        return (microtime(true) - $maintenanceStartedAt) < $maintenanceRuntimeBudgetSeconds;
+    };
     $noiseLikePatterns = [
         '%/wp-login.php%',
         '%/wp-json%',
@@ -134,12 +142,18 @@ if (rex_request_method() == 'post') {
         return $total;
     };
 
-    $deleteChunkedLimited = static function (string $table, string $condition, array $params = [], int $chunkSize = 5000, int $maxRounds = 20) use ($runDeleteWithRetry): array {
+    $deleteChunkedLimited = static function (string $table, string $condition, array $params = [], int $chunkSize = 5000, int $maxRounds = 20) use ($runDeleteWithRetry, $hasMaintenanceBudgetLeft): array {
         $total = 0;
         $round = 0;
         $hasMore = false;
+        $timedOut = false;
 
         do {
+            if (!$hasMaintenanceBudgetLeft()) {
+                $timedOut = true;
+                break;
+            }
+
             ++$round;
             $affected = $runDeleteWithRetry(
                 'DELETE FROM ' . $table . ' WHERE ' . $condition . ' LIMIT ' . (int) $chunkSize,
@@ -150,9 +164,13 @@ if (rex_request_method() == 'post') {
             $hasMore = $affected >= $chunkSize;
         } while ($hasMore && $round < $maxRounds);
 
+        if (!$timedOut && !$hasMaintenanceBudgetLeft()) {
+            $timedOut = true;
+        }
+
         return [
             'deleted' => $total,
-            'has_more' => $hasMore,
+            'has_more' => $hasMore || $timedOut,
         ];
     };
 
@@ -177,12 +195,18 @@ if (rex_request_method() == 'post') {
         return $total;
     };
 
-    $deleteOrphanUrlStatusChunkedLimited = static function (int $chunkSize = 5000, int $maxRounds = 20) use ($runDeleteWithRetry): array {
+    $deleteOrphanUrlStatusChunkedLimited = static function (int $chunkSize = 5000, int $maxRounds = 20) use ($runDeleteWithRetry, $hasMaintenanceBudgetLeft): array {
         $total = 0;
         $round = 0;
         $hasMore = false;
+        $timedOut = false;
 
         do {
+            if (!$hasMaintenanceBudgetLeft()) {
+                $timedOut = true;
+                break;
+            }
+
             ++$round;
             $affected = $runDeleteWithRetry(
                 'DELETE FROM ' . rex::getTable('pagestats_urlstatus')
@@ -200,9 +224,13 @@ if (rex_request_method() == 'post') {
             $hasMore = $affected >= $chunkSize;
         } while ($hasMore && $round < $maxRounds);
 
+        if (!$timedOut && !$hasMaintenanceBudgetLeft()) {
+            $timedOut = true;
+        }
+
         return [
             'deleted' => $total,
-            'has_more' => $hasMore,
+            'has_more' => $hasMore || $timedOut,
         ];
     };
 
@@ -222,7 +250,7 @@ if (rex_request_method() == 'post') {
 
     if ($function == 'delete_hash') {
         try {
-            $result = $deleteChunkedLimited(rex::getTable('pagestats_hash'), '1=1', [], 5000, 12);
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_hash'), '1=1', [], $maintenanceChunkSize, $maintenanceMaxRounds);
             $deleted = (int) $result['deleted'];
             $hasMore = (bool) $result['has_more'];
 
@@ -254,7 +282,12 @@ if (rex_request_method() == 'post') {
             ];
 
             foreach ($tables as $table) {
-                $result = $deleteChunkedLimited($table, '1=1', [], 5000, 8);
+                if (!$hasMaintenanceBudgetLeft()) {
+                    $hasMore = true;
+                    break;
+                }
+
+                $result = $deleteChunkedLimited($table, '1=1', [], $maintenanceChunkSize, $maintenanceMaxRounds);
                 $count += (int) $result['deleted'];
                 $hasMore = $hasMore || (bool) $result['has_more'];
             }
@@ -276,7 +309,7 @@ if (rex_request_method() == 'post') {
         }
     } elseif ($function == 'delete_media') {
         try {
-            $result = $deleteChunkedLimited(rex::getTable('pagestats_media'), '1=1', [], 5000, 12);
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_media'), '1=1', [], $maintenanceChunkSize, $maintenanceMaxRounds);
             $deleted = (int) $result['deleted'];
             $hasMore = (bool) $result['has_more'];
 
@@ -297,7 +330,7 @@ if (rex_request_method() == 'post') {
         }
     } elseif ($function == 'delete_bot') {
         try {
-            $result = $deleteChunkedLimited(rex::getTable('pagestats_bot'), '1=1', [], 5000, 12);
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_bot'), '1=1', [], $maintenanceChunkSize, $maintenanceMaxRounds);
             $deleted = (int) $result['deleted'];
             $hasMore = (bool) $result['has_more'];
 
@@ -318,7 +351,7 @@ if (rex_request_method() == 'post') {
         }
     } elseif ($function == 'delete_referer') {
         try {
-            $result = $deleteChunkedLimited(rex::getTable('pagestats_referer'), '1=1', [], 5000, 12);
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_referer'), '1=1', [], $maintenanceChunkSize, $maintenanceMaxRounds);
             $deleted = (int) $result['deleted'];
             $hasMore = (bool) $result['has_more'];
 
@@ -339,7 +372,7 @@ if (rex_request_method() == 'post') {
         }
     } elseif ($function == 'delete_campaigns') {
         try {
-            $result = $deleteChunkedLimited(rex::getTable('pagestats_api'), '1=1', [], 5000, 12);
+            $result = $deleteChunkedLimited(rex::getTable('pagestats_api'), '1=1', [], $maintenanceChunkSize, $maintenanceMaxRounds);
             $deleted = (int) $result['deleted'];
             $hasMore = (bool) $result['has_more'];
 
@@ -362,8 +395,8 @@ if (rex_request_method() == 'post') {
         try {
             $count = 0;
             $hasMore = false;
-            $maxRoundsPerRun = 15;
-            $chunkSize = 4000;
+            $maxRoundsPerRun = $maintenanceMaxRounds;
+            $chunkSize = $maintenanceChunkSize;
 
             [$whereUrl, $paramsUrl] = $buildLikeWhere('url', $noiseLikePatterns);
             $result = $deleteChunkedLimited(rex::getTable('pagestats_visits_per_url'), $whereUrl, $paramsUrl, $chunkSize, $maxRoundsPerRun);
@@ -413,8 +446,8 @@ if (rex_request_method() == 'post') {
 
             $count = 0;
             $hasMore = false;
-            $chunkSize = 5000;
-            $maxRoundsPerRun = 6;
+            $chunkSize = $maintenanceChunkSize;
+            $maxRoundsPerRun = $maintenanceMaxRounds;
 
             $result = $deleteChunkedLimited(rex::getTable('pagestats_visits_per_day'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
             $count += (int) $result['deleted'];
@@ -484,8 +517,8 @@ if (rex_request_method() == 'post') {
 
             $count = 0;
             $hasMore = false;
-            $chunkSize = 5000;
-            $maxRoundsPerRun = 8;
+            $chunkSize = $maintenanceChunkSize;
+            $maxRoundsPerRun = $maintenanceMaxRounds;
 
             // Reduce high-cardinality raw tables first.
             $result = $deleteChunkedLimited(rex::getTable('pagestats_visits_per_url'), 'date < :cutoff_date', [':cutoff_date' => $cutoffDate], $chunkSize, $maxRoundsPerRun);
@@ -538,7 +571,7 @@ if (rex_request_method() == 'post') {
         }
     } elseif ($function == 'optimize_tables') {
         $optimized = 0;
-        $batchSize = 2;
+        $batchSize = 1;
 
         $tablesToOptimize = [
             rex::getTable('pagestats_hash'),
