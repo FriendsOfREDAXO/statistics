@@ -26,7 +26,7 @@ class ReportPdfGenerator
 
         $kpi = $this->loadKpiData($start, $end);
         $dailyVisits = $this->loadDailyVisits($start, $end);
-        $deviceTypes = $this->loadDataTypeList('browsertype', 8);
+        $deviceTypes = $this->loadDeviceTypeDistribution(5);
         $topPages = $this->loadTopList('pagestats_visits_per_url', 'url', $start, $end, 20);
         $topReferers = $this->loadTopList('pagestats_referer', 'referer', $start, $end, 20);
 
@@ -228,15 +228,43 @@ class ReportPdfGenerator
     }
 
     /**
+     * @return array<int, array{item:string,count:int}>
+     */
+    private function loadDeviceTypeDistribution(int $topLimit): array
+    {
+        $rows = $this->loadDataTypeList('browsertype', 100);
+        if ([] === $rows) {
+            return [];
+        }
+
+        $top = array_slice($rows, 0, $topLimit);
+        $rest = array_slice($rows, $topLimit);
+        $restCount = 0;
+        foreach ($rest as $row) {
+            $restCount += $row['count'];
+        }
+
+        if ($restCount > 0) {
+            $top[] = [
+                'item' => $this->addon->i18n('statistics_other'),
+                'count' => $restCount,
+            ];
+        }
+
+        return $top;
+    }
+
+    /**
      * @return array<int, array{date:string,count:int}>
      */
     private function loadDailyVisits(DateTimeImmutable $start, DateTimeImmutable $end): array
     {
         $sql = rex_sql::factory();
         $rows = $sql->getArray(
-            'SELECT date, IFNULL(count,0) AS total'
+            'SELECT date, IFNULL(SUM(count),0) AS total'
             . ' FROM ' . rex::getTable('pagestats_visits_per_day')
             . ' WHERE date BETWEEN :start AND :end'
+            . ' GROUP BY date'
             . ' ORDER BY date ASC',
             [
                 'start' => $start->format('Y-m-d'),
@@ -285,8 +313,8 @@ class ReportPdfGenerator
         $html .= '.kmeta{font-size:11px;color:#334155;margin-top:4px;}';
         $html .= '.section{margin-top:10px;}';
         $html .= '.section h2{font-size:16px;margin:0 0 8px 0;padding-bottom:4px;border-bottom:1px solid #e2e8f0;}';
-        $html .= '.graphics-grid{display:flex;gap:12px;align-items:stretch;margin:12px 0 6px 0;}';
-        $html .= '.graphics-card{flex:1;border:1px solid #e2e8f0;background:#fbfdff;border-radius:10px;padding:10px;}';
+        $html .= '.graphics-grid{display:block;margin:12px 0 6px 0;page-break-inside:avoid;break-inside:avoid;}';
+        $html .= '.graphics-card{border:1px solid #e2e8f0;background:#fbfdff;border-radius:10px;padding:10px;page-break-inside:avoid;break-inside:avoid;margin-bottom:10px;}';
         $html .= '.graphics-card-full{flex:1 1 100%;}';
         $html .= '.graphics-card h3{margin:0 0 8px 0;font-size:13px;color:#334155;}';
         $html .= '.legend{font-size:10px;color:#475569;margin:0 0 8px 0;}';
@@ -304,7 +332,9 @@ class ReportPdfGenerator
         $html .= '.hbar-track{height:8px;border-radius:999px;background:#e8edf3;overflow:hidden;}';
         $html .= '.hbar-fill{height:8px;border-radius:999px;background:#2f80c8;}';
         $html .= '.hbar-count{width:16%;text-align:right;font-size:10px;color:#334155;padding-left:8px;white-space:nowrap;}';
+        $html .= '.hbar-meta{font-size:10px;color:#64748b;margin-left:4px;}';
         $html .= '.chart-note{font-size:10px;color:#64748b;margin:4px 0 8px 0;}';
+        $html .= '.section{page-break-inside:avoid;break-inside:avoid;}';
         $html .= 'table.list{width:100%;border-collapse:collapse;}';
         $html .= 'table.list th, table.list td{border:1px solid #e2e8f0;padding:6px 8px;text-align:left;vertical-align:top;}';
         $html .= 'table.list th{background:#f1f5f9;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:#475569;}';
@@ -338,6 +368,9 @@ class ReportPdfGenerator
         $html .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_traffic_title'), ENT_QUOTES) . '</h3>';
         $html .= $this->renderTrafficCompareBars($kpi['visits'], $kpi['visitors']);
         $html .= '</div>';
+        $html .= '</div>';
+
+        $html .= '<div class="graphics-grid">';
         $html .= '<div class="graphics-card">';
         $html .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_daily_title'), ENT_QUOTES) . '</h3>';
         $html .= $this->renderDailyBars($dailyVisits);
@@ -347,18 +380,21 @@ class ReportPdfGenerator
         $html .= '<div class="graphics-grid">';
         $html .= '<div class="graphics-card graphics-card-full">';
         $html .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_device_types_title'), ENT_QUOTES) . '</h3>';
-        $html .= $this->renderTopBarList($deviceTypes, '#8a5cf6');
+        $html .= $this->renderTopBarList($deviceTypes, '#8a5cf6', true);
         $html .= '</div>';
         $html .= '</div>';
 
         $html .= '<div class="graphics-grid">';
         $html .= '<div class="graphics-card">';
         $html .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_top_pages_title'), ENT_QUOTES) . '</h3>';
-        $html .= $this->renderTopBarList($topPages, '#2f80c8');
+        $html .= $this->renderTopBarList($topPages, '#2f80c8', false, 6);
         $html .= '</div>';
+        $html .= '</div>';
+
+        $html .= '<div class="graphics-grid">';
         $html .= '<div class="graphics-card">';
         $html .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_top_referers_title'), ENT_QUOTES) . '</h3>';
-        $html .= $this->renderTopBarList($topReferers, '#20a39e');
+        $html .= $this->renderTopBarList($topReferers, '#20a39e', false, 6);
         $html .= '</div>';
         $html .= '</div>';
 
@@ -394,6 +430,13 @@ class ReportPdfGenerator
         $visitsWidth = (int) round(($visits / $max) * 100);
         $visitorsWidth = (int) round(($visitors / $max) * 100);
 
+        if ($visits > 0) {
+            $visitsWidth = max(2, $visitsWidth);
+        }
+        if ($visitors > 0) {
+            $visitorsWidth = max(2, $visitorsWidth);
+        }
+
         $html = '<p class="legend">';
         $html .= '<span class="legend-item"><span class="legend-dot" style="background:#2f80c8"></span>' . htmlspecialchars($this->addon->i18n('statistics_report_kpi_visits'), ENT_QUOTES) . '</span>';
         $html .= '<span class="legend-item"><span class="legend-dot" style="background:#20a39e"></span>' . htmlspecialchars($this->addon->i18n('statistics_report_kpi_visitors'), ENT_QUOTES) . '</span>';
@@ -401,12 +444,12 @@ class ReportPdfGenerator
 
         $html .= '<div class="compare-row">';
         $html .= '<div class="compare-label">' . htmlspecialchars($this->addon->i18n('statistics_report_kpi_visits'), ENT_QUOTES) . ': ' . $visits . '</div>';
-        $html .= '<div class="compare-track"><div class="compare-fill" style="width:' . $visitsWidth . '%"></div></div>';
+        $html .= '<div class="compare-track"><div class="compare-fill" style="width:' . $visitsWidth . '%;background:#2f80c8;"></div></div>';
         $html .= '</div>';
 
         $html .= '<div class="compare-row">';
         $html .= '<div class="compare-label">' . htmlspecialchars($this->addon->i18n('statistics_report_kpi_visitors'), ENT_QUOTES) . ': ' . $visitors . '</div>';
-        $html .= '<div class="compare-track"><div class="compare-fill-alt" style="width:' . $visitorsWidth . '%"></div></div>';
+        $html .= '<div class="compare-track"><div class="compare-fill-alt" style="width:' . $visitorsWidth . '%;background:#20a39e;"></div></div>';
         $html .= '</div>';
 
         return $html;
@@ -448,25 +491,41 @@ class ReportPdfGenerator
     /**
      * @param array<int, array{item:string,count:int}> $rows
      */
-    private function renderTopBarList(array $rows, string $color): string
+    private function renderTopBarList(array $rows, string $color, bool $showShare = false, int $limit = 8): string
     {
         if ([] === $rows) {
             return '<p class="small">' . htmlspecialchars($this->addon->i18n('statistics_no_data'), ENT_QUOTES) . '</p>';
         }
 
-        $list = array_slice($rows, 0, 8);
+        $list = array_slice($rows, 0, $limit);
         $max = max(array_column($list, 'count'));
         if ($max < 1) {
             $max = 1;
         }
 
+        $sum = 0;
+        foreach ($list as $entry) {
+            $sum += (int) $entry['count'];
+        }
+        if ($sum < 1) {
+            $sum = 1;
+        }
+
         $html = '<table class="hbar-table">';
         foreach ($list as $row) {
             $width = (int) round(($row['count'] / $max) * 100);
+            if ((int) $row['count'] > 0) {
+                $width = max(2, $width);
+            }
+            $shareLabel = '';
+            if ($showShare) {
+                $share = round(((int) $row['count'] / $sum) * 100, 1);
+                $shareLabel = '<span class="hbar-meta">(' . str_replace('.', ',', (string) $share) . '%)</span>';
+            }
             $html .= '<tr>';
             $html .= '<td class="hbar-label">' . htmlspecialchars($row['item'], ENT_QUOTES) . '</td>';
             $html .= '<td class="hbar-track-cell"><div class="hbar-track"><div class="hbar-fill" style="width:' . $width . '%;background:' . htmlspecialchars($color, ENT_QUOTES) . ';"></div></div></td>';
-            $html .= '<td class="hbar-count">' . $row['count'] . '</td>';
+            $html .= '<td class="hbar-count">' . $row['count'] . $shareLabel . '</td>';
             $html .= '</tr>';
         }
         $html .= '</table>';
