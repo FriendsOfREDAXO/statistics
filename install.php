@@ -20,12 +20,16 @@ $hasExpectedPrimaryKey = static function (string $table, array $keyColumns) use 
     }
 
     $rows = $sql->getArray(
-        'SHOW INDEX FROM ' . $sql->escapeIdentifier($table) . " WHERE Key_name = 'PRIMARY' ORDER BY Seq_in_index"
+        'SHOW INDEX FROM ' . $sql->escapeIdentifier($table) . " WHERE Key_name = 'PRIMARY'"
     );
 
     if ([] === $rows) {
         return false;
     }
+
+    usort($rows, static function (array $left, array $right): int {
+        return (int) ($left['Seq_in_index'] ?? 0) <=> (int) ($right['Seq_in_index'] ?? 0);
+    });
 
     $existing = array_map(static fn(array $row): string => (string) $row['Column_name'], $rows);
 
