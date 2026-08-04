@@ -83,21 +83,21 @@ $formHtml .= '</div>';
 $formHtml .= '</div>';
 
 $formHtml .= '<div class="row statistics-report__inputs">';
-$formHtml .= '<div class="col-md-4 statistics-report__panel' . ('week' === $periodType ? ' is-active' : ' hidden') . '" data-period-panel="week">';
+$formHtml .= '<div class="col-md-4 statistics-report__panel' . ('week' === $periodType ? ' is-active' : '') . '" data-period-panel="week">';
 $formHtml .= '<div class="form-group">';
 $formHtml .= '<label for="statistics-report-period-week">' . htmlspecialchars($addon->i18n('statistics_report_week_label'), ENT_QUOTES) . '</label>';
 $formHtml .= '<input id="statistics-report-period-week" type="week" class="form-control" name="period_week" value="' . htmlspecialchars($periodWeek, ENT_QUOTES) . '">';
 $formHtml .= '</div>';
 $formHtml .= '</div>';
 
-$formHtml .= '<div class="col-md-4 statistics-report__panel' . ('month' === $periodType ? ' is-active' : ' hidden') . '" data-period-panel="month">';
+$formHtml .= '<div class="col-md-4 statistics-report__panel' . ('month' === $periodType ? ' is-active' : '') . '" data-period-panel="month">';
 $formHtml .= '<div class="form-group">';
 $formHtml .= '<label for="statistics-report-period-month">' . htmlspecialchars($addon->i18n('statistics_report_month_label'), ENT_QUOTES) . '</label>';
 $formHtml .= '<input id="statistics-report-period-month" type="month" class="form-control" name="period_month" value="' . htmlspecialchars($periodMonth, ENT_QUOTES) . '">';
 $formHtml .= '</div>';
 $formHtml .= '</div>';
 
-$formHtml .= '<div class="col-md-4 statistics-report__panel' . ('year' === $periodType ? ' is-active' : ' hidden') . '" data-period-panel="year">';
+$formHtml .= '<div class="col-md-4 statistics-report__panel' . ('year' === $periodType ? ' is-active' : '') . '" data-period-panel="year">';
 $formHtml .= '<div class="form-group">';
 $formHtml .= '<label for="statistics-report-period-year">' . htmlspecialchars($addon->i18n('statistics_report_year_label'), ENT_QUOTES) . '</label>';
 $formHtml .= '<input id="statistics-report-period-year" type="number" min="2000" max="2100" class="form-control" name="period_year" value="' . htmlspecialchars((string) $periodYear, ENT_QUOTES) . '">';

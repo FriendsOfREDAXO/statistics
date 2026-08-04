@@ -268,6 +268,26 @@
     }
   }
 
+  function normalizeRexContainer(container) {
+    if (!container) {
+      return document;
+    }
+
+    if (container.querySelector) {
+      return container;
+    }
+
+    if (typeof container.get === 'function' && container.get(0)) {
+      return container.get(0);
+    }
+
+    if (container[0] && container[0].querySelector) {
+      return container[0];
+    }
+
+    return document;
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
       runInit(document);
@@ -276,9 +296,24 @@
     runInit(document);
   }
 
+  window.addEventListener('load', function () {
+    runInit(document);
+  });
+
+  // Fallback for delayed backend DOM updates (e.g. injected page content).
+  var retryCount = 0;
+  var retryTimer = window.setInterval(function () {
+    runInit(document);
+    var root = document.getElementById('statistics-report-root');
+    if ((root && root.getAttribute('data-reports-init-done') === '1') || retryCount >= 20) {
+      window.clearInterval(retryTimer);
+    }
+    retryCount += 1;
+  }, 250);
+
   if (typeof jQuery !== 'undefined') {
     jQuery(document).on('rex:ready', function (_event, container) {
-      runInit(container || document);
+      runInit(normalizeRexContainer(container));
     });
   }
 })();
