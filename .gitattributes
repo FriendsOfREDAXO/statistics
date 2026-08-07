@@ -1,0 +1,3 @@
+# Exclude development/CI directories from GitHub source archives
+.tools/ export-ignore
+.github/ export-ignore

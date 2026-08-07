@@ -124,6 +124,25 @@ Dadurch bleibt die Seite sofort benutzbar, während schwere Sektionen nur dann S
 
 ## Entwicklungshinweise
 
+### .tools (Maintainer-Werkzeuge)
+
+Der Ordner `.tools` enthält Hilfsskripte für Wartung und Release-Prozess. Diese Skripte sind für Maintainer gedacht und werden nicht im regulären Addon-Betrieb benötigt.
+
+Aktuell enthalten:
+
+- `.tools/release.php`
+    - Unterstützt den Release-Flow, indem Version/Datum im Changelog vorbereitet und die Versionsnummer in `package.yml` angepasst wird.
+    - Typischer Aufruf: `php .tools/release.php 3.6.0`
+
+- `.tools/update-frontend-assets.sh`
+    - Aktualisiert die vendorten Frontend-Dateien in `assets/` (DataTables und ECharts) auf die neueste Version der freigegebenen Major-Linien.
+    - Typischer Aufruf: `bash .tools/update-frontend-assets.sh`
+    - Optional lassen sich Zielversionen setzen: `DT_VERSION=1.13.11 ECHARTS_VERSION=5.6.1 bash .tools/update-frontend-assets.sh`
+
+Hinweis:
+
+- Der Ordner `.tools` ist per `installer_ignore` und `export-ignore` für Release-Archive ausgeschlossen.
+
 ### Backend-Startseite erweitern
 
 Wenn neue Blöcke auf `pages/stats.php` ergänzt werden, sollte zuerst entschieden werden, ob sie synchron oder lazy geladen werden müssen.

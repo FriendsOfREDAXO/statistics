@@ -1,0 +1,56 @@
+name: Update Frontend Assets
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 4 * * 1'
+
+jobs:
+  update-assets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Update vendored frontend assets
+        run: bash .tools/update-frontend-assets.sh
+
+      - name: Detect changes
+        id: changes
+        run: |
+          if git diff --quiet -- assets/datatables.min.js assets/datatables.min.css assets/echarts.min.js; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/statistics-update-frontend-assets
+          commit-message: "chore(statistics): Frontend-Assets aktualisieren"
+          title: "chore(statistics): Frontend-Assets aktualisieren"
+          body: |
+            Automatisches Update der vendorten Frontend-Assets im statistics-Addon.
+
+            Aktualisiert werden:
+            - assets/datatables.min.js
+            - assets/datatables.min.css
+            - assets/echarts.min.js
+
+            Quelle:
+            - DataTables (neueste Version aus Major 1)
+            - ECharts (neueste Version aus Major 5)
+          labels: |
+            dependencies
+            security

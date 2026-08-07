@@ -65,6 +65,11 @@ $deduplicateCountTable(rex::getTable('pagestats_bot'), ['name', 'category', 'pro
 // create tables
 $addon->includeFile(__DIR__ . '/install.php');
 
+// Cleanup legacy frontend asset that is no longer shipped.
+// Important for updates where public addon assets may still contain stale files.
+rex_file::delete(rex_path::addonAssets('statistics', 'exceljs.min.js'));
+rex_file::delete(rex_path::addonAssets('statistics', 'jspdf.umd.min.js'));
+
 // Keep the new per-URL visitor metric disabled on existing installations
 // until editors explicitly enable it in settings.
 if (!rex_config::has('statistics', 'statistics_pages_visitors_enabled')) {

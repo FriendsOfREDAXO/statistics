@@ -7,128 +7,72 @@ namespace Composer\Autoload;
 class ComposerStaticInitb29f579221a7652ba86cff44a1726a0f
 {
     public static $files = array (
-        '2cffec82183ee1cea088009cef9a6fc3' => __DIR__ . '/..' . '/ezyang/htmlpurifier/library/HTMLPurifier.composer.php',
         '04c6c5c2f7095ccf6c481d3e53e1776f' => __DIR__ . '/..' . '/mustangostang/spyc/Spyc.php',
     );
 
     public static $prefixLengthsPsr4 = array (
-        'Z' =>
+        'M' => 
         array (
-            'ZipStream\\' => 10,
-        ),
-        'P' =>
-        array (
-            'Psr\\SimpleCache\\' => 16,
-            'PhpOffice\\PhpSpreadsheet\\' => 25,
-        ),
-        'M' =>
-        array (
-            'MyCLabs\\Enum\\' => 13,
             'MaxMind\\WebService\\' => 19,
             'MaxMind\\Exception\\' => 18,
             'MaxMind\\Db\\' => 11,
-            'Matrix\\' => 7,
             'Matomo\\Network\\' => 15,
         ),
-        'J' =>
+        'J' => 
         array (
             'Jaybizzle\\CrawlerDetect\\' => 24,
         ),
-        'G' =>
+        'G' => 
         array (
             'GeoIp2\\' => 7,
         ),
-        'D' =>
+        'D' => 
         array (
             'DeviceDetector\\' => 15,
         ),
-        'C' =>
-        array (
-            'Composer\\Pcre\\' => 14,
-            'Complex\\' => 8,
-        ),
-        'A' =>
+        'A' => 
         array (
             'AndiLeni\\Statistics\\' => 20,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'ZipStream\\' =>
-        array (
-            0 => __DIR__ . '/..' . '/maennchen/zipstream-php/src',
-        ),
-        'Psr\\SimpleCache\\' =>
-        array (
-            0 => __DIR__ . '/..' . '/psr/simple-cache/src',
-        ),
-        'PhpOffice\\PhpSpreadsheet\\' =>
-        array (
-            0 => __DIR__ . '/..' . '/phpoffice/phpspreadsheet/src/PhpSpreadsheet',
-        ),
-        'MyCLabs\\Enum\\' =>
-        array (
-            0 => __DIR__ . '/..' . '/myclabs/php-enum/src',
-        ),
-        'MaxMind\\WebService\\' =>
+        'MaxMind\\WebService\\' => 
         array (
             0 => __DIR__ . '/..' . '/maxmind/web-service-common/src/WebService',
         ),
-        'MaxMind\\Exception\\' =>
+        'MaxMind\\Exception\\' => 
         array (
             0 => __DIR__ . '/..' . '/maxmind/web-service-common/src/Exception',
         ),
-        'MaxMind\\Db\\' =>
+        'MaxMind\\Db\\' => 
         array (
             0 => __DIR__ . '/..' . '/maxmind-db/reader/src/MaxMind/Db',
         ),
-        'Matrix\\' =>
-        array (
-            0 => __DIR__ . '/..' . '/markbaker/matrix/classes/src',
-        ),
-        'Matomo\\Network\\' =>
+        'Matomo\\Network\\' => 
         array (
             0 => __DIR__ . '/..' . '/matomo/network/src',
         ),
-        'Jaybizzle\\CrawlerDetect\\' =>
+        'Jaybizzle\\CrawlerDetect\\' => 
         array (
             0 => __DIR__ . '/..' . '/jaybizzle/crawler-detect/src',
         ),
-        'GeoIp2\\' =>
+        'GeoIp2\\' => 
         array (
             0 => __DIR__ . '/..' . '/geoip2/geoip2/src',
         ),
-        'DeviceDetector\\' =>
+        'DeviceDetector\\' => 
         array (
             0 => __DIR__ . '/..' . '/matomo/device-detector',
         ),
-        'Composer\\Pcre\\' =>
-        array (
-            0 => __DIR__ . '/..' . '/composer/pcre/src',
-        ),
-        'Complex\\' =>
-        array (
-            0 => __DIR__ . '/..' . '/markbaker/complex/classes/src',
-        ),
-        'AndiLeni\\Statistics\\' =>
+        'AndiLeni\\Statistics\\' => 
         array (
             0 => __DIR__ . '/../..' . '/lib',
         ),
     );
 
-    public static $prefixesPsr0 = array (
-        'H' =>
-        array (
-            'HTMLPurifier' =>
-            array (
-                0 => __DIR__ . '/..' . '/ezyang/htmlpurifier/library',
-            ),
-        ),
-    );
-
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
-        'Stringable' => __DIR__ . '/..' . '/myclabs/php-enum/stubs/Stringable.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
@@ -136,7 +80,6 @@ class ComposerStaticInitb29f579221a7652ba86cff44a1726a0f
         return \Closure::bind(function () use ($loader) {
             $loader->prefixLengthsPsr4 = ComposerStaticInitb29f579221a7652ba86cff44a1726a0f::$prefixLengthsPsr4;
             $loader->prefixDirsPsr4 = ComposerStaticInitb29f579221a7652ba86cff44a1726a0f::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInitb29f579221a7652ba86cff44a1726a0f::$prefixesPsr0;
             $loader->classMap = ComposerStaticInitb29f579221a7652ba86cff44a1726a0f::$classMap;
 
         }, null, ClassLoader::class);

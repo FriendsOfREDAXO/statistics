@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.6.0] - 07.08.2026
+
+-   Unbenutzte Abhängigkeiten und Frontend-Assets bereinigt: `exceljs.min.js` und `jspdf.umd.min.js` entfernt sowie die nicht mehr benötigten Composer-Abhängigkeiten `phpoffice/phpspreadsheet` und `matomo/referrer-spam-blacklist` aus dem Addon entfernt
+-   Release-Paketierung ergänzt: Entwicklungsordner `.tools` und `.github` werden über `installer_ignore` sowie per `.gitattributes` (`export-ignore`) aus Release-Archiven ausgeschlossen
+-   Frontend-Vendor-Assets aktualisiert (DataTables auf 1.13.11, ECharts auf 5.6.1) und automatischen GitHub-Workflow für regelmäßige Asset-Update-PRs ergänzt (`.github/workflows/update-frontend-assets.yml`)
+
 ## [3.5.2] - 04.08.2026
 
 -   Strukturübersicht entfernt
