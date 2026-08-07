@@ -5,7 +5,6 @@ namespace AndiLeni\Statistics;
 use rex;
 use rex_addon;
 use rex_addon_interface;
-use rex_sql;
 use rex_view;
 use InvalidArgumentException;
 use rex_sql_exception;
@@ -48,11 +47,7 @@ class Weekday
             return $this->rows;
         }
 
-        $sql = rex_sql::factory();
-        $this->rows = array_map(
-            static fn(array $row): array => ['name' => (string) $row['name'], 'count' => (int) $row['count']],
-            $sql->getArray('SELECT name, count FROM ' . rex::getTable('pagestats_data') . ' WHERE type = "weekday" ORDER BY count DESC')
-        );
+        $this->rows = DataTypeAggregationRepository::getRowsByType('weekday');
 
         return $this->rows;
     }

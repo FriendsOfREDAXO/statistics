@@ -445,8 +445,10 @@ class Visit
     public function isChromeDataSaverUsed(IP $ip): bool
     {
         // see https://github.com/piwik/piwik/issues/7733
-        return !empty($_SERVER['HTTP_VIA'])
-            && false !== strpos(strtolower($_SERVER['HTTP_VIA']), 'chrome-compression-proxy')
+        $httpVia = rex_server('HTTP_VIA', 'string', '');
+
+        return '' !== $httpVia
+            && false !== strpos(strtolower($httpVia), 'chrome-compression-proxy')
             && $ip->isInRanges(self::BOTIPS);
     }
 
@@ -475,28 +477,26 @@ class Visit
         $this->brand = trim($brandInfo) != '' ? ucfirst($brandInfo) : 'Undefiniert';
         $this->model = trim($modelInfo) != '' ? ucfirst($modelInfo) : 'Undefiniert';
 
+        $counterRows = [
+            ['type' => 'browser', 'name' => $this->browser],
+            ['type' => 'os', 'name' => $this->os . ' ' . $this->osVer],
+            ['type' => 'browsertype', 'name' => $this->device_type],
+            ['type' => 'brand', 'name' => $this->brand],
+            ['type' => 'model', 'name' => $this->brand . ' - ' . $this->model],
+            ['type' => 'hour', 'name' => $this->datetime_now->format('H')],
+            ['type' => 'weekday', 'name' => $this->datetime_now->format('N')],
+            ['type' => 'country', 'name' => $this->country],
+        ];
 
-        $sql = rex_sql::factory();
+        $this->incrementCounterRows(rex::getTable('pagestats_data'), $counterRows);
 
-        $sql_insert = 'INSERT INTO ' . rex::getTable('pagestats_data') . ' (type,name,count) VALUES 
-        ("browser","' . addslashes($this->browser) . '",1), 
-        ("os","' . addslashes($this->os) . ' ' . addslashes($this->osVer) . '",1), 
-        ("browsertype","' . addslashes($this->device_type) . '",1), 
-        ("brand","' . addslashes($this->brand) . '",1), 
-        ("model","' . addslashes($this->brand) . ' - ' . addslashes($this->model) . '",1),  
-        ("hour","' . $this->datetime_now->format('H') . '",1), 
-        ("weekday","' . $this->datetime_now->format('N') . '",1),
-        ("country","' . $this->country . '",1)
-        ON DUPLICATE KEY UPDATE count = count + 1;';
-
-        $sql->setQuery($sql_insert);
-
-
-        $sql_insert = 'INSERT INTO ' . rex::getTable('pagestats_visits_per_day') . ' (date,domain,count) VALUES 
-        ("' . $this->datetime_now->format('Y-m-d') . '","' . addslashes($this->domain) . '",1)  
-        ON DUPLICATE KEY UPDATE count = count + 1;';
-
-        $sql->setQuery($sql_insert);
+        $this->incrementCounterRow(
+            rex::getTable('pagestats_visits_per_day'),
+            [
+                'date' => $this->datetime_now->format('Y-m-d'),
+                'domain' => $this->domain,
+            ]
+        );
     }
 
 
@@ -509,11 +509,14 @@ class Visit
      */
     public function updateVisitsPerUrl(): void
     {
-        $sql_insert = 'INSERT INTO ' . rex::getTable('pagestats_visits_per_url') . ' (hash,date,url,count) VALUES 
-        ("' . md5($this->datetime_now->format('Y-m-d') . $this->url) . '","' . $this->datetime_now->format('Y-m-d') . '","' . addslashes($this->url) . '",1) 
-        ON DUPLICATE KEY UPDATE count = count + 1;';
-
-        $this->executeWriteWithRetry($sql_insert);
+        $this->incrementCounterRow(
+            rex::getTable('pagestats_visits_per_url'),
+            [
+                'hash' => md5($this->datetime_now->format('Y-m-d') . $this->url),
+                'date' => $this->datetime_now->format('Y-m-d'),
+                'url' => $this->url,
+            ]
+        );
 
 
         // save url http status
@@ -590,13 +593,13 @@ class Visit
      */
     public function persistVisitor(): void
     {
-        $sql = rex_sql::factory();
-
-        $sql_insert = 'INSERT INTO ' . rex::getTable('pagestats_visitors_per_day') . ' (date,domain,count) VALUES 
-        ("' . $this->datetime_now->format('Y-m-d') . '","' . addslashes($this->domain) . '",1)  
-        ON DUPLICATE KEY UPDATE count = count + 1;';
-
-        $sql->setQuery($sql_insert);
+        $this->incrementCounterRow(
+            rex::getTable('pagestats_visitors_per_day'),
+            [
+                'date' => $this->datetime_now->format('Y-m-d'),
+                'domain' => $this->domain,
+            ]
+        );
     }
 
     /**
@@ -725,12 +728,42 @@ class Visit
     public function parseUA(): void
     {
         $cache = new StaticCache();
-        $clientHints = ClientHints::factory($_SERVER);
+        $clientHints = ClientHints::factory(self::buildClientHintsServerBag());
         $this->DeviceDetector = new DeviceDetector($this->userAgent, $clientHints);
         // $this->DeviceDetector = new DeviceDetector($this->userAgent);
         $this->DeviceDetector->setYamlParser(new DeviceDetectorSymfonyYamlParser());
         $this->DeviceDetector->setCache($cache);
         $this->DeviceDetector->parse();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function buildClientHintsServerBag(): array
+    {
+        $keys = [
+            'HTTP_USER_AGENT',
+            'HTTP_SEC_CH_UA',
+            'HTTP_SEC_CH_UA_MOBILE',
+            'HTTP_SEC_CH_UA_PLATFORM',
+            'HTTP_SEC_CH_UA_PLATFORM_VERSION',
+            'HTTP_SEC_CH_UA_MODEL',
+            'HTTP_SEC_CH_UA_FULL_VERSION',
+            'HTTP_SEC_CH_UA_FULL_VERSION_LIST',
+            'HTTP_SEC_CH_UA_ARCH',
+            'HTTP_SEC_CH_UA_BITNESS',
+        ];
+
+        $server = [];
+
+        foreach ($keys as $key) {
+            $value = rex_server($key, 'string', '');
+            if ('' !== $value) {
+                $server[$key] = $value;
+            }
+        }
+
+        return $server;
     }
 
 
@@ -749,12 +782,14 @@ class Visit
         $botcategory = $botInfo['category'] ?? '-';
         $botproducer = $botInfo['producer']['name'] ?? '-';
 
-        $sql = rex_sql::factory();
-
-        $sql->setQuery('
-        INSERT INTO ' . rex::getTable('pagestats_bot') . ' (name,category,producer,count) VALUES 
-        (:botname,:botcategory,:botproducer,1) 
-        ON DUPLICATE KEY UPDATE count = count + 1;', ['botname' => $botname, 'botcategory' => $botcategory, 'botproducer' => $botproducer]);
+        $this->incrementCounterRow(
+            rex::getTable('pagestats_bot'),
+            [
+                'name' => $botname,
+                'category' => $botcategory,
+                'producer' => $botproducer,
+            ]
+        );
     }
 
 
@@ -767,12 +802,14 @@ class Visit
      */
     public function saveCrawlerDetect(string $name): void
     {
-        $sql = rex_sql::factory();
-
-        $sql->setQuery('
-        INSERT INTO ' . rex::getTable('pagestats_bot') . ' (name,category,producer,count) VALUES 
-        (:botname,:botcategory,:botproducer,1) 
-        ON DUPLICATE KEY UPDATE count = count + 1;', ['botname' => $name, 'botcategory' => "Crawler", 'botproducer' => "-"]);
+        $this->incrementCounterRow(
+            rex::getTable('pagestats_bot'),
+            [
+                'name' => $name,
+                'category' => 'Crawler',
+                'producer' => '-',
+            ]
+        );
     }
 
 
@@ -786,12 +823,53 @@ class Visit
      */
     public function saveReferer(string $referer): void
     {
-        $sql = rex_sql::factory();
+        $this->incrementCounterRow(
+            rex::getTable('pagestats_referer'),
+            [
+                'hash' => md5($this->datetime_now->format('Y-m-d') . $referer),
+                'referer' => $referer,
+                'date' => $this->datetime_now->format('Y-m-d'),
+            ]
+        );
+    }
 
-        $sql->setQuery('
-        INSERT INTO ' . rex::getTable('pagestats_referer') . ' (hash,referer,date,count) VALUES 
-        (:hash,:referer,:date,1) 
-        ON DUPLICATE KEY UPDATE count = count + 1;', ['hash' => md5($this->datetime_now->format('Y-m-d') . $referer), 'referer' => $referer, 'date' => $this->datetime_now->format('Y-m-d')]);
+    /**
+     * @param array<string, scalar|null> $keyValues
+     */
+    private function incrementCounterRow(string $table, array $keyValues): void
+    {
+        $this->incrementCounterRows($table, [$keyValues]);
+    }
+
+    /**
+     * @param list<array<string, scalar|null>> $rows
+     */
+    private function incrementCounterRows(string $table, array $rows): void
+    {
+        if ([] === $rows) {
+            return;
+        }
+
+        $columns = array_keys($rows[0]);
+        $params = [];
+        $valueGroups = [];
+
+        foreach ($rows as $index => $row) {
+            $rowPlaceholders = [];
+            foreach ($columns as $column) {
+                $placeholder = ':' . $column . '_' . $index;
+                $rowPlaceholders[] = $placeholder;
+                $params[$placeholder] = $row[$column] ?? null;
+            }
+            $valueGroups[] = '(' . implode(',', $rowPlaceholders) . ',1)';
+        }
+
+        $query = 'INSERT INTO ' . $table
+            . ' (' . implode(',', $columns) . ',count) VALUES '
+            . implode(',', $valueGroups)
+            . ' ON DUPLICATE KEY UPDATE count = count + 1;';
+
+        $this->executeWriteWithRetry($query, $params);
     }
 
 
