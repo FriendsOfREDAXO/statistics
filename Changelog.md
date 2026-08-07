@@ -5,6 +5,10 @@
 -   Unbenutzte Abhängigkeiten und Frontend-Assets bereinigt: `exceljs.min.js` und `jspdf.umd.min.js` entfernt sowie die nicht mehr benötigten Composer-Abhängigkeiten `phpoffice/phpspreadsheet` und `matomo/referrer-spam-blacklist` aus dem Addon entfernt
 -   Release-Paketierung ergänzt: Entwicklungsordner `.tools` und `.github` werden über `installer_ignore` sowie per `.gitattributes` (`export-ignore`) aus Release-Archiven ausgeschlossen
 -   Frontend-Vendor-Assets aktualisiert (DataTables auf 1.13.11, ECharts auf 5.6.1) und automatischen GitHub-Workflow für regelmäßige Asset-Update-PRs ergänzt (`.github/workflows/update-frontend-assets.yml`)
+-   Tracking-SQL gehärtet und vereinheitlicht: bisherige String-SQL mit `addslashes` in `Visit` auf parametrisierte Upsert-Queries umgestellt, wiederholte Counter-Upserts in `Visit`/`EventRequest` über interne Helper konsolidiert und den `pagestats_data`-Write-Path per Bulk-Upsert reduziert
+-   Data-Aggregationen für Browser/Brand/Browsertype/OS/Model/Country/Hour/Weekday zusammengeführt: statt mehrerer Einzelabfragen je Klasse werden die Typen zentral über eine gemeinsame Query geladen und intern wiederverwendet
+-   REDAXO-Härtung ergänzt: direkte `$_SERVER`-Zugriffe in `Visit`/`EventRequest` durch REDAXO-Serverzugriff ersetzt (u. a. Client-Hints und `HTTP_VIA`)
+-   Wartungs- und Analyseballast reduziert: veraltete `psalm.xml` entfernt und README um eine Maintainer-Sektion für `.tools` erweitert
 
 ## [3.5.2] - 04.08.2026
 

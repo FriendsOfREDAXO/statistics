@@ -11,7 +11,6 @@ use DeviceDetector\Yaml\Symfony as DeviceDetectorSymfonyYamlParser;
 use rex;
 use rex_addon;
 use rex_addon_interface;
-use rex_path;
 use rex_sql;
 use InvalidArgumentException;
 use rex_sql_exception;
@@ -81,22 +80,26 @@ class EventRequest
             $max_visit_length = intval($this->addon->getConfig('statistics_visit_duration'));
 
             if ($minute_diff > $max_visit_length) {
-                // update set last visit to now
-                $sql->setQuery('UPDATE ' . rex::getTable('pagestats_hash') . ' SET datetime = :datetime WHERE hash = :hash ', ['hash' => $hash, 'datetime' => $this->datetime_now->format('Y-m-d H:i:s')]);
+                $this->touchHashEntry($hash, $this->datetime_now->format('Y-m-d H:i:s'));
                 return true;
             } else {
                 return false;
             }
         } else {
             // hash was not found, save hash with current datetime, then save visit
-            $sql = rex_sql::factory();
-            $sql->setTable(rex::getTable('pagestats_hash'));
-            $sql->setValue('hash', $hash);
-            $sql->setValue('datetime', $this->datetime_now->format('Y-m-d H:i:s'));
-            $sql->insert();
+            $this->touchHashEntry($hash, $this->datetime_now->format('Y-m-d H:i:s'));
 
             return true;
         }
+    }
+
+    private function touchHashEntry(string $hash, string $datetime): void
+    {
+        $sql = rex_sql::factory();
+        $sql->setTable(rex::getTable('pagestats_hash'));
+        $sql->setValue('hash', $hash);
+        $sql->setValue('datetime', $datetime);
+        $sql->insertOrUpdate();
     }
 
 
@@ -109,11 +112,41 @@ class EventRequest
     public function parseUA(): void
     {
         $cache = new StaticCache();
-        $clientHints = ClientHints::factory($_SERVER);
+        $clientHints = ClientHints::factory(self::buildClientHintsServerBag());
         $this->DeviceDetector = new DeviceDetector($this->userAgent, $clientHints);
         $this->DeviceDetector->setYamlParser(new DeviceDetectorSymfonyYamlParser());
         $this->DeviceDetector->setCache($cache);
         $this->DeviceDetector->parse();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function buildClientHintsServerBag(): array
+    {
+        $keys = [
+            'HTTP_USER_AGENT',
+            'HTTP_SEC_CH_UA',
+            'HTTP_SEC_CH_UA_MOBILE',
+            'HTTP_SEC_CH_UA_PLATFORM',
+            'HTTP_SEC_CH_UA_PLATFORM_VERSION',
+            'HTTP_SEC_CH_UA_MODEL',
+            'HTTP_SEC_CH_UA_FULL_VERSION',
+            'HTTP_SEC_CH_UA_FULL_VERSION_LIST',
+            'HTTP_SEC_CH_UA_ARCH',
+            'HTTP_SEC_CH_UA_BITNESS',
+        ];
+
+        $server = [];
+
+        foreach ($keys as $key) {
+            $value = rex_server($key, 'string', '');
+            if ('' !== $value) {
+                $server[$key] = $value;
+            }
+        }
+
+        return $server;
     }
 
 
@@ -126,17 +159,38 @@ class EventRequest
      */
     public function save(): void
     {
-        $sql = rex_sql::factory();
-        $result = $sql->setQuery('UPDATE ' . rex::getTable('pagestats_api') . ' SET count = count + 1 WHERE name = :name AND date = :date', ['name' => $this->name, 'date' => $this->datetime_now->format('Y-m-d')]);
+        $this->incrementCounterRow(
+            rex::getTable('pagestats_api'),
+            [
+                'name' => $this->name,
+                'date' => $this->datetime_now->format('Y-m-d'),
+            ]
+        );
+    }
 
-        if ($result->getRows() === 0) {
-            $bot = rex_sql::factory();
-            $bot->setTable(rex::getTable('pagestats_api'));
-            $bot->setValue('name', $this->name);
-            $bot->setValue('date', $this->datetime_now->format('Y-m-d'));
-            $bot->setValue('count', 1);
-            $bot->insert();
+    /**
+     * @param array<string, scalar|null> $keyValues
+     */
+    private function incrementCounterRow(string $table, array $keyValues): void
+    {
+        $columns = [];
+        $placeholders = [];
+        $params = [];
+
+        foreach ($keyValues as $column => $value) {
+            $columns[] = $column;
+            $placeholder = ':' . $column;
+            $placeholders[] = $placeholder;
+            $params[$placeholder] = $value;
         }
+
+        $query = 'INSERT INTO ' . $table
+            . ' (' . implode(',', $columns) . ',count)'
+            . ' VALUES (' . implode(',', $placeholders) . ',1)'
+            . ' ON DUPLICATE KEY UPDATE count = count + 1;';
+
+        $sql = rex_sql::factory();
+        $sql->setQuery($query, $params);
     }
 
 
