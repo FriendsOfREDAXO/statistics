@@ -515,6 +515,7 @@ class Visit
                 'hash' => md5($this->datetime_now->format('Y-m-d') . $this->url),
                 'date' => $this->datetime_now->format('Y-m-d'),
                 'url' => $this->url,
+                'url_hash' => md5($this->url),
             ]
         );
 
@@ -615,14 +616,15 @@ class Visit
         $hash = hash('sha1', $this->datetime_now->format('Y-m-d') . '|' . $this->url . '|' . $this->token);
         $sql = rex_sql::factory();
 
-        $sqlInsert = 'INSERT INTO ' . rex::getTable('pagestats_visitors_per_url') . ' (hash,date,url,count) VALUES '
-            . '(:hash,:date,:url,1) '
+        $sqlInsert = 'INSERT INTO ' . rex::getTable('pagestats_visitors_per_url') . ' (hash,date,url,url_hash,count) VALUES '
+            . '(:hash,:date,:url,:url_hash,1) '
             . 'ON DUPLICATE KEY UPDATE count = count;';
 
         $sql->setQuery($sqlInsert, [
             ':hash' => $hash,
             ':date' => $this->datetime_now->format('Y-m-d'),
             ':url' => $this->url,
+            ':url_hash' => md5($this->url),
         ]);
     }
 
@@ -828,6 +830,7 @@ class Visit
             [
                 'hash' => md5($this->datetime_now->format('Y-m-d') . $referer),
                 'referer' => $referer,
+                'referer_hash' => md5($referer),
                 'date' => $this->datetime_now->format('Y-m-d'),
             ]
         );

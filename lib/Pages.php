@@ -114,14 +114,15 @@ class Pages
         $sql = rex_sql::factory();
 
         // get sum per day for substraction
-        $sum_per_day = $sql->getArray('select date, sum(count) as "count" from ' . rex::getTable('pagestats_visits_per_url') . ' where url = :url group by date', ['url' => $request_url]);
+        $urlHash = md5($request_url);
+        $sum_per_day = $sql->getArray('select date, sum(count) as "count" from ' . rex::getTable('pagestats_visits_per_url') . ' where url_hash = :url_hash and url = :url group by date', ['url_hash' => $urlHash, 'url' => $request_url]);
 
         // reduce visits per day by these factors
         foreach ($sum_per_day as $e) {
             $sql->setQuery('update ' . rex::getTable('pagestats_visits_per_day') . ' set count = count - :v where date = :date', ['v' => $e['count'], 'date' => $e['date']]);
         }
 
-        $sql->setQuery('delete from ' . rex::getTable('pagestats_visits_per_url') . ' where url = :url', ['url' => $request_url]);
+        $sql->setQuery('delete from ' . rex::getTable('pagestats_visits_per_url') . ' where url_hash = :url_hash and url = :url', ['url_hash' => $urlHash, 'url' => $request_url]);
 
         return $sql->getRows();
     }
@@ -155,7 +156,7 @@ class Pages
                 $table .= rex_view::warning(sprintf($this->addon->i18n('statistics_pages_list_limited'), (string) $limit));
             }
 
-            $table .= '<table class="table-bordered dt_order_second statistics_table table-striped table-hover table" data-page-length="30">';
+            $table .= '<table class="table-bordered dt_order_second statistics_table table-striped table-hover table" data-order-column="2" data-page-length="30">';
             $table .= '<thead><tr>';
             $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_favorite'), ENT_QUOTES) . '</th>';
             $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_url'), ENT_QUOTES) . '</th>';
@@ -239,27 +240,27 @@ class Pages
         }
         $query .= ', IFNULL(us.status, "-") AS status '
             . 'FROM ('
-            . ' SELECT url, IFNULL(SUM(count), 0) AS count'
+            . ' SELECT url, url_hash, IFNULL(SUM(count), 0) AS count'
             . ' FROM ' . rex::getTable('pagestats_visits_per_url')
             . ' WHERE date BETWEEN :start AND :end'
-            . ' GROUP BY url'
+            . ' GROUP BY url_hash, url'
             . ') agg ';
 
         if ($visitorsPerUrlEnabled) {
             $query .= 'LEFT JOIN ('
-                . ' SELECT url, IFNULL(SUM(count), 0) AS unique_visitors'
+                . ' SELECT url, url_hash, IFNULL(SUM(count), 0) AS unique_visitors'
                 . ' FROM ' . rex::getTable('pagestats_visitors_per_url')
                 . ' WHERE date BETWEEN :start AND :end'
-                . ' GROUP BY url'
-                . ') vis ON vis.url = agg.url ';
+                . ' GROUP BY url_hash, url'
+                . ') vis ON vis.url_hash = agg.url_hash AND vis.url = agg.url ';
         }
 
         if ('200' === $httpstatus) {
-            $query .= 'INNER JOIN ' . rex::getTable('pagestats_urlstatus') . ' us ON agg.url = us.url AND us.status = "200 OK" ';
+            $query .= 'INNER JOIN ' . rex::getTable('pagestats_urlstatus') . ' us ON agg.url_hash = us.hash AND agg.url = us.url AND us.status = "200 OK" ';
         } elseif ('not200' === $httpstatus) {
-            $query .= 'INNER JOIN ' . rex::getTable('pagestats_urlstatus') . ' us ON agg.url = us.url AND us.status != "200 OK" ';
+            $query .= 'INNER JOIN ' . rex::getTable('pagestats_urlstatus') . ' us ON agg.url_hash = us.hash AND agg.url = us.url AND us.status != "200 OK" ';
         } else {
-            $query .= 'LEFT JOIN ' . rex::getTable('pagestats_urlstatus') . ' us ON agg.url = us.url ';
+            $query .= 'LEFT JOIN ' . rex::getTable('pagestats_urlstatus') . ' us ON agg.url_hash = us.hash AND agg.url = us.url ';
         }
 
         $params = [

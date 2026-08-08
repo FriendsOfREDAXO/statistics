@@ -107,9 +107,10 @@ class RefererDetails
         $sql = rex_sql::factory();
         $rows = $sql->getArray(
             'SELECT date, count FROM ' . rex::getTable('pagestats_referer')
-            . ' WHERE referer = :referer AND date BETWEEN :start AND :end'
+            . ' WHERE referer_hash = :referer_hash AND referer = :referer AND date BETWEEN :start AND :end'
             . ' GROUP BY date ORDER BY count DESC',
             [
+                'referer_hash' => md5($this->referer),
                 'referer' => $this->referer,
                 'start' => $this->filter_date_helper->date_start->format('Y-m-d'),
                 'end' => $this->filter_date_helper->date_end->format('Y-m-d'),

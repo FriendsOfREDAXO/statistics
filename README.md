@@ -47,6 +47,12 @@ Medienaufrufe können auf zwei Arten erfasst werden:
 
 Alternativ kann das Addon über den REDAXO-Installer installiert werden.
 
+### Hinweis zum Update auf 3.7.0
+
+Beim Update auf 3.7.0 werden für bestehende URL- und Referrer-Daten Hashwerte nachgetragen und die zugehörigen Datenbankindizes neu aufgebaut. Bei großen Tabellen kann dieser Vorgang länger dauern und vorübergehend zusätzliche Datenbank- und Festplattenressourcen beanspruchen.
+
+Vor dem Update wird deshalb ein aktuelles Datenbank-Backup empfohlen. Installationen mit umfangreichen Statistikdaten sollten das Update in einem Wartungsfenster ausführen und vorab prüfen, ob ausreichend freier Speicherplatz verfügbar ist. Die Statistik-Erfassung wird während der Migration automatisch pausiert und anschließend wieder in den vorherigen Zustand versetzt.
+
 ## Architektur
 
 Das Addon besteht im Kern aus drei Bereichen:
@@ -88,7 +94,7 @@ Besonders wichtig sind Indizes für diese Abfragemuster:
 - URL-, Referrer- und Status-Auswertungen
 - Domain-Filter für Tages- und Besucherstatistiken
 
-Für sehr lange Felder wie URL und Referrer werden Prefix-Indizes verwendet. Der Grund ist die MySQL-/MariaDB-Key-Length-Grenze bei `utf8mb4`. REDAXOs Schema-Helper kann diese Prefix-Längen nicht direkt ausdrücken, deshalb werden die betroffenen Indizes in `install.php` per SQL ergänzt.
+Für sehr lange Felder wie URL und Referrer werden separate MD5-Hashspalten mit regulären REDAXO-Indizes verwendet. Der Originalwert bleibt vollständig erhalten und wird bei Abfragen zusätzlich verglichen, um Hashkollisionen auszuschließen. Dadurch bleibt das Schema trotz der MySQL-/MariaDB-Key-Length-Grenze vollständig über `rex_sql_table` und Deployment-Werkzeuge reproduzierbar.
 
 ### Optimierte Hotspots
 

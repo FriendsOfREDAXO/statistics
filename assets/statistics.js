@@ -725,6 +725,12 @@ $(document).on("rex:ready", function (event, container) {
 
     function buildTableOptions(orderIndex, caseInsensitive, element) {
         var pageLength = 10;
+        if (element && element.dataset && element.dataset.orderColumn) {
+            var parsedOrderIndex = parseInt(element.dataset.orderColumn, 10);
+            if (!isNaN(parsedOrderIndex) && parsedOrderIndex >= 0) {
+                orderIndex = parsedOrderIndex;
+            }
+        }
         if (element && element.dataset && element.dataset.pageLength) {
             var parsedPageLength = parseInt(element.dataset.pageLength, 10);
             if (!isNaN(parsedPageLength) && parsedPageLength > 0) {

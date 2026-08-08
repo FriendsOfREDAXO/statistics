@@ -365,10 +365,10 @@ class rex_statistics_maintenance_cronjob extends rex_cronjob
         do {
             $affected = $this->runDeleteWithRetry(
                 'DELETE FROM ' . rex::getTable('pagestats_urlstatus')
-                . ' WHERE url IN ('
-                . 'SELECT stale.url FROM ('
-                . 'SELECT us.url FROM ' . rex::getTable('pagestats_urlstatus') . ' us '
-                . 'LEFT JOIN ' . rex::getTable('pagestats_visits_per_url') . ' v ON v.url = us.url '
+                . ' WHERE hash IN ('
+                . 'SELECT stale.hash FROM ('
+                . 'SELECT us.hash FROM ' . rex::getTable('pagestats_urlstatus') . ' us '
+                . 'LEFT JOIN ' . rex::getTable('pagestats_visits_per_url') . ' v ON v.url_hash = us.hash AND v.url = us.url '
                 . 'WHERE v.url IS NULL '
                 . 'LIMIT ' . (int) $chunkSize
                 . ') stale'

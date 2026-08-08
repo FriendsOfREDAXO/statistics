@@ -225,16 +225,22 @@ rex_sql_table::get(rex::getTable('pagestats_visits_per_url'))
     ->ensureColumn(new rex_sql_column('hash', 'varchar(255)'))
     ->ensureColumn(new rex_sql_column('date', 'date'))
     ->ensureColumn(new rex_sql_column('url', 'varchar(2048)'))
+    ->ensureColumn(new rex_sql_column('url_hash', 'char(32)', false, ''))
     ->ensureColumn(new rex_sql_column('count', 'int'))
     ->setPrimaryKey(['hash'])
+    ->ensureIndex(new rex_sql_index('date_url_hash', ['date', 'url_hash']))
+    ->ensureIndex(new rex_sql_index('url_hash_date', ['url_hash', 'date']))
     ->ensure();
 
 rex_sql_table::get(rex::getTable('pagestats_visitors_per_url'))
     ->ensureColumn(new rex_sql_column('hash', 'varchar(255)'))
     ->ensureColumn(new rex_sql_column('date', 'date'))
     ->ensureColumn(new rex_sql_column('url', 'varchar(2048)'))
+    ->ensureColumn(new rex_sql_column('url_hash', 'char(32)', false, ''))
     ->ensureColumn(new rex_sql_column('count', 'int'))
     ->setPrimaryKey(['hash'])
+    ->ensureIndex(new rex_sql_index('date_url_hash', ['date', 'url_hash']))
+    ->ensureIndex(new rex_sql_index('url_hash_date', ['url_hash', 'date']))
     ->ensure();
 
 rex_sql_table::get(rex::getTable('pagestats_urlstatus'))
@@ -264,9 +270,12 @@ rex_sql_table::get(rex::getTable('pagestats_referer'))
     ->removeColumn('id')
     ->ensureColumn(new rex_sql_column('hash', 'varchar(255)'))
     ->ensureColumn(new rex_sql_column('referer', 'varchar(2048)'))
+    ->ensureColumn(new rex_sql_column('referer_hash', 'char(32)', false, ''))
     ->ensureColumn(new rex_sql_column('date', 'date'))
     ->ensureColumn(new rex_sql_column('count', 'int'))
     ->setPrimaryKey(['hash'])
+    ->ensureIndex(new rex_sql_index('date_referer_hash', ['date', 'referer_hash']))
+    ->ensureIndex(new rex_sql_index('referer_hash_date', ['referer_hash', 'date']))
     ->ensure();
 
 rex_sql_table::get(rex::getTable('pagestats_sessionstats'))
@@ -297,29 +306,46 @@ rex_sql_table::get(rex::getTable('pagestats_api'))
     ->ensureIndex(new rex_sql_index('date_name', ['date', 'name']))
     ->ensure();
 
-// Long utf8mb4 URL/referer columns exceed MySQL's index length limit.
-// rex_sql_index cannot express prefix lengths, so these indexes are added manually.
-$ensurePrefixIndex = static function (string $table, string $indexName, string $indexSql) use ($sql): void {
-    $result = $sql->getArray(
+// Backfill hash columns for existing installations before hash-based lookups are used.
+$sql->setQuery(
+    'UPDATE ' . $sql->escapeIdentifier(rex::getTable('pagestats_visits_per_url'))
+    . ' SET url_hash = MD5(url) WHERE url_hash = ""'
+);
+$sql->setQuery(
+    'UPDATE ' . $sql->escapeIdentifier(rex::getTable('pagestats_visitors_per_url'))
+    . ' SET url_hash = MD5(url) WHERE url_hash = ""'
+);
+$sql->setQuery(
+    'UPDATE ' . $sql->escapeIdentifier(rex::getTable('pagestats_referer'))
+    . ' SET referer_hash = MD5(referer) WHERE referer_hash = ""'
+);
+
+// Remove legacy prefix indexes. rex_sql_table cannot reproduce their Sub_part metadata,
+// while the hash indexes above are fully portable through REDAXO schema tooling/ydeploy.
+$dropIndexIfExists = static function (string $table, string $indexName) use ($sql): void {
+    $indexes = $sql->getArray(
         'SHOW INDEX FROM ' . $sql->escapeIdentifier($table) . ' WHERE Key_name = :index_name',
         ['index_name' => $indexName]
     );
 
-    if ([] === $result) {
+    if ([] !== $indexes) {
         $sql->setQuery(
-            'ALTER TABLE ' . $sql->escapeIdentifier($table) . ' ADD INDEX ' . $sql->escapeIdentifier($indexName) . ' (' . $indexSql . ')'
+            'ALTER TABLE ' . $sql->escapeIdentifier($table)
+            . ' DROP INDEX ' . $sql->escapeIdentifier($indexName)
         );
     }
 };
 
-$ensurePrefixIndex(rex::getTable('pagestats_visits_per_url'), 'date_url', '`date`, `url`(191)');
-$ensurePrefixIndex(rex::getTable('pagestats_visits_per_url'), 'url_date', '`url`(191), `date`');
-$ensurePrefixIndex(rex::getTable('pagestats_visitors_per_url'), 'date_url', '`date`, `url`(191)');
-$ensurePrefixIndex(rex::getTable('pagestats_visitors_per_url'), 'url_date', '`url`(191), `date`');
-$ensurePrefixIndex(rex::getTable('pagestats_urlstatus'), 'url', '`url`(191)');
-$ensurePrefixIndex(rex::getTable('pagestats_urlstatus'), 'url_status', '`url`(191), `status`');
-$ensurePrefixIndex(rex::getTable('pagestats_referer'), 'date_referer', '`date`, `referer`(191)');
-$ensurePrefixIndex(rex::getTable('pagestats_referer'), 'referer_date', '`referer`(191), `date`');
+foreach (['date_url', 'url_date'] as $indexName) {
+    $dropIndexIfExists(rex::getTable('pagestats_visits_per_url'), $indexName);
+    $dropIndexIfExists(rex::getTable('pagestats_visitors_per_url'), $indexName);
+}
+foreach (['url', 'url_status'] as $indexName) {
+    $dropIndexIfExists(rex::getTable('pagestats_urlstatus'), $indexName);
+}
+foreach (['date_referer', 'referer_date'] as $indexName) {
+    $dropIndexIfExists(rex::getTable('pagestats_referer'), $indexName);
+}
 
 // Geo-Datenbank wird bewusst nicht mehr automatisch im Install/Reinstall geladen.
 // Die Aktualisierung erfolgt manuell ueber die Settings-Seite.

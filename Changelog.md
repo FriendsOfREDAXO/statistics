@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.7.0] - 07.08.2026
+
+-   Datenbankschema für Deployments gehärtet: nicht reproduzierbare Prefix-Indizes auf langen URL-/Referer-Spalten durch portable Hash-Spalten und reguläre REDAXO-Indizes ersetzt
+-   Bestehende Installationen werden beim Update/Reinstall vollständig migriert; URL- und Referer-Hashes werden nachgetragen und alte Prefix-Indizes entfernt, ohne Langwerte zu kürzen
+-   URL-/Referer-Abfragen, Status-Joins und Wartungsläufe verwenden die neuen Hash-Indizes mit zusätzlichem Vergleich des Originalwerts zur Kollisionsabsicherung
+-   Grundsortierung der Seitenaufrufe im Backend auf „Aufrufe“ absteigend korrigiert
+-   README um Hinweise zu Backup, Wartungsfenster und zusätzlichem Ressourcenbedarf beim Update großer Statistikbestände ergänzt
+
 ## [3.6.0] - 07.08.2026
 
 -   Unbenutzte Abhängigkeiten und Frontend-Assets bereinigt: `exceljs.min.js` und `jspdf.umd.min.js` entfernt sowie die nicht mehr benötigten Composer-Abhängigkeiten `phpoffice/phpspreadsheet` und `matomo/referrer-spam-blacklist` aus dem Addon entfernt

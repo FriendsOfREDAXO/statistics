@@ -83,7 +83,10 @@ class PageDetails
     {
         $details_page_total = rex_sql::factory();
 
-        $details_page_total->setQuery('SELECT sum(count) as "count" FROM ' . rex::getTable('pagestats_visits_per_url') . ' WHERE url = :url', ['url' => $this->url]);
+        $details_page_total->setQuery(
+            'SELECT sum(count) as "count" FROM ' . rex::getTable('pagestats_visits_per_url') . ' WHERE url_hash = :url_hash AND url = :url',
+            ['url_hash' => md5($this->url), 'url' => $this->url]
+        );
 
         $details_page_total = $details_page_total->getValue('count') ? intval($details_page_total->getValue('count')) : 0;
 
@@ -142,9 +145,10 @@ class PageDetails
         $sql = rex_sql::factory();
         $rows = $sql->getArray(
             'SELECT date, count FROM ' . rex::getTable('pagestats_visits_per_url')
-            . ' WHERE url = :url AND date BETWEEN :start AND :end'
+            . ' WHERE url_hash = :url_hash AND url = :url AND date BETWEEN :start AND :end'
             . ' ORDER BY count DESC',
             [
+                'url_hash' => md5($this->url),
                 'url' => $this->url,
                 'start' => $this->filter_date_helper->date_start->format('Y-m-d'),
                 'end' => $this->filter_date_helper->date_end->format('Y-m-d'),
