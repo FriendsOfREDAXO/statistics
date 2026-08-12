@@ -255,18 +255,20 @@ class Pages
                 . ') vis ON vis.url_hash = agg.url_hash AND vis.url = agg.url ';
         }
 
-        if ('200' === $httpstatus) {
-            $query .= 'INNER JOIN ' . rex::getTable('pagestats_urlstatus') . ' us ON agg.url_hash = us.hash AND agg.url = us.url AND us.status = "200 OK" ';
-        } elseif ('not200' === $httpstatus) {
-            $query .= 'INNER JOIN ' . rex::getTable('pagestats_urlstatus') . ' us ON agg.url_hash = us.hash AND agg.url = us.url AND us.status != "200 OK" ';
-        } else {
-            $query .= 'LEFT JOIN ' . rex::getTable('pagestats_urlstatus') . ' us ON agg.url_hash = us.hash AND agg.url = us.url ';
-        }
-
         $params = [
             'start' => $this->filter_date_helper->date_start->format('Y-m-d'),
             'end' => $this->filter_date_helper->date_end->format('Y-m-d'),
         ];
+
+        if ('200' === $httpstatus) {
+            $query .= 'INNER JOIN ' . rex::getTable('pagestats_urlstatus') . ' us ON agg.url_hash = us.hash AND agg.url = us.url AND us.status LIKE :status_ok_prefix ';
+            $params['status_ok_prefix'] = '200%';
+        } elseif ('not200' === $httpstatus) {
+            $query .= 'INNER JOIN ' . rex::getTable('pagestats_urlstatus') . ' us ON agg.url_hash = us.hash AND agg.url = us.url AND us.status NOT LIKE :status_ok_prefix ';
+            $params['status_ok_prefix'] = '200%';
+        } else {
+            $query .= 'LEFT JOIN ' . rex::getTable('pagestats_urlstatus') . ' us ON agg.url_hash = us.hash AND agg.url = us.url ';
+        }
 
         if ([] !== $favoriteUrls) {
             $favoritePlaceholders = [];

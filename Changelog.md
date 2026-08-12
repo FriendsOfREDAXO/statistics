@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.7.1] - 12.08.2026
+
+-   Fehler in der Wartungsaktion „Nicht-200-URLs bereinigen“ korrigiert: 200er-Status werden jetzt robust per Präfixprüfung (`200%`) behandelt und nicht mehr versehentlich mitgelöscht
+-   Statusfilter in Seitenauswertung und Chart-Daten vereinheitlicht: 200er-Status (z. B. `200` und `200 OK`) werden konsistent per Präfix erkannt, statt auf einen einzelnen exakten Status-String festgelegt zu sein
+-   README erweitert um eine transparente Liste typischer Störanfragen-Muster sowie Hinweise auf konfigurierbare Zusatzfilter
+
 ## [3.7.0] - 07.08.2026
 
 -   Datenbankschema für Deployments gehärtet: nicht reproduzierbare Prefix-Indizes auf langen URL-/Referer-Spalten durch portable Hash-Spalten und reguläre REDAXO-Indizes ersetzt
@@ -7,12 +13,14 @@
 -   URL-/Referer-Abfragen, Status-Joins und Wartungsläufe verwenden die neuen Hash-Indizes mit zusätzlichem Vergleich des Originalwerts zur Kollisionsabsicherung
 -   Grundsortierung der Seitenaufrufe im Backend auf „Aufrufe“ absteigend korrigiert
 -   README um Hinweise zu Backup, Wartungsfenster und zusätzlichem Ressourcenbedarf beim Update großer Statistikbestände ergänzt
+-   Automatischen Frontend-Asset-Workflow repariert: npm-Versionslisten werden robust auf stabile Major-Versionen gefiltert, ungültige Versionsvorgaben abgewiesen und GitHub Actions auf Node.js 24 aktualisiert
+-   Fehler in der Wartungsaktion „Nicht-200-URLs bereinigen“ behoben: 200er-Status werden nicht mehr fälschlich als Nicht-200 behandelt
 
 ## [3.6.0] - 07.08.2026
 
 -   Unbenutzte Abhängigkeiten und Frontend-Assets bereinigt: `exceljs.min.js` und `jspdf.umd.min.js` entfernt sowie die nicht mehr benötigten Composer-Abhängigkeiten `phpoffice/phpspreadsheet` und `matomo/referrer-spam-blacklist` aus dem Addon entfernt
 -   Release-Paketierung ergänzt: Entwicklungsordner `.tools` und `.github` werden über `installer_ignore` sowie per `.gitattributes` (`export-ignore`) aus Release-Archiven ausgeschlossen
--   Frontend-Vendor-Assets aktualisiert (DataTables auf 1.13.11, ECharts auf 5.6.1) und automatischen GitHub-Workflow für regelmäßige Asset-Update-PRs ergänzt (`.github/workflows/update-frontend-assets.yml`)
+-   Frontend-Vendor-Assets aktualisiert (DataTables auf 1.13.11, ECharts auf 5.6.0) und automatischen GitHub-Workflow für regelmäßige Asset-Update-PRs ergänzt (`.github/workflows/update-frontend-assets.yml`)
 -   Tracking-SQL gehärtet und vereinheitlicht: bisherige String-SQL mit `addslashes` in `Visit` auf parametrisierte Upsert-Queries umgestellt, wiederholte Counter-Upserts in `Visit`/`EventRequest` über interne Helper konsolidiert und den `pagestats_data`-Write-Path per Bulk-Upsert reduziert
 -   Data-Aggregationen für Browser/Brand/Browsertype/OS/Model/Country/Hour/Weekday zusammengeführt: statt mehrerer Einzelabfragen je Klasse werden die Typen zentral über eine gemeinsame Query geladen und intern wiederverwendet
 -   REDAXO-Härtung ergänzt: direkte `$_SERVER`-Zugriffe in `Visit`/`EventRequest` durch REDAXO-Serverzugriff ersetzt (u. a. Client-Hints und `HTTP_VIA`)

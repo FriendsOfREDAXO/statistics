@@ -53,6 +53,25 @@ Beim Update auf 3.7.0 werden für bestehende URL- und Referrer-Daten Hashwerte n
 
 Vor dem Update wird deshalb ein aktuelles Datenbank-Backup empfohlen. Installationen mit umfangreichen Statistikdaten sollten das Update in einem Wartungsfenster ausführen und vorab prüfen, ob ausreichend freier Speicherplatz verfügbar ist. Die Statistik-Erfassung wird während der Migration automatisch pausiert und anschließend wieder in den vorherigen Zustand versetzt.
 
+### Störanfragen-Filter (Bereinigung)
+
+Die Wartungsaktion „Störanfragen bereinigen“ und der optionale Wartungs-Cronjob verwenden eine zentrale Pattern-Liste. Standardmäßig werden unter anderem folgende Request-Muster als Störanfragen behandelt:
+
+- WordPress-Scans: `/wp-login.php`, `/wp-json`, `/wp-config`, `/wp-admin`, `/wp-includes/`, `/wp-content/`
+- XML-RPC und ähnliche Scanner-Ziele: `/xmlrpc.php`, `/wlwmanifest.xml`
+- CMS/Shop-Scans: `/drupal`, `/joomla`, `/magento`, `/prestashop`, `/typo3`, `/shopware`
+- Admin-/Backend-Scanner: `/administrator`, `/admin/login`, `/admin/`, `/api/`, `/api`
+- Datenbank-/Server-Endpoints: `/adminer`, `/adminer.php`, `/phpmyadmin`, `/phpmyadmin2`, `/pma`, `/dbadmin`, `/myadmin`, `/webadmin`, `/mysql`, `/phpinfo.php`, `/server-status`, `/server-info`, `/cgi-bin/`
+- Mail-/Webzugriff und typische Probeziele: `/webmail`, `/roundcube`, `/.git/`, `/vendor/phpunit`, `apple-touch`, `/.well-known/security.txt`, `/.env`, `/.htaccess`
+- Verdächtige Dateiendungs-Zugriffe: `.php`, `.json`, `.xml`, `.yml`, `.save`, `.ini`, `.log`, `.bak`, `.old`, `.sql`
+
+Zusätzlich können in den Addon-Einstellungen eigene Regeln gepflegt werden:
+
+- `statistics_ignored_path_contains`: Ein Fragment pro Zeile, wird als „enthält“-Muster verwendet.
+- `statistics_ignored_path_ends`: Eine Endung pro Zeile, wird als „endet auf“-Muster verwendet.
+
+Damit ist nachvollziehbar, welche Anfragen bei der Bereinigung aus den Statistikdaten entfernt werden.
+
 ## Architektur
 
 Das Addon besteht im Kern aus drei Bereichen:
@@ -143,7 +162,7 @@ Aktuell enthalten:
 - `.tools/update-frontend-assets.sh`
     - Aktualisiert die vendorten Frontend-Dateien in `assets/` (DataTables und ECharts) auf die neueste Version der freigegebenen Major-Linien.
     - Typischer Aufruf: `bash .tools/update-frontend-assets.sh`
-    - Optional lassen sich Zielversionen setzen: `DT_VERSION=1.13.11 ECHARTS_VERSION=5.6.1 bash .tools/update-frontend-assets.sh`
+    - Optional lassen sich Zielversionen setzen: `DT_VERSION=1.13.11 ECHARTS_VERSION=5.6.0 bash .tools/update-frontend-assets.sh`
 
 Hinweis:
 

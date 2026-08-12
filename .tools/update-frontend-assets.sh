@@ -4,16 +4,45 @@ set -euo pipefail
 ADDON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ASSETS_DIR="${ADDON_DIR}/assets"
 
-get_latest_datatables_v1() {
-  node -e "const cp=require('child_process');const versions=JSON.parse(cp.execSync('npm view datatables.net@1 versions --json',{encoding:'utf8'}));console.log(versions[versions.length-1]);"
+get_latest_stable_version() {
+  local package_name="$1"
+  local major="$2"
+
+  node - "${package_name}" "${major}" <<'NODE'
+const childProcess = require('node:child_process');
+
+const packageName = process.argv[2];
+const major = process.argv[3];
+const output = childProcess.execFileSync(
+  'npm',
+  ['view', packageName, 'versions', '--json'],
+  {encoding: 'utf8'},
+);
+const versions = [JSON.parse(output)]
+  .flat(Infinity)
+  .filter((version) => new RegExp(`^${major}\\.\\d+\\.\\d+$`).test(version))
+  .sort((left, right) => left.localeCompare(right, 'en', {numeric: true}));
+
+if (versions.length === 0) {
+  throw new Error(`No stable ${packageName} ${major}.x version found`);
 }
 
-get_latest_echarts_v5() {
-  node -e "const cp=require('child_process');const versions=JSON.parse(cp.execSync('npm view echarts@5 versions --json',{encoding:'utf8'}));console.log(versions[versions.length-1]);"
+process.stdout.write(versions.at(-1));
+NODE
 }
 
-DT_VERSION="${DT_VERSION:-$(get_latest_datatables_v1)}"
-ECHARTS_VERSION="${ECHARTS_VERSION:-$(get_latest_echarts_v5)}"
+DT_VERSION="${DT_VERSION:-$(get_latest_stable_version datatables.net 1)}"
+ECHARTS_VERSION="${ECHARTS_VERSION:-$(get_latest_stable_version echarts 5)}"
+
+if [[ ! "${DT_VERSION}" =~ ^1\.[0-9]+\.[0-9]+$ ]]; then
+  echo "Invalid DataTables 1.x version: ${DT_VERSION}" >&2
+  exit 1
+fi
+
+if [[ ! "${ECHARTS_VERSION}" =~ ^5\.[0-9]+\.[0-9]+$ ]]; then
+  echo "Invalid ECharts 5.x version: ${ECHARTS_VERSION}" >&2
+  exit 1
+fi
 
 DT_JS_URL="https://cdn.datatables.net/v/bs/dt-${DT_VERSION}/datatables.min.js"
 DT_CSS_URL="https://cdn.datatables.net/v/bs/dt-${DT_VERSION}/datatables.min.css"

@@ -17,9 +17,9 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Update vendored frontend assets
         run: bash .tools/update-frontend-assets.sh
@@ -35,7 +35,7 @@ jobs:
 
       - name: Create Pull Request
         if: steps.changes.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: chore/statistics-update-frontend-assets
           commit-message: "chore(statistics): Frontend-Assets aktualisieren"

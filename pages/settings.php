@@ -389,11 +389,11 @@ if (rex_request_method() == 'post') {
                     . ' WHERE url IN ('
                     . 'SELECT stale.url FROM ('
                     . 'SELECT us.url FROM ' . $statusTable . ' us '
-                    . 'WHERE us.status <> :status_ok '
+                    . 'WHERE us.status NOT LIKE :status_ok_prefix '
                     . 'LIMIT ' . (int) $chunkSize
                     . ') stale'
                     . ')',
-                    [':status_ok' => '200']
+                    [':status_ok_prefix' => '200%']
                 );
 
                 $affectedVisitors = $runDeleteWithRetry(
@@ -401,16 +401,16 @@ if (rex_request_method() == 'post') {
                     . ' WHERE url IN ('
                     . 'SELECT stale.url FROM ('
                     . 'SELECT us.url FROM ' . $statusTable . ' us '
-                    . 'WHERE us.status <> :status_ok '
+                    . 'WHERE us.status NOT LIKE :status_ok_prefix '
                     . 'LIMIT ' . (int) $chunkSize
                     . ') stale'
                     . ')',
-                    [':status_ok' => '200']
+                    [':status_ok_prefix' => '200%']
                 );
 
                 $affectedStatus = $runDeleteWithRetry(
-                    'DELETE FROM ' . $statusTable . ' WHERE status <> :status_ok LIMIT ' . (int) $chunkSize,
-                    [':status_ok' => '200']
+                    'DELETE FROM ' . $statusTable . ' WHERE status NOT LIKE :status_ok_prefix LIMIT ' . (int) $chunkSize,
+                    [':status_ok_prefix' => '200%']
                 );
 
                 $count += $affectedVisits + $affectedVisitors + $affectedStatus;

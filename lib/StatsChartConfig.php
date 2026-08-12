@@ -146,8 +146,13 @@ class StatsChartConfig
             'dataset' => [
                 [
                     'id' => 'dataset_raw',
-                    'dimensions' => ['url', 'count', 'status', 'zero'],
-                    'source' => $source,
+                    'dimensions' => ['url', 'count', 'status', 'is_ok', 'zero'],
+                    'source' => array_map(static function (array $row): array {
+                        $status = (string) ($row['status'] ?? '');
+                        $row['is_ok'] = str_starts_with($status, '200') ? 1 : 0;
+
+                        return $row;
+                    }, $source),
                 ],
                 [
                     'id' => 'ds0',
@@ -166,8 +171,8 @@ class StatsChartConfig
                     'transform' => [[
                         'type' => 'filter',
                         'config' => [
-                            'dimension' => 'status',
-                            '=' => '200 OK',
+                            'dimension' => 'is_ok',
+                            '=' => 1,
                         ],
                     ]],
                 ],
@@ -177,8 +182,8 @@ class StatsChartConfig
                     'transform' => [[
                         'type' => 'filter',
                         'config' => [
-                            'dimension' => 'status',
-                            '!=' => '200 OK',
+                            'dimension' => 'is_ok',
+                            '=' => 0,
                         ],
                     ]],
                 ],
@@ -210,7 +215,7 @@ class StatsChartConfig
 
             $labels[] = $label;
 
-            if ('200 OK' === $status) {
+            if (str_starts_with($status, '200')) {
                 $okValues[] = $count;
                 $notOkValues[] = 0;
             } else {
