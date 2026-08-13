@@ -2,7 +2,7 @@
 
 Dieses Addon stellt im REDAXO CMS eine serverseitige Besucherzählung bereit und visualisiert die erfassten Metriken im Backend mit ECharts und DataTables.
 
-## Features
+## Features 
 
 Erfasst und visualisiert werden unter anderem diese Metriken:
 
