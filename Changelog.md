@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.7.8] - 13.08.2026
+## [3.7.3] - 13.08.2026
 
 -   Mehrere XSS-Sicherheitslücken im Backend geschlossen: getrackte URLs werden in JSON-Script-Blöcken sicher kodiert und URL-/Domain-Ausgaben kontextgerecht escaped
 -   Weitere Backend-XSS-Risiken in Datumsfilter-Attributen und dynamischen Detailüberschriften behoben; dafür werden die REDAXO-Core-Escaper zentral verwendet
