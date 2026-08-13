@@ -1,12 +1,12 @@
 # Changelog
 
-## [3.7.2] - 13.08.2026
+## [3.7.8] - 13.08.2026
 
 -   Mehrere XSS-Sicherheitslücken im Backend geschlossen: getrackte URLs werden in JSON-Script-Blöcken sicher kodiert und URL-/Domain-Ausgaben kontextgerecht escaped
 -   Weitere Backend-XSS-Risiken in Datumsfilter-Attributen und dynamischen Detailüberschriften behoben; dafür werden die REDAXO-Core-Escaper zentral verwendet
 -   HTML-Ausgaben im Add-on vollständig auf den REDAXO-Core-Escaper `rex_escape()` vereinheitlicht
 -   Zustandsändernde Backend-Formulare und Aktionslinks gegen CSRF abgesichert: Wartungsaktionen, GeoIP-Update, Seiten-Favoriten, URL-Ignorierung sowie Event- und Medienlöschungen; REDAXO-generierte Konfigurationsformulare verwenden weiterhin ihren integrierten CSRF-Schutz
--   Mindestanforderung auf PHP 8.4 angehoben; Composer-Plattform und CI prüfen jetzt ausschließlich PHP 8.4 oder höher
+-   Mindestanforderung auf PHP 8.2 festgelegt; Composer-Plattform und CI prüfen PHP 8.2, 8.3 und 8.4
 
 ## [3.7.1] - 12.08.2026
 

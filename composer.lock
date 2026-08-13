@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0b225fc16b513d42b140486832f651d8",
+    "content-hash": "15e3e375dd0b87033bbaf54e6b3a3622",
     "packages": [
         {
             "name": "geoip2/geoip2",
@@ -400,7 +400,7 @@
     "platform": {},
     "platform-dev": {},
     "platform-overrides": {
-        "php": "8.4"
+        "php": "8.2"
     },
     "plugin-api-version": "2.6.0"
 }
