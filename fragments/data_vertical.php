@@ -11,9 +11,9 @@ $modalId = (string) $this->getVar('modalid', '');
         <div class="panel panel-default">
             <header class="panel-heading">
                 <div class="panel-title" style="display:flex; align-items:center;">
-                    <b><?php echo htmlspecialchars($title, ENT_QUOTES); ?></b>
+                    <b><?php echo rex_escape($title); ?></b>
                     <?php if ('' !== $note && '' !== $modalId) : ?>
-                        <button type="button" class="btn btn-link" data-toggle="modal" data-target="#<?= htmlspecialchars($modalId, ENT_QUOTES); ?>">
+                        <button type="button" class="btn btn-link" data-toggle="modal" data-target="#<?= rex_escape($modalId); ?>">
                             <i class="rex-icon fa-fw rex-icon-info"></i>
                         </button>
                     <?php endif ?>
@@ -35,12 +35,12 @@ $modalId = (string) $this->getVar('modalid', '');
 
 <?php if ('' !== $note && '' !== $modalId) : ?>
 
-    <div class="modal fade" id="<?= htmlspecialchars($modalId, ENT_QUOTES); ?>">
+    <div class="modal fade" id="<?= rex_escape($modalId); ?>">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
-                    <h4 class="modal-title" id="myModalLabel"><b><?= htmlspecialchars($title, ENT_QUOTES); ?></b></h4>
+                    <h4 class="modal-title" id="myModalLabel"><b><?= rex_escape($title); ?></b></h4>
                 </div>
                 <div class="modal-body">
                     <?= $note; ?>

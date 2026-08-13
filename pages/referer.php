@@ -25,7 +25,7 @@ if ($request_ref !== '') {
     echo StatsSubpageRenderer::renderInfoSection(
         $addon->i18n('statistics_details_for'),
         $request_ref,
-        '<a target="_blank" href="' . htmlspecialchars($request_ref, ENT_QUOTES) . '">' . htmlspecialchars($request_ref, ENT_QUOTES) . '</a><div id="chart_details" style="height:500px; width:auto"></div>' . StatsChartConfig::renderScript('chart_details', StatsChartConfig::buildTimelineOption($sum_data['labels'], $sum_data['values'])) . $refererDetails->getList()
+        '<a target="_blank" href="' . rex_escape($request_ref) . '">' . rex_escape($request_ref) . '</a><div id="chart_details" style="height:500px; width:auto"></div>' . StatsChartConfig::renderScript('chart_details', StatsChartConfig::buildTimelineOption($sum_data['labels'], $sum_data['values'])) . $refererDetails->getList()
     );
 }
 
@@ -83,9 +83,9 @@ if ([] === $refererRows) {
     $topReferersMax = max(array_map(static fn (array $row): int => (int) $row['count'], $topReferers));
 
     $kpiBody = '<div class="row">';
-    $kpiBody .= '<div class="col-sm-4"><div class="panel panel-default statistics-kpi-panel"><div class="panel-body"><div class="text-muted">' . htmlspecialchars($addon->i18n('statistics_referer_kpi_total_calls'), ENT_QUOTES) . '</div><div style="font-size:28px;font-weight:700;line-height:1.2;">' . htmlspecialchars((string) $totalRefererCalls, ENT_QUOTES) . '</div></div></div></div>';
-    $kpiBody .= '<div class="col-sm-4"><div class="panel panel-default statistics-kpi-panel"><div class="panel-body"><div class="text-muted">' . htmlspecialchars($addon->i18n('statistics_referer_kpi_unique_referers'), ENT_QUOTES) . '</div><div style="font-size:28px;font-weight:700;line-height:1.2;">' . htmlspecialchars((string) count($refererRows), ENT_QUOTES) . '</div></div></div></div>';
-    $kpiBody .= '<div class="col-sm-4"><div class="panel panel-default statistics-kpi-panel"><div class="panel-body"><div class="text-muted">' . htmlspecialchars($addon->i18n('statistics_referer_kpi_unique_hosts'), ENT_QUOTES) . '</div><div style="font-size:28px;font-weight:700;line-height:1.2;">' . htmlspecialchars((string) count($hostCounts), ENT_QUOTES) . '</div></div></div></div>';
+    $kpiBody .= '<div class="col-sm-4"><div class="panel panel-default statistics-kpi-panel"><div class="panel-body"><div class="text-muted">' . rex_escape($addon->i18n('statistics_referer_kpi_total_calls')) . '</div><div style="font-size:28px;font-weight:700;line-height:1.2;">' . rex_escape((string) $totalRefererCalls) . '</div></div></div></div>';
+    $kpiBody .= '<div class="col-sm-4"><div class="panel panel-default statistics-kpi-panel"><div class="panel-body"><div class="text-muted">' . rex_escape($addon->i18n('statistics_referer_kpi_unique_referers')) . '</div><div style="font-size:28px;font-weight:700;line-height:1.2;">' . rex_escape((string) count($refererRows)) . '</div></div></div></div>';
+    $kpiBody .= '<div class="col-sm-4"><div class="panel panel-default statistics-kpi-panel"><div class="panel-body"><div class="text-muted">' . rex_escape($addon->i18n('statistics_referer_kpi_unique_hosts')) . '</div><div style="font-size:28px;font-weight:700;line-height:1.2;">' . rex_escape((string) count($hostCounts)) . '</div></div></div></div>';
     $kpiBody .= '</div>';
 
     $hostBody = '<div class="row">';
@@ -97,8 +97,8 @@ if ([] === $refererRows) {
             $hostShare = $topHostMax > 0 ? (int) round(($hostCount / $topHostMax) * 100) : 0;
             $hostBody .= '<div class="col-sm-6 col-md-4">';
             $hostBody .= '<div class="statistics-ref-host-card">';
-            $hostBody .= '<div class="statistics-ref-host-title" title="' . htmlspecialchars((string) $host, ENT_QUOTES) . '">' . htmlspecialchars((string) $host, ENT_QUOTES) . '</div>';
-            $hostBody .= '<div class="statistics-ref-host-count">' . htmlspecialchars((string) $hostCount, ENT_QUOTES) . '</div>';
+            $hostBody .= '<div class="statistics-ref-host-title" title="' . rex_escape((string) $host) . '">' . rex_escape((string) $host) . '</div>';
+            $hostBody .= '<div class="statistics-ref-host-count">' . rex_escape((string) $hostCount) . '</div>';
             $hostBody .= '<div class="statistics-ref-meter"><div class="statistics-ref-meter-bar" style="width:' . $hostShare . '%"></div></div>';
             $hostBody .= '</div>';
             $hostBody .= '</div>';
@@ -118,9 +118,9 @@ if ([] === $refererRows) {
         $topShare = $topReferersMax > 0 ? (int) round(($count / $topReferersMax) * 100) : 0;
 
         $topBody .= '<div class="col-sm-6">';
-        $topBody .= '<a class="statistics-ref-top-card" href="' . htmlspecialchars($detailUrl, ENT_QUOTES) . '">';
-        $topBody .= '<div class="statistics-ref-top-url" title="' . htmlspecialchars($referer, ENT_QUOTES) . '">' . htmlspecialchars($referer, ENT_QUOTES) . '</div>';
-        $topBody .= '<div class="statistics-ref-top-count">' . htmlspecialchars((string) $count, ENT_QUOTES) . '</div>';
+        $topBody .= '<a class="statistics-ref-top-card" href="' . rex_escape($detailUrl) . '">';
+        $topBody .= '<div class="statistics-ref-top-url" title="' . rex_escape($referer) . '">' . rex_escape($referer) . '</div>';
+        $topBody .= '<div class="statistics-ref-top-count">' . rex_escape((string) $count) . '</div>';
         $topBody .= '<div class="statistics-ref-meter"><div class="statistics-ref-meter-bar" style="width:' . $topShare . '%"></div></div>';
         $topBody .= '</a>';
         $topBody .= '</div>';
@@ -132,7 +132,7 @@ if ([] === $refererRows) {
     echo StatsSubpageRenderer::renderSection($addon->i18n('statistics_referer_top_referers_heading'), $topBody);
 
     $table = '<table class="table-bordered dt_order_second statistics_table table-striped table-hover table">';
-    $table .= '<thead><tr><th>' . htmlspecialchars($addon->i18n('statistics_referer'), ENT_QUOTES) . '</th><th>' . htmlspecialchars($addon->i18n('statistics_count'), ENT_QUOTES) . '</th></tr></thead><tbody>';
+    $table .= '<thead><tr><th>' . rex_escape($addon->i18n('statistics_referer')) . '</th><th>' . rex_escape($addon->i18n('statistics_count')) . '</th></tr></thead><tbody>';
 
     foreach ($refererRows as $row) {
         $referer = (string) $row['referer'];
@@ -144,8 +144,8 @@ if ([] === $refererRows) {
         ]);
 
         $table .= '<tr>';
-        $table .= '<td><a href="' . htmlspecialchars($detailUrl, ENT_QUOTES) . '">' . htmlspecialchars($referer, ENT_QUOTES) . '</a></td>';
-        $table .= '<td data-sort="' . htmlspecialchars($count, ENT_QUOTES) . '">' . htmlspecialchars($count, ENT_QUOTES) . '</td>';
+        $table .= '<td><a href="' . rex_escape($detailUrl) . '">' . rex_escape($referer) . '</a></td>';
+        $table .= '<td data-sort="' . rex_escape($count) . '">' . rex_escape($count) . '</td>';
         $table .= '</tr>';
     }
 

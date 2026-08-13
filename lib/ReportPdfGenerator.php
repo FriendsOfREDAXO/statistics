@@ -350,11 +350,11 @@ class ReportPdfGenerator
         $html .= '</style></head><body>';
 
         $html .= '<div class="header">';
-        $html .= '<p class="title">' . htmlspecialchars($title, ENT_QUOTES) . '</p>';
-        $html .= '<p class="sub">' . htmlspecialchars($periodLabel, ENT_QUOTES) . ' | '
-            . htmlspecialchars($start->format('d.m.Y') . ' - ' . $end->format('d.m.Y'), ENT_QUOTES)
+        $html .= '<p class="title">' . rex_escape($title) . '</p>';
+        $html .= '<p class="sub">' . rex_escape($periodLabel) . ' | '
+            . rex_escape($start->format('d.m.Y') . ' - ' . $end->format('d.m.Y'))
             . '</p>';
-        $html .= '<p class="sub">' . htmlspecialchars($this->addon->i18n('statistics_report_generated_at') . ': ' . $generated, ENT_QUOTES) . '</p>';
+        $html .= '<p class="sub">' . rex_escape($this->addon->i18n('statistics_report_generated_at') . ': ' . $generated) . '</p>';
         $html .= '</div>';
 
         $html .= '<table class="kpis"><tr>';
@@ -364,57 +364,57 @@ class ReportPdfGenerator
         $html .= $this->renderKpiCard($this->addon->i18n('statistics_report_kpi_active_days'), (string) $kpi['activeDays']);
         $html .= '</tr></table>';
 
-        $html .= '<p class="small"><strong>' . htmlspecialchars($this->addon->i18n('statistics_report_kpi_top_page'), ENT_QUOTES) . ':</strong> '
-            . htmlspecialchars($kpi['topPage'], ENT_QUOTES) . ' (' . (int) $kpi['topPageCount'] . ')</p>';
-        $html .= '<p class="small"><strong>' . htmlspecialchars($this->addon->i18n('statistics_report_kpi_top_referer'), ENT_QUOTES) . ':</strong> '
-            . htmlspecialchars($kpi['topReferer'], ENT_QUOTES) . ' (' . (int) $kpi['topRefererCount'] . ')</p>';
+        $html .= '<p class="small"><strong>' . rex_escape($this->addon->i18n('statistics_report_kpi_top_page')) . ':</strong> '
+            . rex_escape($kpi['topPage']) . ' (' . (int) $kpi['topPageCount'] . ')</p>';
+        $html .= '<p class="small"><strong>' . rex_escape($this->addon->i18n('statistics_report_kpi_top_referer')) . ':</strong> '
+            . rex_escape($kpi['topReferer']) . ' (' . (int) $kpi['topRefererCount'] . ')</p>';
 
         $html .= '<div class="graphics-grid">';
         $html .= '<div class="graphics-card">';
-        $html .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_traffic_title'), ENT_QUOTES) . '</h3>';
+        $html .= '<h3>' . rex_escape($this->addon->i18n('statistics_report_graph_traffic_title')) . '</h3>';
         $html .= $this->renderTrafficCompareBars($kpi['visits'], $kpi['visitors']);
         $html .= '</div>';
         $html .= '</div>';
 
         $html .= '<div class="graphics-grid">';
         $html .= '<div class="graphics-card">';
-        $html .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_daily_title'), ENT_QUOTES) . '</h3>';
+        $html .= '<h3>' . rex_escape($this->addon->i18n('statistics_report_graph_daily_title')) . '</h3>';
         $html .= $this->renderDailyBars($dailyVisits);
         $html .= '</div>';
         $html .= '</div>';
 
         $html .= '<div class="graphics-grid">';
         $html .= '<div class="graphics-card graphics-card-full">';
-        $html .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_device_types_title'), ENT_QUOTES) . '</h3>';
+        $html .= '<h3>' . rex_escape($this->addon->i18n('statistics_report_graph_device_types_title')) . '</h3>';
         $html .= $this->renderTopBarList($deviceTypes, '#8a5cf6', true);
         $html .= '</div>';
         $html .= '</div>';
 
         $html .= '<div class="graphics-grid">';
         $html .= '<div class="graphics-card">';
-        $html .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_top_pages_title'), ENT_QUOTES) . '</h3>';
+        $html .= '<h3>' . rex_escape($this->addon->i18n('statistics_report_graph_top_pages_title')) . '</h3>';
         $html .= $this->renderTopBarList($topPages, '#2f80c8', false, 6);
         $html .= '</div>';
         $html .= '</div>';
 
         $html .= '<div class="graphics-grid">';
         $html .= '<div class="graphics-card">';
-        $html .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_top_referers_title'), ENT_QUOTES) . '</h3>';
+        $html .= '<h3>' . rex_escape($this->addon->i18n('statistics_report_graph_top_referers_title')) . '</h3>';
         $html .= $this->renderTopBarList($topReferers, '#20a39e', false, 6);
         $html .= '</div>';
         $html .= '</div>';
 
         $html .= '<div class="section">';
-        $html .= '<h2>' . htmlspecialchars($this->addon->i18n('statistics_report_top_pages_title'), ENT_QUOTES) . '</h2>';
+        $html .= '<h2>' . rex_escape($this->addon->i18n('statistics_report_top_pages_title')) . '</h2>';
         $html .= $this->renderTopTable($topPages);
         $html .= '</div>';
 
         $html .= '<div class="section">';
-        $html .= '<h2>' . htmlspecialchars($this->addon->i18n('statistics_report_top_referers_title'), ENT_QUOTES) . '</h2>';
+        $html .= '<h2>' . rex_escape($this->addon->i18n('statistics_report_top_referers_title')) . '</h2>';
         $html .= $this->renderTopTable($topReferers);
         $html .= '</div>';
 
-        $html .= '<p class="muted">' . htmlspecialchars($this->addon->i18n('statistics_report_footer_note'), ENT_QUOTES) . '</p>';
+        $html .= '<p class="muted">' . rex_escape($this->addon->i18n('statistics_report_footer_note')) . '</p>';
         $html .= '</body></html>';
 
         return $html;
@@ -423,8 +423,8 @@ class ReportPdfGenerator
     private function renderKpiCard(string $label, string $value): string
     {
         $html = '<td class="kpi">';
-        $html .= '<div class="klabel">' . htmlspecialchars($label, ENT_QUOTES) . '</div>';
-        $html .= '<div class="kvalue">' . htmlspecialchars($value, ENT_QUOTES) . '</div>';
+        $html .= '<div class="klabel">' . rex_escape($label) . '</div>';
+        $html .= '<div class="kvalue">' . rex_escape($value) . '</div>';
         $html .= '</td>';
 
         return $html;
@@ -444,17 +444,17 @@ class ReportPdfGenerator
         }
 
         $html = '<p class="legend">';
-        $html .= '<span class="legend-item"><span class="legend-dot" style="background:#2f80c8"></span>' . htmlspecialchars($this->addon->i18n('statistics_report_kpi_visits'), ENT_QUOTES) . '</span>';
-        $html .= '<span class="legend-item"><span class="legend-dot" style="background:#20a39e"></span>' . htmlspecialchars($this->addon->i18n('statistics_report_kpi_visitors'), ENT_QUOTES) . '</span>';
+        $html .= '<span class="legend-item"><span class="legend-dot" style="background:#2f80c8"></span>' . rex_escape($this->addon->i18n('statistics_report_kpi_visits')) . '</span>';
+        $html .= '<span class="legend-item"><span class="legend-dot" style="background:#20a39e"></span>' . rex_escape($this->addon->i18n('statistics_report_kpi_visitors')) . '</span>';
         $html .= '</p>';
 
         $html .= '<div class="compare-row">';
-        $html .= '<div class="compare-label">' . htmlspecialchars($this->addon->i18n('statistics_report_kpi_visits'), ENT_QUOTES) . ': ' . $visits . '</div>';
+        $html .= '<div class="compare-label">' . rex_escape($this->addon->i18n('statistics_report_kpi_visits')) . ': ' . $visits . '</div>';
         $html .= '<div class="compare-track"><div class="compare-fill" style="width:' . $visitsWidth . '%;background:#2f80c8;"></div></div>';
         $html .= '</div>';
 
         $html .= '<div class="compare-row">';
-        $html .= '<div class="compare-label">' . htmlspecialchars($this->addon->i18n('statistics_report_kpi_visitors'), ENT_QUOTES) . ': ' . $visitors . '</div>';
+        $html .= '<div class="compare-label">' . rex_escape($this->addon->i18n('statistics_report_kpi_visitors')) . ': ' . $visitors . '</div>';
         $html .= '<div class="compare-track"><div class="compare-fill-alt" style="width:' . $visitorsWidth . '%;background:#20a39e;"></div></div>';
         $html .= '</div>';
 
@@ -467,21 +467,21 @@ class ReportPdfGenerator
     private function renderDailyBars(array $dailyVisits): string
     {
         if ([] === $dailyVisits) {
-            return '<p class="small">' . htmlspecialchars($this->addon->i18n('statistics_no_data'), ENT_QUOTES) . '</p>';
+            return '<p class="small">' . rex_escape($this->addon->i18n('statistics_no_data')) . '</p>';
         }
 
         $bars = array_slice($dailyVisits, -10);
         $max = $this->resolveMaxCount($bars);
 
-        $html = '<p class="legend"><span class="legend-item"><span class="legend-dot" style="background:#2f80c8"></span>' . htmlspecialchars($this->addon->i18n('statistics_report_graph_daily_series_label'), ENT_QUOTES) . '</span></p>';
-        $html .= '<p class="chart-note">' . htmlspecialchars($this->addon->i18n('statistics_report_graph_max_label') . ': ' . (string) $max, ENT_QUOTES) . '</p>';
+        $html = '<p class="legend"><span class="legend-item"><span class="legend-dot" style="background:#2f80c8"></span>' . rex_escape($this->addon->i18n('statistics_report_graph_daily_series_label')) . '</span></p>';
+        $html .= '<p class="chart-note">' . rex_escape($this->addon->i18n('statistics_report_graph_max_label') . ': ' . (string) $max) . '</p>';
         $html .= '<table class="hbar-table">';
         foreach ($bars as $row) {
             $width = max(2, (int) round(($row['count'] / $max) * 100));
             $date = $row['date'];
             $count = $row['count'];
             $html .= '<tr>';
-            $html .= '<td class="hbar-label">' . htmlspecialchars($date, ENT_QUOTES) . '</td>';
+            $html .= '<td class="hbar-label">' . rex_escape($date) . '</td>';
             $html .= '<td class="hbar-track-cell"><div class="hbar-track"><div class="hbar-fill" style="width:' . $width . '%"></div></div></td>';
             $html .= '<td class="hbar-count">' . $count . '</td>';
             $html .= '</tr>';
@@ -497,12 +497,12 @@ class ReportPdfGenerator
     private function renderTopBarList(array $rows, string $color, bool $showShare = false, int $limit = 8): string
     {
         if ([] === $rows) {
-            return '<p class="small">' . htmlspecialchars($this->addon->i18n('statistics_no_data'), ENT_QUOTES) . '</p>';
+            return '<p class="small">' . rex_escape($this->addon->i18n('statistics_no_data')) . '</p>';
         }
 
         $list = array_slice($rows, 0, $limit);
         if ([] === $list) {
-            return '<p class="small">' . htmlspecialchars($this->addon->i18n('statistics_no_data'), ENT_QUOTES) . '</p>';
+            return '<p class="small">' . rex_escape($this->addon->i18n('statistics_no_data')) . '</p>';
         }
 
         $max = $this->resolveMaxCount($list);
@@ -527,8 +527,8 @@ class ReportPdfGenerator
                 $shareLabel = '<span class="hbar-meta">(' . str_replace('.', ',', (string) $share) . '%)</span>';
             }
             $html .= '<tr>';
-            $html .= '<td class="hbar-label">' . htmlspecialchars($row['item'], ENT_QUOTES) . '</td>';
-            $html .= '<td class="hbar-track-cell"><div class="hbar-track"><div class="hbar-fill" style="width:' . $width . '%;background:' . htmlspecialchars($color, ENT_QUOTES) . ';"></div></div></td>';
+            $html .= '<td class="hbar-label">' . rex_escape($row['item']) . '</td>';
+            $html .= '<td class="hbar-track-cell"><div class="hbar-track"><div class="hbar-fill" style="width:' . $width . '%;background:' . rex_escape($color) . ';"></div></div></td>';
             $html .= '<td class="hbar-count">' . $row['count'] . $shareLabel . '</td>';
             $html .= '</tr>';
         }
@@ -558,20 +558,20 @@ class ReportPdfGenerator
     private function renderTopTable(array $rows): string
     {
         if ([] === $rows) {
-            return '<p class="small">' . htmlspecialchars($this->addon->i18n('statistics_no_data'), ENT_QUOTES) . '</p>';
+            return '<p class="small">' . rex_escape($this->addon->i18n('statistics_no_data')) . '</p>';
         }
 
         $html = '<table class="list">';
         $html .= '<thead><tr>';
         $html .= '<th style="width:50px">#</th>';
-        $html .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_name'), ENT_QUOTES) . '</th>';
-        $html .= '<th style="width:90px">' . htmlspecialchars($this->addon->i18n('statistics_count'), ENT_QUOTES) . '</th>';
+        $html .= '<th>' . rex_escape($this->addon->i18n('statistics_name')) . '</th>';
+        $html .= '<th style="width:90px">' . rex_escape($this->addon->i18n('statistics_count')) . '</th>';
         $html .= '</tr></thead><tbody>';
 
         foreach ($rows as $index => $row) {
             $html .= '<tr>';
             $html .= '<td class="num">' . ($index + 1) . '</td>';
-            $html .= '<td>' . htmlspecialchars($row['item'], ENT_QUOTES) . '</td>';
+            $html .= '<td>' . rex_escape($row['item']) . '</td>';
             $html .= '<td class="num">' . $row['count'] . '</td>';
             $html .= '</tr>';
         }

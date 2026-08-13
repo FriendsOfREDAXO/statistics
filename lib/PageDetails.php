@@ -55,14 +55,14 @@ class PageDetails
         $addon = rex_addon::get('statistics');
 
         $table = '<table class="table-bordered dt_order_first statistics_table table-striped table-hover table">';
-        $table .= '<thead><tr><th>' . htmlspecialchars($addon->i18n('statistics_date'), ENT_QUOTES) . '</th><th>' . htmlspecialchars($addon->i18n('statistics_count'), ENT_QUOTES) . '</th></tr></thead><tbody>';
+        $table .= '<thead><tr><th>' . rex_escape($addon->i18n('statistics_date')) . '</th><th>' . rex_escape($addon->i18n('statistics_count')) . '</th></tr></thead><tbody>';
 
         foreach ($rows as $row) {
             $formattedDateObj = DateTime::createFromFormat('Y-m-d', $row['date']);
             $formattedDate = false !== $formattedDateObj ? $formattedDateObj->format('d.m.Y') : $row['date'];
             $table .= '<tr>';
-            $table .= '<td data-sort="' . htmlspecialchars($row['date'], ENT_QUOTES) . '">' . htmlspecialchars($formattedDate, ENT_QUOTES) . '</td>';
-            $table .= '<td data-sort="' . htmlspecialchars((string) $row['count'], ENT_QUOTES) . '">' . htmlspecialchars((string) $row['count'], ENT_QUOTES) . '</td>';
+            $table .= '<td data-sort="' . rex_escape($row['date']) . '">' . rex_escape($formattedDate) . '</td>';
+            $table .= '<td data-sort="' . rex_escape((string) $row['count']) . '">' . rex_escape((string) $row['count']) . '</td>';
             $table .= '</tr>';
         }
 

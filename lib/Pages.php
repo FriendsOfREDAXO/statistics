@@ -139,12 +139,13 @@ class Pages
     {
         $visitorsPerUrlEnabled = (bool) $this->addon->getConfig('statistics_pages_visitors_enabled', false);
         $favoriteUrls = $this->getFavoriteUrls();
+        $actionsToken = \rex_csrf_token::factory('statistics_pages_actions');
         $favoriteMap = array_fill_keys($favoriteUrls, true);
         $rows = $this->getPageRows($httpstatus, $limit, $favoriteUrls, $onlyFavorites, $visitorsPerUrlEnabled);
 
         $visitsNoteKey = $visitorsPerUrlEnabled ? 'statistics_pages_visits_note' : 'statistics_pages_visits_note_legacy';
         $visitsNote = '<div class="alert alert-info" style="margin-bottom:10px;">'
-            . htmlspecialchars($this->addon->i18n($visitsNoteKey), ENT_QUOTES)
+            . rex_escape($this->addon->i18n($visitsNoteKey))
             . '</div>';
 
         if ([] === $rows) {
@@ -158,14 +159,14 @@ class Pages
 
             $table .= '<table class="table-bordered dt_order_second statistics_table table-striped table-hover table" data-order-column="2" data-page-length="30">';
             $table .= '<thead><tr>';
-            $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_favorite'), ENT_QUOTES) . '</th>';
-            $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_url'), ENT_QUOTES) . '</th>';
-            $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_pages_visits_column'), ENT_QUOTES) . '</th>';
+            $table .= '<th>' . rex_escape($this->addon->i18n('statistics_favorite')) . '</th>';
+            $table .= '<th>' . rex_escape($this->addon->i18n('statistics_url')) . '</th>';
+            $table .= '<th>' . rex_escape($this->addon->i18n('statistics_pages_visits_column')) . '</th>';
             if ($visitorsPerUrlEnabled) {
-                $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_pages_visitors_column'), ENT_QUOTES) . '</th>';
+                $table .= '<th>' . rex_escape($this->addon->i18n('statistics_pages_visitors_column')) . '</th>';
             }
             $table .= '<th>Status</th>';
-            $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_ignore'), ENT_QUOTES) . '</th>';
+            $table .= '<th>' . rex_escape($this->addon->i18n('statistics_ignore')) . '</th>';
             $table .= '</tr></thead><tbody>';
 
             foreach ($rows as $row) {
@@ -190,7 +191,7 @@ class Pages
                     'date_start' => $this->filter_date_helper->date_start->format('Y-m-d'),
                     'date_end' => $this->filter_date_helper->date_end->format('Y-m-d'),
                     'httpstatus' => $httpstatus,
-                ], false);
+                ] + $actionsToken->getUrlParams(), false);
                 $toggleFavoriteUrl = \rex_url::backendController([
                     'page' => 'statistics/pages',
                     'url' => $url,
@@ -199,8 +200,8 @@ class Pages
                     'date_start' => $this->filter_date_helper->date_start->format('Y-m-d'),
                     'date_end' => $this->filter_date_helper->date_end->format('Y-m-d'),
                     'httpstatus' => $httpstatus,
-                ], false);
-                $confirm = htmlspecialchars($url . ':' . PHP_EOL . $this->addon->i18n('statistics_confirm_ignore_delete'), ENT_QUOTES);
+                ] + $actionsToken->getUrlParams(), false);
+                $confirm = rex_escape($url . ':' . PHP_EOL . $this->addon->i18n('statistics_confirm_ignore_delete'));
                 $star = $isFavorite ? '★' : '☆';
                 $favoriteTitle = $isFavorite
                     ? $this->addon->i18n('statistics_favorite_toggle_remove')
@@ -208,14 +209,14 @@ class Pages
                 $rowClass = $isFavorite ? ' class="statistics-row-favorite"' : '';
 
                 $table .= '<tr' . $rowClass . '>';
-                $table .= '<td data-sort="' . ($isFavorite ? '0' : '1') . '"><a href="' . htmlspecialchars($toggleFavoriteUrl, ENT_QUOTES) . '" title="' . htmlspecialchars($favoriteTitle, ENT_QUOTES) . '" style="text-decoration:none;font-size:18px;line-height:1;">' . $star . '</a></td>';
-                $table .= '<td><a href="' . htmlspecialchars($detailUrl, ENT_QUOTES) . '">' . htmlspecialchars($url, ENT_QUOTES) . '</a></td>';
-                $table .= '<td data-sort="' . htmlspecialchars($count, ENT_QUOTES) . '">' . htmlspecialchars($count, ENT_QUOTES) . '</td>';
+                $table .= '<td data-sort="' . ($isFavorite ? '0' : '1') . '"><a href="' . rex_escape($toggleFavoriteUrl) . '" title="' . rex_escape($favoriteTitle) . '" style="text-decoration:none;font-size:18px;line-height:1;">' . $star . '</a></td>';
+                $table .= '<td><a href="' . rex_escape($detailUrl) . '">' . rex_escape($url) . '</a></td>';
+                $table .= '<td data-sort="' . rex_escape($count) . '">' . rex_escape($count) . '</td>';
                 if ($visitorsPerUrlEnabled) {
-                    $table .= '<td data-sort="' . htmlspecialchars($visitors, ENT_QUOTES) . '">' . htmlspecialchars($visitors, ENT_QUOTES) . '</td>';
+                    $table .= '<td data-sort="' . rex_escape($visitors) . '">' . rex_escape($visitors) . '</td>';
                 }
-                $table .= '<td>' . htmlspecialchars($status, ENT_QUOTES) . '</td>';
-                $table .= '<td><a href="' . htmlspecialchars($ignoreUrl, ENT_QUOTES) . '" data-confirm="' . $confirm . '">' . $this->addon->i18n('statistics_ignore_and_delete') . '</a></td>';
+                $table .= '<td>' . rex_escape($status) . '</td>';
+                $table .= '<td><a href="' . rex_escape($ignoreUrl) . '" data-confirm="' . $confirm . '">' . $this->addon->i18n('statistics_ignore_and_delete') . '</a></td>';
                 $table .= '</tr>';
             }
 

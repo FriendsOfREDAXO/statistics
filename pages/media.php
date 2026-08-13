@@ -14,14 +14,19 @@ $request_url = htmlspecialchars_decode($request_url);
 $delete_entry = rex_request('delete_entry', 'boolean', false);
 $request_date_start = htmlspecialchars_decode(rex_request('date_start', 'string', ''));
 $request_date_end = htmlspecialchars_decode(rex_request('date_end', 'string', ''));
+$actionsToken = rex_csrf_token::factory('statistics_media_delete');
+
+if ($request_url !== '' && $delete_entry && !$actionsToken->isValid()) {
+    echo rex_view::error(rex_i18n::msg('csrf_token_invalid'));
+}
 
 $filter_date_helper = new DateFilter($request_date_start, $request_date_end, 'pagestats_media');
 echo StatsSubpageRenderer::renderFilter($current_backend_page, $filter_date_helper);
 
-if ($request_url !== '' && $delete_entry === true) {
+if ($request_url !== '' && $delete_entry === true && $actionsToken->isValid()) {
     $sql = rex_sql::factory();
     $sql->setQuery('delete from ' . rex::getTable('pagestats_media') . ' where url = :url', ['url' => $request_url]);
-    echo rex_view::success(sprintf($addon->i18n('statistics_deleted_campaign_entries'), (string) $sql->getRows(), htmlspecialchars($request_url, ENT_QUOTES)));
+    echo rex_view::success(sprintf($addon->i18n('statistics_deleted_campaign_entries'), (string) $sql->getRows(), rex_escape($request_url)));
 }
 
 // details section
@@ -53,7 +58,7 @@ if ([] === $mediaRows) {
     $table = rex_view::info($addon->i18n('statistics_no_data'));
 } else {
     $table = '<table class="table-bordered dt_order_second statistics_table table-striped table-hover table">';
-    $table .= '<thead><tr><th>' . htmlspecialchars($addon->i18n('statistics_media_url'), ENT_QUOTES) . '</th><th>' . htmlspecialchars($addon->i18n('statistics_media_count'), ENT_QUOTES) . '</th></tr></thead><tbody>';
+    $table .= '<thead><tr><th>' . rex_escape($addon->i18n('statistics_media_url')) . '</th><th>' . rex_escape($addon->i18n('statistics_media_count')) . '</th></tr></thead><tbody>';
 
     foreach ($mediaRows as $row) {
         $url = (string) $row['url'];
@@ -65,8 +70,8 @@ if ([] === $mediaRows) {
         ]);
 
         $table .= '<tr>';
-        $table .= '<td><a href="' . htmlspecialchars($detailUrl, ENT_QUOTES) . '">' . htmlspecialchars($url, ENT_QUOTES) . '</a></td>';
-        $table .= '<td data-sort="' . htmlspecialchars($count, ENT_QUOTES) . '">' . htmlspecialchars($count, ENT_QUOTES) . '</td>';
+        $table .= '<td><a href="' . rex_escape($detailUrl) . '">' . rex_escape($url) . '</a></td>';
+        $table .= '<td data-sort="' . rex_escape($count) . '">' . rex_escape($count) . '</td>';
         $table .= '</tr>';
     }
 

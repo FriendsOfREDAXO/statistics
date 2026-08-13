@@ -83,7 +83,7 @@ class ListData
 
     public function getDailyContent(): string
     {
-        $table = '<h3>' . htmlspecialchars($this->addon->i18n('statistics_list_visits_heading'), ENT_QUOTES) . '</h3>' . $this->renderTimeTable(
+        $table = '<h3>' . rex_escape($this->addon->i18n('statistics_list_visits_heading')) . '</h3>' . $this->renderTimeTable(
             $this->getDailyRows('pagestats_visits_per_day'),
             'date',
             $this->addon->i18n('statistics_date')
@@ -91,7 +91,7 @@ class ListData
 
         $table .= '<hr>';
 
-        $table .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_list_visitors_heading'), ENT_QUOTES) . '</h3>' . $this->renderTimeTable(
+        $table .= '<h3>' . rex_escape($this->addon->i18n('statistics_list_visitors_heading')) . '</h3>' . $this->renderTimeTable(
             $this->getDailyRows('pagestats_visitors_per_day'),
             'date',
             $this->addon->i18n('statistics_date')
@@ -102,7 +102,7 @@ class ListData
 
     public function getMonthlyContent(): string
     {
-        $table = '<h3>' . htmlspecialchars($this->addon->i18n('statistics_list_visits_heading'), ENT_QUOTES) . '</h3>' . $this->renderTimeTable(
+        $table = '<h3>' . rex_escape($this->addon->i18n('statistics_list_visits_heading')) . '</h3>' . $this->renderTimeTable(
             $this->getMonthlyRows('pagestats_visits_per_day'),
             'month',
             $this->addon->i18n('statistics_month')
@@ -110,7 +110,7 @@ class ListData
 
         $table .= '<hr>';
 
-        $table .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_list_visitors_heading'), ENT_QUOTES) . '</h3>' . $this->renderTimeTable(
+        $table .= '<h3>' . rex_escape($this->addon->i18n('statistics_list_visitors_heading')) . '</h3>' . $this->renderTimeTable(
             $this->getMonthlyRows('pagestats_visitors_per_day'),
             'month',
             $this->addon->i18n('statistics_month')
@@ -121,7 +121,7 @@ class ListData
 
     public function getYearlyContent(): string
     {
-        $table = '<h3>' . htmlspecialchars($this->addon->i18n('statistics_list_visits_heading'), ENT_QUOTES) . '</h3>' . $this->renderTimeTable(
+        $table = '<h3>' . rex_escape($this->addon->i18n('statistics_list_visits_heading')) . '</h3>' . $this->renderTimeTable(
             $this->getYearlyRows('pagestats_visits_per_day'),
             'year',
             $this->addon->i18n('statistics_year')
@@ -129,7 +129,7 @@ class ListData
 
         $table .= '<hr>';
 
-        $table .= '<h3>' . htmlspecialchars($this->addon->i18n('statistics_list_visitors_heading'), ENT_QUOTES) . '</h3>' . $this->renderTimeTable(
+        $table .= '<h3>' . rex_escape($this->addon->i18n('statistics_list_visitors_heading')) . '</h3>' . $this->renderTimeTable(
             $this->getYearlyRows('pagestats_visitors_per_day'),
             'year',
             $this->addon->i18n('statistics_year')
@@ -228,8 +228,8 @@ class ListData
 
         $table = '<table class="table-bordered dt_order_first statistics_table table-striped table-hover table">';
         $table .= '<thead><tr>';
-        $table .= '<th>' . htmlspecialchars($labelTitle, ENT_QUOTES) . '</th>';
-        $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_count'), ENT_QUOTES) . '</th>';
+        $table .= '<th>' . rex_escape($labelTitle) . '</th>';
+        $table .= '<th>' . rex_escape($this->addon->i18n('statistics_count')) . '</th>';
         $table .= '</tr></thead><tbody>';
 
         foreach ($rows as $row) {
@@ -245,8 +245,8 @@ class ListData
             }
 
             $table .= '<tr>';
-            $table .= '<td data-sort="' . htmlspecialchars($sortValue, ENT_QUOTES) . '">' . htmlspecialchars($label, ENT_QUOTES) . '</td>';
-            $table .= '<td data-sort="' . htmlspecialchars($count, ENT_QUOTES) . '">' . htmlspecialchars($count, ENT_QUOTES) . '</td>';
+            $table .= '<td data-sort="' . rex_escape($sortValue) . '">' . rex_escape($label) . '</td>';
+            $table .= '<td data-sort="' . rex_escape($count) . '">' . rex_escape($count) . '</td>';
             $table .= '</tr>';
         }
 

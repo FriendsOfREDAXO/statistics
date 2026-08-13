@@ -13,6 +13,6 @@ class StatsLazySection
 
     private static function renderLazyBlock(string $id, string $blockId, DateFilter $filterDateHelper): string
     {
-        return '<div id="' . htmlspecialchars($id, ENT_QUOTES) . '" data-statistics-lazy-block data-block-id="' . htmlspecialchars($blockId, ENT_QUOTES) . '" data-date-start="' . htmlspecialchars($filterDateHelper->date_start->format('Y-m-d'), ENT_QUOTES) . '" data-date-end="' . htmlspecialchars($filterDateHelper->date_end->format('Y-m-d'), ENT_QUOTES) . '" data-state="idle" style="min-height: 160px;"></div>';
+        return '<div id="' . rex_escape($id) . '" data-statistics-lazy-block data-block-id="' . rex_escape($blockId) . '" data-date-start="' . rex_escape($filterDateHelper->date_start->format('Y-m-d')) . '" data-date-end="' . rex_escape($filterDateHelper->date_end->format('Y-m-d')) . '" data-state="idle" style="min-height: 160px;"></div>';
     }
 }

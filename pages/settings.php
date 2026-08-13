@@ -3,11 +3,15 @@
 use AndiLeni\Statistics\Ip2Geo;
 
 $addon = rex_addon::get('statistics');
+$csrfToken = rex_csrf_token::factory('statistics_settings');
 
 
 // post request which handles deletion of stats data
 if (rex_request_method() == 'post') {
     $function = rex_post('func', 'string', '');
+    if ('' !== $function && !$csrfToken->isValid()) {
+        echo rex_view::error(rex_i18n::msg('csrf_token_invalid'));
+    } else {
     $maintenanceChunkSize = 1200;
     $maintenanceMaxRounds = 2;
     $maintenanceRuntimeBudgetSeconds = 2.0;
@@ -162,15 +166,16 @@ if (rex_request_method() == 'post') {
         ];
     };
 
-    $renderBatchContinueForm = static function (string $func, array $hiddenFields = []) use ($addon): string {
-        $html = '<form style="margin-top:10px" action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post">';
-        $html .= '<input type="hidden" name="func" value="' . htmlspecialchars($func, ENT_QUOTES) . '">';
+    $renderBatchContinueForm = static function (string $func, array $hiddenFields = []) use ($addon, $csrfToken): string {
+        $html = '<form style="margin-top:10px" action="' . rex_escape(rex_url::currentBackendPage()) . '" method="post">';
+        $html .= $csrfToken->getHiddenField();
+        $html .= '<input type="hidden" name="func" value="' . rex_escape($func) . '">';
 
         foreach ($hiddenFields as $name => $value) {
-            $html .= '<input type="hidden" name="' . htmlspecialchars((string) $name, ENT_QUOTES) . '" value="' . htmlspecialchars((string) $value, ENT_QUOTES) . '">';
+            $html .= '<input type="hidden" name="' . rex_escape((string) $name) . '" value="' . rex_escape((string) $value) . '">';
         }
 
-        $html .= '<button class="btn btn-default" type="submit">' . htmlspecialchars($addon->i18n('statistics_batch_continue'), ENT_QUOTES) . '</button>';
+        $html .= '<button class="btn btn-default" type="submit">' . rex_escape($addon->i18n('statistics_batch_continue')) . '</button>';
         $html .= '</form>';
 
         return $html;
@@ -681,10 +686,11 @@ if (rex_request_method() == 'post') {
             }
 
             if ($nextOffset < $totalTables) {
-                $continueHtml = '<form style="margin-top:10px" action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post">';
+                $continueHtml = '<form style="margin-top:10px" action="' . rex_escape(rex_url::currentBackendPage()) . '" method="post">';
+                $continueHtml .= $csrfToken->getHiddenField();
                 $continueHtml .= '<input type="hidden" name="func" value="optimize_tables">';
                 $continueHtml .= '<input type="hidden" name="optimize_offset" value="' . (string) $nextOffset . '">';
-                $continueHtml .= '<button class="btn btn-default" type="submit">' . htmlspecialchars($addon->i18n('statistics_optimize_tables_continue'), ENT_QUOTES) . '</button>';
+                $continueHtml .= '<button class="btn btn-default" type="submit">' . rex_escape($addon->i18n('statistics_optimize_tables_continue')) . '</button>';
                 $continueHtml .= '</form>';
 
                 echo rex_view::warning(
@@ -717,6 +723,7 @@ if (rex_request_method() == 'post') {
             echo rex_view::error($addon->i18n('statistics_geo_update_error'));
         }
     }
+    }
 }
 
 
@@ -731,7 +738,7 @@ $renderConfigPanel = static function (string $panelKey, string $title, string $f
     $fragment->setVar('title', $title, false);
     $fragment->setVar('body', $formBody, false);
 
-    echo '<div id="statistics-settings-panel-' . htmlspecialchars($panelKey, ENT_QUOTES) . '">';
+    echo '<div id="statistics-settings-panel-' . rex_escape($panelKey) . '">';
     echo $fragment->parse('core/page/section.php');
     echo '</div>';
 };
@@ -755,10 +762,10 @@ $field->addOption($addon->i18n('statistics_identity_mode_stateless'), 'stateless
 $field->addOption($addon->i18n('statistics_identity_mode_session'), 'session');
 $field->setNotice($addon->i18n('statistics_identity_mode_note'));
 
-$identityHintHtml = '<strong>' . htmlspecialchars($addon->i18n('statistics_identity_mode_hint_title'), ENT_QUOTES) . '</strong><br>'
-    . htmlspecialchars($addon->i18n('statistics_identity_mode_hint_stateless'), ENT_QUOTES) . '<br>'
-    . htmlspecialchars($addon->i18n('statistics_identity_mode_hint_session'), ENT_QUOTES) . '<br>'
-    . htmlspecialchars($addon->i18n('statistics_identity_mode_hint_lock'), ENT_QUOTES);
+$identityHintHtml = '<strong>' . rex_escape($addon->i18n('statistics_identity_mode_hint_title')) . '</strong><br>'
+    . rex_escape($addon->i18n('statistics_identity_mode_hint_stateless')) . '<br>'
+    . rex_escape($addon->i18n('statistics_identity_mode_hint_session')) . '<br>'
+    . rex_escape($addon->i18n('statistics_identity_mode_hint_lock'));
 $trackingForm->addRawField(rex_view::info($identityHintHtml));
 
 $field = $trackingForm->addTextField('statistics_token_rotation_hours');
@@ -817,8 +824,8 @@ $field->setNotice($addon->i18n('pagestats_ignored_regex_note'));
 
 $filterForm->addRawField(
     rex_view::info(
-        '<strong>' . htmlspecialchars($addon->i18n('pagestats_ignored_regex_examples_heading'), ENT_QUOTES) . '</strong><br><pre style="margin-top:8px;white-space:pre-wrap;">'
-        . htmlspecialchars(implode(PHP_EOL, $regexExamples), ENT_QUOTES)
+        '<strong>' . rex_escape($addon->i18n('pagestats_ignored_regex_examples_heading')) . '</strong><br><pre style="margin-top:8px;white-space:pre-wrap;">'
+        . rex_escape(implode(PHP_EOL, $regexExamples))
         . '</pre>'
     )
 );
@@ -918,15 +925,16 @@ $geoDbStatusLabel = $geoDbAvailable
 $geoDbStatusClass = $geoDbAvailable ? 'alert-success' : 'alert-warning';
 
 $geoIpHtml = '
-<p>' . htmlspecialchars($addon->i18n('statistics_geo_intro'), ENT_QUOTES) . '</p>
+<p>' . rex_escape($addon->i18n('statistics_geo_intro')) . '</p>
 <div class="alert ' . $geoDbStatusClass . '" style="margin:10px 5px;">
-<strong>' . htmlspecialchars($addon->i18n('statistics_geo_status'), ENT_QUOTES) . ':</strong> ' . htmlspecialchars($geoDbStatusLabel, ENT_QUOTES) . '<br>
-<strong>' . htmlspecialchars($addon->i18n('statistics_geo_last_update'), ENT_QUOTES) . ':</strong> ' . htmlspecialchars($geoDbLastUpdated, ENT_QUOTES) . '<br>
-<strong>' . htmlspecialchars($addon->i18n('statistics_geo_file_size'), ENT_QUOTES) . ':</strong> ' . htmlspecialchars($geoDbSizeFormatted, ENT_QUOTES) . '
+<strong>' . rex_escape($addon->i18n('statistics_geo_status')) . ':</strong> ' . rex_escape($geoDbStatusLabel) . '<br>
+<strong>' . rex_escape($addon->i18n('statistics_geo_last_update')) . ':</strong> ' . rex_escape($geoDbLastUpdated) . '<br>
+<strong>' . rex_escape($addon->i18n('statistics_geo_file_size')) . ':</strong> ' . rex_escape($geoDbSizeFormatted) . '
 </div>
-<form style="margin:5px" action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post">
+<form style="margin:5px" action="' . rex_escape(rex_url::currentBackendPage()) . '" method="post">
+' . $csrfToken->getHiddenField() . '
 <input type="hidden" name="func" value="updateGeo2Ip">
-<button class="btn btn-primary" type="submit">' . htmlspecialchars($addon->i18n('statistics_geo_update_button'), ENT_QUOTES) . '</button>
+<button class="btn btn-primary" type="submit">' . rex_escape($addon->i18n('statistics_geo_update_button')) . '</button>
 </form>
 <p><a href="https://db-ip.com">IP Geolocation by DB-IP</a></p>
 ';
@@ -1001,35 +1009,38 @@ try {
 $totalStorageUsage = array_sum($storageUsageByTable);
 
 $storageUsageHtml = '<div class="alert alert-info" style="margin-bottom:10px;">';
-$storageUsageHtml .= '<strong>' . htmlspecialchars($addon->i18n('statistics_storage_usage_current'), ENT_QUOTES) . ':</strong> ';
-$storageUsageHtml .= htmlspecialchars($formatBytes($totalStorageUsage), ENT_QUOTES);
-$storageUsageHtml .= '<br><small>' . htmlspecialchars($addon->i18n('statistics_storage_usage_note'), ENT_QUOTES) . '</small>';
+$storageUsageHtml .= '<strong>' . rex_escape($addon->i18n('statistics_storage_usage_current')) . ':</strong> ';
+$storageUsageHtml .= rex_escape($formatBytes($totalStorageUsage));
+$storageUsageHtml .= '<br><small>' . rex_escape($addon->i18n('statistics_storage_usage_note')) . '</small>';
 $storageUsageHtml .= '</div>';
 
 $storageUsageHtml .= '<table class="table table-striped table-bordered" style="margin-bottom:15px;">';
 $storageUsageHtml .= '<thead><tr>';
-$storageUsageHtml .= '<th>' . htmlspecialchars($addon->i18n('statistics_storage_usage_table'), ENT_QUOTES) . '</th>';
-$storageUsageHtml .= '<th>' . htmlspecialchars($addon->i18n('statistics_storage_usage_size'), ENT_QUOTES) . '</th>';
+$storageUsageHtml .= '<th>' . rex_escape($addon->i18n('statistics_storage_usage_table')) . '</th>';
+$storageUsageHtml .= '<th>' . rex_escape($addon->i18n('statistics_storage_usage_size')) . '</th>';
 $storageUsageHtml .= '</tr></thead><tbody>';
 
 foreach ($storageUsageByTable as $tableName => $bytes) {
     $storageUsageHtml .= '<tr>';
-    $storageUsageHtml .= '<td>' . htmlspecialchars($tableName, ENT_QUOTES) . '</td>';
-    $storageUsageHtml .= '<td data-sort="' . htmlspecialchars((string) $bytes, ENT_QUOTES) . '">' . htmlspecialchars($formatBytes((int) $bytes), ENT_QUOTES) . '</td>';
+    $storageUsageHtml .= '<td>' . rex_escape($tableName) . '</td>';
+    $storageUsageHtml .= '<td data-sort="' . rex_escape((string) $bytes) . '">' . rex_escape($formatBytes((int) $bytes)) . '</td>';
     $storageUsageHtml .= '</tr>';
 }
 
 $storageUsageHtml .= '<tr>';
-$storageUsageHtml .= '<td><strong>' . htmlspecialchars($addon->i18n('statistics_storage_usage_total'), ENT_QUOTES) . '</strong></td>';
-$storageUsageHtml .= '<td data-sort="' . htmlspecialchars((string) $totalStorageUsage, ENT_QUOTES) . '"><strong>' . htmlspecialchars($formatBytes((int) $totalStorageUsage), ENT_QUOTES) . '</strong></td>';
+$storageUsageHtml .= '<td><strong>' . rex_escape($addon->i18n('statistics_storage_usage_total')) . '</strong></td>';
+$storageUsageHtml .= '<td data-sort="' . rex_escape((string) $totalStorageUsage) . '"><strong>' . rex_escape($formatBytes((int) $totalStorageUsage)) . '</strong></td>';
 $storageUsageHtml .= '</tr>';
 $storageUsageHtml .= '</tbody></table>';
 
-$renderActionCard = static function (string $title, string $scope, string $formHtml): string {
+$renderActionCard = static function (string $title, string $scope, string $formHtml) use ($csrfToken): string {
+    $formHtml = preg_replace_callback('~<form\b[^>]*>~i', static function (array $matches) use ($csrfToken): string {
+        return $matches[0] . $csrfToken->getHiddenField();
+    }, $formHtml, 1) ?? $formHtml;
     $html = '<div class="panel panel-default" style="margin-bottom:10px;">';
     $html .= '<div class="panel-body" style="padding:12px;">';
-    $html .= '<div style="font-weight:600;margin-bottom:4px;">' . htmlspecialchars($title, ENT_QUOTES) . '</div>';
-    $html .= '<div style="font-size:12px;color:#6c7785;margin-bottom:10px;">' . htmlspecialchars($scope, ENT_QUOTES) . '</div>';
+    $html .= '<div style="font-weight:600;margin-bottom:4px;">' . rex_escape($title) . '</div>';
+    $html .= '<div style="font-size:12px;color:#6c7785;margin-bottom:10px;">' . rex_escape($scope) . '</div>';
     $html .= $formHtml;
     $html .= '</div>';
     $html .= '</div>';
@@ -1041,7 +1052,7 @@ $deleteActionsHtml = '';
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_hashes'),
     $addon->i18n('statistics_maintenance_scope_hashes'),
-    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_delete_hashes'), ENT_QUOTES) . '">'
+    '<form action="' . rex_escape(rex_url::currentBackendPage()) . '" method="post" data-confirm="' . rex_escape($addon->i18n('statistics_confirm_delete_hashes')) . '">'
     . '<input type="hidden" name="func" value="delete_hash">'
     . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_delete_hashes') . '</button>'
     . '</form>'
@@ -1049,7 +1060,7 @@ $deleteActionsHtml .= $renderActionCard(
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_visits'),
     $addon->i18n('statistics_maintenance_scope_all'),
-    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_delete_dump'), ENT_QUOTES) . '">'
+    '<form action="' . rex_escape(rex_url::currentBackendPage()) . '" method="post" data-confirm="' . rex_escape($addon->i18n('statistics_confirm_delete_dump')) . '">'
     . '<input type="hidden" name="func" value="delete_dump">'
     . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_delete_visits') . '</button>'
     . '</form>'
@@ -1057,7 +1068,7 @@ $deleteActionsHtml .= $renderActionCard(
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_bots'),
     $addon->i18n('statistics_maintenance_scope_bot'),
-    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_delete_bots'), ENT_QUOTES) . '">'
+    '<form action="' . rex_escape(rex_url::currentBackendPage()) . '" method="post" data-confirm="' . rex_escape($addon->i18n('statistics_confirm_delete_bots')) . '">'
     . '<input type="hidden" name="func" value="delete_bot">'
     . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_delete_bots') . '</button>'
     . '</form>'
@@ -1065,7 +1076,7 @@ $deleteActionsHtml .= $renderActionCard(
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_referer'),
     $addon->i18n('statistics_maintenance_scope_referer'),
-    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_delete_referer'), ENT_QUOTES) . '">'
+    '<form action="' . rex_escape(rex_url::currentBackendPage()) . '" method="post" data-confirm="' . rex_escape($addon->i18n('statistics_confirm_delete_referer')) . '">'
     . '<input type="hidden" name="func" value="delete_referer">'
     . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_delete_referer') . '</button>'
     . '</form>'
@@ -1073,7 +1084,7 @@ $deleteActionsHtml .= $renderActionCard(
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_media_delete_media'),
     $addon->i18n('statistics_maintenance_scope_media'),
-    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_media_delete_media_confirm'), ENT_QUOTES) . '">'
+    '<form action="' . rex_escape(rex_url::currentBackendPage()) . '" method="post" data-confirm="' . rex_escape($addon->i18n('statistics_media_delete_media_confirm')) . '">'
     . '<input type="hidden" name="func" value="delete_media">'
     . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_media_delete_media') . '</button>'
     . '</form>'
@@ -1081,7 +1092,7 @@ $deleteActionsHtml .= $renderActionCard(
 $deleteActionsHtml .= $renderActionCard(
     $addon->i18n('statistics_api_delete_api'),
     $addon->i18n('statistics_maintenance_scope_api'),
-    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_api_delete_api_confirm'), ENT_QUOTES) . '">'
+    '<form action="' . rex_escape(rex_url::currentBackendPage()) . '" method="post" data-confirm="' . rex_escape($addon->i18n('statistics_api_delete_api_confirm')) . '">'
     . '<input type="hidden" name="func" value="delete_campaigns">'
     . '<button class="btn btn-danger" type="submit">' . $addon->i18n('statistics_api_delete_api') . '</button>'
     . '</form>'
@@ -1091,7 +1102,7 @@ $maintenanceTasksHtml = '';
 $maintenanceTasksHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_noise'),
     $addon->i18n('statistics_maintenance_scope_noise'),
-    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_delete_noise'), ENT_QUOTES) . '">'
+    '<form action="' . rex_escape(rex_url::currentBackendPage()) . '" method="post" data-confirm="' . rex_escape($addon->i18n('statistics_confirm_delete_noise')) . '">'
     . '<input type="hidden" name="func" value="delete_noise">'
     . '<button class="btn btn-default" type="submit">' . $addon->i18n('statistics_delete_noise') . '</button>'
     . '</form>'
@@ -1099,7 +1110,7 @@ $maintenanceTasksHtml .= $renderActionCard(
 $maintenanceTasksHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_non200_urls'),
     $addon->i18n('statistics_maintenance_scope_non200_urls'),
-    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_delete_non200_urls'), ENT_QUOTES) . '">'
+    '<form action="' . rex_escape(rex_url::currentBackendPage()) . '" method="post" data-confirm="' . rex_escape($addon->i18n('statistics_confirm_delete_non200_urls')) . '">'
     . '<input type="hidden" name="func" value="delete_non200_urls">'
     . '<button class="btn btn-default" type="submit">' . $addon->i18n('statistics_delete_non200_urls') . '</button>'
     . '</form>'
@@ -1107,7 +1118,7 @@ $maintenanceTasksHtml .= $renderActionCard(
 $maintenanceTasksHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_old'),
     $addon->i18n('statistics_maintenance_scope_keep_days'),
-    '<form style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_delete_old'), ENT_QUOTES) . '">'
+    '<form style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" action="' . rex_escape(rex_url::currentBackendPage()) . '" method="post" data-confirm="' . rex_escape($addon->i18n('statistics_confirm_delete_old')) . '">'
     . '<input type="hidden" name="func" value="delete_old">'
     . '<label for="statistics-keep-days" style="margin:0;">' . $addon->i18n('statistics_cleanup_keep_days') . '</label>'
     . '<input id="statistics-keep-days" class="form-control" style="width:110px" type="number" min="1" step="1" name="keep_days" value="365">'
@@ -1117,17 +1128,17 @@ $maintenanceTasksHtml .= $renderActionCard(
 $maintenanceTasksHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_since_date'),
     $addon->i18n('statistics_maintenance_scope_since_date'),
-    '<form style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_delete_since_date'), ENT_QUOTES) . '">'
+    '<form style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" action="' . rex_escape(rex_url::currentBackendPage()) . '" method="post" data-confirm="' . rex_escape($addon->i18n('statistics_confirm_delete_since_date')) . '">'
     . '<input type="hidden" name="func" value="delete_since_date">'
     . '<label for="statistics-since-date" style="margin:0;">' . $addon->i18n('statistics_cleanup_since_date') . '</label>'
-    . '<input id="statistics-since-date" class="form-control" style="width:170px" type="date" name="since_date" value="' . htmlspecialchars(date('Y-m-d'), ENT_QUOTES) . '">'
+    . '<input id="statistics-since-date" class="form-control" style="width:170px" type="date" name="since_date" value="' . rex_escape(date('Y-m-d')) . '">'
     . '<button class="btn btn-default" type="submit">' . $addon->i18n('statistics_delete_since_date') . '</button>'
     . '</form>'
 );
 $maintenanceTasksHtml .= $renderActionCard(
     $addon->i18n('statistics_delete_raw_old'),
     $addon->i18n('statistics_maintenance_scope_keep_days_raw'),
-    '<form style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_delete_raw_old'), ENT_QUOTES) . '">'
+    '<form style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" action="' . rex_escape(rex_url::currentBackendPage()) . '" method="post" data-confirm="' . rex_escape($addon->i18n('statistics_confirm_delete_raw_old')) . '">'
     . '<input type="hidden" name="func" value="delete_raw_old">'
     . '<label for="statistics-keep-days-raw" style="margin:0;">' . $addon->i18n('statistics_cleanup_keep_days_raw') . '</label>'
     . '<input id="statistics-keep-days-raw" class="form-control" style="width:110px" type="number" min="1" step="1" name="keep_days_raw" value="120">'
@@ -1137,7 +1148,7 @@ $maintenanceTasksHtml .= $renderActionCard(
 $maintenanceTasksHtml .= $renderActionCard(
     $addon->i18n('statistics_optimize_tables'),
     $addon->i18n('statistics_maintenance_scope_optimize'),
-    '<form action="' . htmlspecialchars(rex_url::currentBackendPage(), ENT_QUOTES) . '" method="post" data-confirm="' . htmlspecialchars($addon->i18n('statistics_confirm_optimize_tables'), ENT_QUOTES) . '">'
+    '<form action="' . rex_escape(rex_url::currentBackendPage()) . '" method="post" data-confirm="' . rex_escape($addon->i18n('statistics_confirm_optimize_tables')) . '">'
     . '<input type="hidden" name="func" value="optimize_tables">'
     . '<button class="btn btn-default" type="submit">' . $addon->i18n('statistics_optimize_tables') . '</button>'
     . '</form>'
@@ -1147,16 +1158,16 @@ $content = $storageUsageHtml;
 $content .= '<div class="row">';
 $content .= '<div class="col-md-6">';
 $content .= '<div class="alert alert-danger" style="margin-bottom:10px;">';
-$content .= '<strong>' . htmlspecialchars($addon->i18n('statistics_maintenance_delete_heading'), ENT_QUOTES) . '</strong><br>';
-$content .= '<small>' . htmlspecialchars($addon->i18n('statistics_maintenance_delete_note'), ENT_QUOTES) . '</small>';
+$content .= '<strong>' . rex_escape($addon->i18n('statistics_maintenance_delete_heading')) . '</strong><br>';
+$content .= '<small>' . rex_escape($addon->i18n('statistics_maintenance_delete_note')) . '</small>';
 $content .= '</div>';
 $content .= $deleteActionsHtml;
 $content .= '</div>';
 
 $content .= '<div class="col-md-6">';
 $content .= '<div class="alert alert-info" style="margin-bottom:10px;">';
-$content .= '<strong>' . htmlspecialchars($addon->i18n('statistics_maintenance_tasks_heading'), ENT_QUOTES) . '</strong><br>';
-$content .= '<small>' . htmlspecialchars($addon->i18n('statistics_maintenance_tasks_note'), ENT_QUOTES) . '</small>';
+$content .= '<strong>' . rex_escape($addon->i18n('statistics_maintenance_tasks_heading')) . '</strong><br>';
+$content .= '<small>' . rex_escape($addon->i18n('statistics_maintenance_tasks_note')) . '</small>';
 $content .= '</div>';
 $content .= $maintenanceTasksHtml;
 $content .= '</div>';

@@ -52,7 +52,7 @@ class VisitDuration
         $rows = $this->getRows();
 
         $note = '<div class="alert alert-warning" style="margin-bottom:10px;">'
-            . htmlspecialchars($addon->i18n('statistics_visit_duration_zero_seconds_note'), ENT_QUOTES)
+            . rex_escape($addon->i18n('statistics_visit_duration_zero_seconds_note'))
             . '</div>';
 
         if ([] === $rows) {
@@ -60,15 +60,15 @@ class VisitDuration
         } else {
             $table = $note;
             $table .= '<table class="dt_order_second statistics_table table table-striped table-hover">';
-            $table .= '<thead><tr><th>' . htmlspecialchars($addon->i18n('statistics_duration_seconds_label'), ENT_QUOTES) . '</th><th>' . htmlspecialchars($addon->i18n('statistics_count'), ENT_QUOTES) . '</th></tr></thead><tbody>';
+            $table .= '<thead><tr><th>' . rex_escape($addon->i18n('statistics_duration_seconds_label')) . '</th><th>' . rex_escape($addon->i18n('statistics_count')) . '</th></tr></thead><tbody>';
 
             foreach ($rows as $row) {
                 $timespan = (string) $row['timespan'];
                 $count = (string) $row['count'];
                 $dur = (string) $row['dur'];
                 $table .= '<tr>';
-                $table .= '<td data-sort="' . htmlspecialchars($dur, ENT_QUOTES) . '">' . htmlspecialchars($timespan, ENT_QUOTES) . '</td>';
-                $table .= '<td data-sort="' . htmlspecialchars($count, ENT_QUOTES) . '">' . htmlspecialchars($count, ENT_QUOTES) . '</td>';
+                $table .= '<td data-sort="' . rex_escape($dur) . '">' . rex_escape($timespan) . '</td>';
+                $table .= '<td data-sort="' . rex_escape($count) . '">' . rex_escape($count) . '</td>';
                 $table .= '</tr>';
             }
 

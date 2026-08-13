@@ -55,14 +55,14 @@ class Lastpage
             $table = rex_view::info($addon->i18n('statistics_no_data'));
         } else {
             $table = '<table class="dt_order_second statistics_table table table-striped table-hover">';
-            $table .= '<thead><tr><th>' . htmlspecialchars($addon->i18n('statistics_page'), ENT_QUOTES) . '</th><th>' . htmlspecialchars($addon->i18n('statistics_count'), ENT_QUOTES) . '</th></tr></thead><tbody>';
+            $table .= '<thead><tr><th>' . rex_escape($addon->i18n('statistics_page')) . '</th><th>' . rex_escape($addon->i18n('statistics_count')) . '</th></tr></thead><tbody>';
 
             foreach ($rows as $row) {
                 $lastpage = (string) $row['lastpage'];
                 $count = (string) $row['count'];
                 $table .= '<tr>';
-                $table .= '<td>' . htmlspecialchars($lastpage, ENT_QUOTES) . '</td>';
-                $table .= '<td data-sort="' . htmlspecialchars($count, ENT_QUOTES) . '">' . htmlspecialchars($count, ENT_QUOTES) . '</td>';
+                $table .= '<td>' . rex_escape($lastpage) . '</td>';
+                $table .= '<td data-sort="' . rex_escape($count) . '">' . rex_escape($count) . '</td>';
                 $table .= '</tr>';
             }
 

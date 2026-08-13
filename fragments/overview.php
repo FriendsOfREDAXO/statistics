@@ -2,7 +2,7 @@
     <div class="row">
         <div class="col-12">
             <p class="text-muted" style="margin: 0 0 8px;">
-                <?php echo $this->i18n('statistics_overview_now'); ?>: <b><?php echo htmlspecialchars((string) $this->generated_at, ENT_QUOTES); ?></b>
+                <?php echo $this->i18n('statistics_overview_now'); ?>: <b><?php echo rex_escape((string) $this->generated_at); ?></b>
             </p>
         </div>
     </div>
@@ -82,7 +82,7 @@
                 <div class="panel-title"><b><?php echo $this->i18n('statistics_overview_week_top_article'); ?></b></div>
             </header>
             <div class="panel-body">
-                <p class="statistics_my-0"><b><?php echo htmlspecialchars((string) $this->top_article_path_week, ENT_QUOTES); ?></b></p>
+                <p class="statistics_my-0"><b><?php echo rex_escape((string) $this->top_article_path_week); ?></b></p>
                 <p class="statistics_my-0 text-muted"><?php echo $this->i18n('statistics_overview_views'); ?>: <?php echo (int) $this->top_article_count_week; ?></p>
             </div>
         </div>

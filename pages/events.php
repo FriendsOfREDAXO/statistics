@@ -14,15 +14,20 @@ $request_name = htmlspecialchars_decode($request_name);
 $delete_entry = rex_request('delete_entry', 'boolean', false);
 $request_date_start = htmlspecialchars_decode(rex_request('date_start', 'string', ''));
 $request_date_end = htmlspecialchars_decode(rex_request('date_end', 'string', ''));
+$actionsToken = rex_csrf_token::factory('statistics_events_delete');
+
+if ($request_name !== '' && $delete_entry && !$actionsToken->isValid()) {
+    echo rex_view::error(rex_i18n::msg('csrf_token_invalid'));
+}
 
 $filter_date_helper = new DateFilter($request_date_start, $request_date_end, 'pagestats_api');
 echo StatsSubpageRenderer::renderFilter($current_backend_page, $filter_date_helper);
 
 
-if ($request_name !== '' && $delete_entry === true) {
+if ($request_name !== '' && $delete_entry === true && $actionsToken->isValid()) {
     $sql = rex_sql::factory();
     $sql->setQuery('delete from ' . rex::getTable('pagestats_api') . ' where name = :name', ['name' => $request_name]);
-    echo rex_view::success(sprintf($addon->i18n('statistics_deleted_campaign_entries'), (string) $sql->getRows(), htmlspecialchars($request_name, ENT_QUOTES)));
+    echo rex_view::success(sprintf($addon->i18n('statistics_deleted_campaign_entries'), (string) $sql->getRows(), rex_escape($request_name)));
 }
 
 // details section
@@ -56,9 +61,9 @@ if ([] === $eventRows) {
 } else {
     $table = '<table class="table-bordered dt_order_second statistics_table table-striped table-hover table">';
     $table .= '<thead><tr>';
-    $table .= '<th>' . htmlspecialchars($addon->i18n('statistics_api_name'), ENT_QUOTES) . '</th>';
-    $table .= '<th>' . htmlspecialchars($addon->i18n('statistics_api_count'), ENT_QUOTES) . '</th>';
-    $table .= '<th>' . htmlspecialchars($addon->i18n('statistics_api_delete'), ENT_QUOTES) . '</th>';
+    $table .= '<th>' . rex_escape($addon->i18n('statistics_api_name')) . '</th>';
+    $table .= '<th>' . rex_escape($addon->i18n('statistics_api_count')) . '</th>';
+    $table .= '<th>' . rex_escape($addon->i18n('statistics_api_delete')) . '</th>';
     $table .= '</tr></thead><tbody>';
 
     foreach ($eventRows as $row) {
@@ -72,13 +77,13 @@ if ([] === $eventRows) {
         $deleteUrl = rex_context::fromGet()->getUrl([
             'name' => $name,
             'delete_entry' => true,
-        ]);
-        $confirm = htmlspecialchars($name . PHP_EOL . $addon->i18n('statistics_api_delete_confirm'), ENT_QUOTES);
+        ] + $actionsToken->getUrlParams());
+        $confirm = rex_escape($name . PHP_EOL . $addon->i18n('statistics_api_delete_confirm'));
 
         $table .= '<tr>';
-        $table .= '<td><a href="' . htmlspecialchars($detailUrl, ENT_QUOTES) . '">' . htmlspecialchars($name, ENT_QUOTES) . '</a></td>';
-        $table .= '<td data-sort="' . htmlspecialchars($count, ENT_QUOTES) . '">' . htmlspecialchars($count, ENT_QUOTES) . '</td>';
-        $table .= '<td><a href="' . htmlspecialchars($deleteUrl, ENT_QUOTES) . '" data-confirm="' . $confirm . '">' . htmlspecialchars($addon->i18n('statistics_api_delete'), ENT_QUOTES) . '</a></td>';
+        $table .= '<td><a href="' . rex_escape($detailUrl) . '">' . rex_escape($name) . '</a></td>';
+        $table .= '<td data-sort="' . rex_escape($count) . '">' . rex_escape($count) . '</td>';
+        $table .= '<td><a href="' . rex_escape($deleteUrl) . '" data-confirm="' . $confirm . '">' . rex_escape($addon->i18n('statistics_api_delete')) . '</a></td>';
         $table .= '</tr>';
     }
 

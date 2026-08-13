@@ -86,26 +86,26 @@ class StatsLazyBlockRenderer
         $charts = [];
 
         $html .= '<div class="alert alert-info" style="margin-bottom:10px;">'
-            . htmlspecialchars($this->addon->i18n('statistics_filter_scope_alltime_data'), ENT_QUOTES)
+            . rex_escape($this->addon->i18n('statistics_filter_scope_alltime_data'))
             . '</div>';
 
         $html .= $this->renderVerticalSection($this->addon->i18n('statistics_browser'), 'chart_browser', $browser->getList());
         $charts[] = ['id' => 'chart_browser', 'option' => $this->buildTopCategoriesBarOption($browser->getData(), '{b}: <b>{c}</b>')];
 
-        $deviceAndBrandTable = '<h5><b>' . htmlspecialchars($this->addon->i18n('statistics_devicetype'), ENT_QUOTES) . '</b></h5>'
+        $deviceAndBrandTable = '<h5><b>' . rex_escape($this->addon->i18n('statistics_devicetype')) . '</b></h5>'
             . $browsertype->getList()
             . '<hr>'
-            . '<h5><b>' . htmlspecialchars($this->addon->i18n('statistics_brand'), ENT_QUOTES) . '</b></h5>'
+            . '<h5><b>' . rex_escape($this->addon->i18n('statistics_brand')) . '</b></h5>'
             . $brand->getList()
             . '<hr>'
-            . '<h5><b>' . htmlspecialchars($this->addon->i18n('statistics_os'), ENT_QUOTES) . '</b></h5>'
+            . '<h5><b>' . rex_escape($this->addon->i18n('statistics_os')) . '</b></h5>'
             . $os->getList();
         $deviceCharts = ''
-            . '<h5><b>' . htmlspecialchars($this->addon->i18n('statistics_devicetype'), ENT_QUOTES) . '</b></h5>'
+            . '<h5><b>' . rex_escape($this->addon->i18n('statistics_devicetype')) . '</b></h5>'
             . '<div id="chart_device_type_compact" style="width:100%;height:180px"></div>'
-            . '<h5 style="margin-top:18px"><b>' . htmlspecialchars($this->addon->i18n('statistics_brand'), ENT_QUOTES) . '</b></h5>'
+            . '<h5 style="margin-top:18px"><b>' . rex_escape($this->addon->i18n('statistics_brand')) . '</b></h5>'
             . '<div id="chart_device_brand_compact" style="width:100%;height:220px"></div>'
-            . '<h5 style="margin-top:18px"><b>' . htmlspecialchars($this->addon->i18n('statistics_os'), ENT_QUOTES) . '</b></h5>'
+            . '<h5 style="margin-top:18px"><b>' . rex_escape($this->addon->i18n('statistics_os')) . '</b></h5>'
             . '<div id="chart_device_os_compact" style="width:100%;height:220px"></div>';
         $html .= $this->renderTwoColumnSection(rex_i18n::rawMsg('statistics_device_brand_os_title'), $deviceCharts, $deviceAndBrandTable);
         $charts[] = ['id' => 'chart_device_type_compact', 'option' => $this->buildTopCategoriesBarOption($browsertype->getData(), '{b}: <b>{c}</b>', 6)];
@@ -251,7 +251,7 @@ class StatsLazyBlockRenderer
             $countryData = $country->getChartData();
 
             $note = '<div class="alert alert-info" style="margin-bottom:10px;">'
-                . htmlspecialchars($this->addon->i18n('statistics_filter_scope_alltime_data'), ENT_QUOTES)
+                . rex_escape($this->addon->i18n('statistics_filter_scope_alltime_data'))
                 . '</div>';
 
             return [
@@ -277,14 +277,14 @@ class StatsLazyBlockRenderer
         $body = '<div class="panel panel-default">'
             . '<div class="panel-heading">'
                 . '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">'
-                    . '<strong>' . htmlspecialchars($title, ENT_QUOTES) . '</strong>'
-                    . '<button class="btn btn-primary btn-xs" type="button" data-toggle="collapse" data-target="#' . htmlspecialchars($collapseId, ENT_QUOTES) . '">' . htmlspecialchars($this->addon->i18n('statistics_toggle_collapse_table'), ENT_QUOTES) . '</button>'
+                    . '<strong>' . rex_escape($title) . '</strong>'
+                    . '<button class="btn btn-primary btn-xs" type="button" data-toggle="collapse" data-target="#' . rex_escape($collapseId) . '">' . rex_escape($this->addon->i18n('statistics_toggle_collapse_table')) . '</button>'
                 . '</div>'
-                . '<div style="margin-top:6px;color:#708090;">' . htmlspecialchars($description, ENT_QUOTES) . '</div>'
+                . '<div style="margin-top:6px;color:#708090;">' . rex_escape($description) . '</div>'
             . '</div>'
-            . '<div id="' . htmlspecialchars($collapseId, ENT_QUOTES) . '" class="collapse">'
+            . '<div id="' . rex_escape($collapseId) . '" class="collapse">'
                 . '<div class="panel-body">'
-                    . '<div data-statistics-lazy-collapse data-block-id="' . htmlspecialchars($lazyBlockId, ENT_QUOTES) . '" data-date-start="' . htmlspecialchars($this->filter_date_helper->date_start->format('Y-m-d'), ENT_QUOTES) . '" data-date-end="' . htmlspecialchars($this->filter_date_helper->date_end->format('Y-m-d'), ENT_QUOTES) . '" data-state="idle"></div>'
+                    . '<div data-statistics-lazy-collapse data-block-id="' . rex_escape($lazyBlockId) . '" data-date-start="' . rex_escape($this->filter_date_helper->date_start->format('Y-m-d')) . '" data-date-end="' . rex_escape($this->filter_date_helper->date_end->format('Y-m-d')) . '" data-state="idle"></div>'
                 . '</div>'
             . '</div>'
         . '</div>';
@@ -321,9 +321,9 @@ class StatsLazyBlockRenderer
             }
 
             $cards .= '<div class="col-xs-6 col-sm-4 col-md-3" style="margin-bottom:10px;">';
-            $cards .= '<div class="' . htmlspecialchars($cardClass, ENT_QUOTES) . '">';
-            $cards .= '<div class="statistics-weekday-card__label">' . htmlspecialchars($label, ENT_QUOTES) . '</div>';
-            $cards .= '<div class="statistics-weekday-card__value">' . htmlspecialchars((string) $value, ENT_QUOTES) . '</div>';
+            $cards .= '<div class="' . rex_escape($cardClass) . '">';
+            $cards .= '<div class="statistics-weekday-card__label">' . rex_escape($label) . '</div>';
+            $cards .= '<div class="statistics-weekday-card__value">' . rex_escape((string) $value) . '</div>';
             $cards .= '</div></div>';
         }
         $cards .= '</div>';
@@ -348,14 +348,14 @@ class StatsLazyBlockRenderer
             $height = 8 + (int) round(($value / $max) * 108);
             $color = $palette[$hour % count($palette)];
 
-            $bars .= '<div title="' . str_pad((string) $hour, 2, '0', STR_PAD_LEFT) . ':00 - ' . htmlspecialchars((string) $value, ENT_QUOTES) . '" style="min-width:18px;text-align:center;">';
-            $bars .= '<div style="height:' . $height . 'px;background:' . htmlspecialchars($color, ENT_QUOTES) . ';border-radius:4px 4px 0 0;"></div>';
+            $bars .= '<div title="' . str_pad((string) $hour, 2, '0', STR_PAD_LEFT) . ':00 - ' . rex_escape((string) $value) . '" style="min-width:18px;text-align:center;">';
+            $bars .= '<div style="height:' . $height . 'px;background:' . rex_escape($color) . ';border-radius:4px 4px 0 0;"></div>';
             $bars .= '<div style="font-size:10px;color:#6b7c93;">' . str_pad((string) $hour, 2, '0', STR_PAD_LEFT) . '</div>';
             $bars .= '</div>';
         }
 
         $bars .= '</div>';
-        $bars .= '<div style="font-size:12px;color:#6b7c93;padding:4px 2px 0;">' . htmlspecialchars($this->addon->i18n('statistics_hours_distribution_note'), ENT_QUOTES) . '</div>';
+        $bars .= '<div style="font-size:12px;color:#6b7c93;padding:4px 2px 0;">' . rex_escape($this->addon->i18n('statistics_hours_distribution_note')) . '</div>';
         $bars .= '</div>';
 
         return $this->renderTwoColumnSection($title, $bars, $table);
@@ -379,21 +379,21 @@ class StatsLazyBlockRenderer
             $height = 12 + (int) round(($value / $max) * 158);
             $color = $palette[$hour % count($palette)];
 
-            $bars .= '<div title="' . str_pad((string) $hour, 2, '0', STR_PAD_LEFT) . ':00 - ' . htmlspecialchars((string) $value, ENT_QUOTES) . '" style="flex:1 1 0;min-width:24px;max-width:56px;text-align:center;">';
-            $bars .= '<div style="height:' . $height . 'px;background:' . htmlspecialchars($color, ENT_QUOTES) . ';border-radius:5px 5px 0 0;"></div>';
+            $bars .= '<div title="' . str_pad((string) $hour, 2, '0', STR_PAD_LEFT) . ':00 - ' . rex_escape((string) $value) . '" style="flex:1 1 0;min-width:24px;max-width:56px;text-align:center;">';
+            $bars .= '<div style="height:' . $height . 'px;background:' . rex_escape($color) . ';border-radius:5px 5px 0 0;"></div>';
             $bars .= '<div style="font-size:11px;color:#6b7c93;margin-top:2px;">' . str_pad((string) $hour, 2, '0', STR_PAD_LEFT) . '</div>';
             $bars .= '</div>';
         }
 
         $bars .= '</div>';
-        $bars .= '<div style="font-size:13px;color:#6b7c93;padding:4px 2px 0;">' . htmlspecialchars($this->addon->i18n('statistics_hours_distribution_note'), ENT_QUOTES) . '</div>';
+        $bars .= '<div style="font-size:13px;color:#6b7c93;padding:4px 2px 0;">' . rex_escape($this->addon->i18n('statistics_hours_distribution_note')) . '</div>';
         $bars .= '</div>';
 
         $bars .= '<div style="margin-top:12px;">';
-        $bars .= '<button class="btn btn-default btn-xs" type="button" data-toggle="collapse" data-target="#' . htmlspecialchars($tableCollapseId, ENT_QUOTES) . '">';
-        $bars .= htmlspecialchars($this->addon->i18n('statistics_toggle_collapse_table'), ENT_QUOTES);
+        $bars .= '<button class="btn btn-default btn-xs" type="button" data-toggle="collapse" data-target="#' . rex_escape($tableCollapseId) . '">';
+        $bars .= rex_escape($this->addon->i18n('statistics_toggle_collapse_table'));
         $bars .= '</button>';
-        $bars .= '<div id="' . htmlspecialchars($tableCollapseId, ENT_QUOTES) . '" class="collapse" style="margin-top:10px;">' . $table . '</div>';
+        $bars .= '<div id="' . rex_escape($tableCollapseId) . '" class="collapse" style="margin-top:10px;">' . $table . '</div>';
         $bars .= '</div>';
 
         $fragment = new rex_fragment();
@@ -416,18 +416,18 @@ class StatsLazyBlockRenderer
         } else {
             $table = '<table class="dt_bots statistics_table table table-striped table-hover">';
             $table .= '<thead><tr>';
-            $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_name'), ENT_QUOTES) . '</th>';
-            $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_count'), ENT_QUOTES) . '</th>';
-            $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_category'), ENT_QUOTES) . '</th>';
-            $table .= '<th>' . htmlspecialchars($this->addon->i18n('statistics_producer'), ENT_QUOTES) . '</th>';
+            $table .= '<th>' . rex_escape($this->addon->i18n('statistics_name')) . '</th>';
+            $table .= '<th>' . rex_escape($this->addon->i18n('statistics_count')) . '</th>';
+            $table .= '<th>' . rex_escape($this->addon->i18n('statistics_category')) . '</th>';
+            $table .= '<th>' . rex_escape($this->addon->i18n('statistics_producer')) . '</th>';
             $table .= '</tr></thead><tbody>';
 
             foreach ($rows as $row) {
                 $table .= '<tr>';
-                $table .= '<td>' . htmlspecialchars((string) $row['name'], ENT_QUOTES) . '</td>';
-                $table .= '<td data-sort="' . htmlspecialchars((string) $row['count'], ENT_QUOTES) . '">' . htmlspecialchars((string) $row['count'], ENT_QUOTES) . '</td>';
-                $table .= '<td>' . htmlspecialchars((string) $row['category'], ENT_QUOTES) . '</td>';
-                $table .= '<td>' . htmlspecialchars((string) $row['producer'], ENT_QUOTES) . '</td>';
+                $table .= '<td>' . rex_escape((string) $row['name']) . '</td>';
+                $table .= '<td data-sort="' . rex_escape((string) $row['count']) . '">' . rex_escape((string) $row['count']) . '</td>';
+                $table .= '<td>' . rex_escape((string) $row['category']) . '</td>';
+                $table .= '<td>' . rex_escape((string) $row['producer']) . '</td>';
                 $table .= '</tr>';
             }
 
@@ -504,7 +504,7 @@ class StatsLazyBlockRenderer
     {
         $fragment = new rex_fragment();
         $fragment->setVar('title', $title);
-        $fragment->setVar('chart', '<div id="' . htmlspecialchars($chartId, ENT_QUOTES) . '" style="width: 100%;height:500px"></div>', false);
+        $fragment->setVar('chart', '<div id="' . rex_escape($chartId) . '" style="width: 100%;height:500px"></div>', false);
         $fragment->setVar('table', $table, false);
 
         if (null !== $modalId && null !== $note) {
@@ -555,7 +555,7 @@ class StatsLazyBlockRenderer
             '<div class="row">'
                 . '<div class="col-sm-12 col-lg-5">'
                     . '<div class="alert alert-info" style="margin-bottom:12px;">'
-                        . '<strong>' . htmlspecialchars($subtitle, ENT_QUOTES) . '</strong>'
+                        . '<strong>' . rex_escape($subtitle) . '</strong>'
                     . '</div>'
                     . $insights
                 . '</div>'
@@ -605,13 +605,13 @@ class StatsLazyBlockRenderer
             $percentage = $max > 0 ? (int) round(($entry['value'] / $max) * 100) : 0;
             $color = $palette[$index % count($palette)];
 
-            $html .= '<div class="list-group-item" title="' . htmlspecialchars(str_replace(['{b}', '{c}'], [$entry['label'], (string) $entry['value']], $tooltipFormatter), ENT_QUOTES) . '">';
+            $html .= '<div class="list-group-item" title="' . rex_escape(str_replace(['{b}', '{c}'], [$entry['label'], (string) $entry['value']], $tooltipFormatter)) . '">';
             $html .= '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;">';
-            $html .= '<span style="word-break:break-word;">' . htmlspecialchars($entry['label'], ENT_QUOTES) . '</span>';
-            $html .= '<span class="label" style="background:' . htmlspecialchars($color, ENT_QUOTES) . ';">' . htmlspecialchars((string) $entry['value'], ENT_QUOTES) . '</span>';
+            $html .= '<span style="word-break:break-word;">' . rex_escape($entry['label']) . '</span>';
+            $html .= '<span class="label" style="background:' . rex_escape($color) . ';">' . rex_escape((string) $entry['value']) . '</span>';
             $html .= '</div>';
             $html .= '<div style="margin-top:8px;height:6px;background:#eef2f6;border-radius:999px;overflow:hidden;">';
-            $html .= '<div style="width:' . $percentage . '%;height:6px;background:' . htmlspecialchars($color, ENT_QUOTES) . ';"></div>';
+            $html .= '<div style="width:' . $percentage . '%;height:6px;background:' . rex_escape($color) . ';"></div>';
             $html .= '</div>';
             $html .= '</div>';
         }

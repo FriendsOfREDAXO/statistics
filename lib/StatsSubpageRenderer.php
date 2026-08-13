@@ -21,8 +21,8 @@ class StatsSubpageRenderer
     {
         $fragment = new rex_fragment();
         $fragment->setVar('class', 'info', false);
-        $fragment->setVar('title', $title);
-        $fragment->setVar('heading', $heading);
+        $fragment->setVar('title', rex_escape($title));
+        $fragment->setVar('heading', rex_escape($heading));
         $fragment->setVar('body', $body, false);
 
         return $fragment->parse('core/page/section.php');
@@ -31,7 +31,7 @@ class StatsSubpageRenderer
     public static function renderSection(string $title, string $body): string
     {
         $fragment = new rex_fragment();
-        $fragment->setVar('title', $title);
+        $fragment->setVar('title', rex_escape($title));
         $fragment->setVar('body', $body, false);
 
         return $fragment->parse('core/page/section.php');

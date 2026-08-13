@@ -18,12 +18,12 @@ class StatsMainChartSection
         );
         $fragmentMainChart->setVar(
             'monthly',
-            '<div id="chart_visits_monthly" data-statistics-lazy-chart data-block-id="main-monthly-chart" data-date-start="' . htmlspecialchars($filterDateHelper->date_start->format('Y-m-d'), ENT_QUOTES) . '" data-date-end="' . htmlspecialchars($filterDateHelper->date_end->format('Y-m-d'), ENT_QUOTES) . '" data-state="idle" style="width: 100%;height:500px;"></div>' . self::renderCollapse('main-monthly-tables', $filterDateHelper),
+            '<div id="chart_visits_monthly" data-statistics-lazy-chart data-block-id="main-monthly-chart" data-date-start="' . rex_escape($filterDateHelper->date_start->format('Y-m-d')) . '" data-date-end="' . rex_escape($filterDateHelper->date_end->format('Y-m-d')) . '" data-state="idle" style="width: 100%;height:500px;"></div>' . self::renderCollapse('main-monthly-tables', $filterDateHelper),
             false
         );
         $fragmentMainChart->setVar(
             'yearly',
-            '<div id="chart_visits_yearly" data-statistics-lazy-chart data-block-id="main-yearly-chart" data-date-start="' . htmlspecialchars($filterDateHelper->date_start->format('Y-m-d'), ENT_QUOTES) . '" data-date-end="' . htmlspecialchars($filterDateHelper->date_end->format('Y-m-d'), ENT_QUOTES) . '" data-state="idle" style="width: 100%;height:500px;"></div>' . self::renderCollapse('main-yearly-tables', $filterDateHelper),
+            '<div id="chart_visits_yearly" data-statistics-lazy-chart data-block-id="main-yearly-chart" data-date-start="' . rex_escape($filterDateHelper->date_start->format('Y-m-d')) . '" data-date-end="' . rex_escape($filterDateHelper->date_end->format('Y-m-d')) . '" data-state="idle" style="width: 100%;height:500px;"></div>' . self::renderCollapse('main-yearly-tables', $filterDateHelper),
             false
         );
 

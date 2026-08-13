@@ -198,8 +198,8 @@ foreach ($urlRows as $row) {
 }
 
 if ([] === $groups) {
-    $body = '<div class="alert alert-warning" style="margin-bottom:10px;">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_no_hits'), ENT_QUOTES) . '</div>';
-    $body .= '<p><a class="btn btn-default" href="https://ads.google.com/aw/campaigns" target="_blank" rel="noopener noreferrer">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_open_ads'), ENT_QUOTES) . '</a></p>';
+    $body = '<div class="alert alert-warning" style="margin-bottom:10px;">' . rex_escape($addon->i18n('statistics_google_campaigns_no_hits')) . '</div>';
+    $body .= '<p><a class="btn btn-default" href="https://ads.google.com/aw/campaigns" target="_blank" rel="noopener noreferrer">' . rex_escape($addon->i18n('statistics_google_campaigns_open_ads')) . '</a></p>';
     echo StatsSubpageRenderer::renderSection($addon->i18n('statistics_google_campaigns_groups'), $body . rex_view::info($addon->i18n('statistics_no_data')));
     return;
 }
@@ -222,29 +222,29 @@ $filterBase = [
 $allLink = rex_url::backendController(array_merge($filterBase, ['only_ads' => 0]), false);
 $onlyAdsLink = rex_url::backendController(array_merge($filterBase, ['only_ads' => 1]), false);
 
-$intro = '<div class="' . $statusClass . '" style="margin-bottom:10px;">' . htmlspecialchars($statusText, ENT_QUOTES) . '</div>';
-$intro .= '<div class="alert alert-info" style="margin-bottom:10px;">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_intro'), ENT_QUOTES) . ' '
-    . '<a href="https://ads.google.com/aw/campaigns" target="_blank" rel="noopener noreferrer">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_open_ads'), ENT_QUOTES) . '</a>'
+$intro = '<div class="' . $statusClass . '" style="margin-bottom:10px;">' . rex_escape($statusText) . '</div>';
+$intro .= '<div class="alert alert-info" style="margin-bottom:10px;">' . rex_escape($addon->i18n('statistics_google_campaigns_intro')) . ' '
+    . '<a href="https://ads.google.com/aw/campaigns" target="_blank" rel="noopener noreferrer">' . rex_escape($addon->i18n('statistics_google_campaigns_open_ads')) . '</a>'
     . '</div>';
 
 $kpi = '<div class="row">';
-$kpi .= '<div class="col-sm-4"><div class="panel panel-default"><div class="panel-body"><div class="text-muted">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_kpi_detected_calls'), ENT_QUOTES) . '</div><div style="font-size:28px;font-weight:700;line-height:1.2;">' . htmlspecialchars((string) $totalDetectedCalls, ENT_QUOTES) . '</div></div></div></div>';
-$kpi .= '<div class="col-sm-4"><div class="panel panel-default"><div class="panel-body"><div class="text-muted">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_kpi_ads_campaigns'), ENT_QUOTES) . '</div><div style="font-size:28px;font-weight:700;line-height:1.2;">' . htmlspecialchars((string) count($campaignIds), ENT_QUOTES) . '</div></div></div></div>';
-$kpi .= '<div class="col-sm-4"><div class="panel panel-default"><div class="panel-body"><div class="text-muted">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_kpi_top_group'), ENT_QUOTES) . '</div><div style="font-size:15px;font-weight:700;line-height:1.3;word-break:break-word;">' . htmlspecialchars($topGroupText, ENT_QUOTES) . '</div></div></div></div>';
+$kpi .= '<div class="col-sm-4"><div class="panel panel-default"><div class="panel-body"><div class="text-muted">' . rex_escape($addon->i18n('statistics_google_campaigns_kpi_detected_calls')) . '</div><div style="font-size:28px;font-weight:700;line-height:1.2;">' . rex_escape((string) $totalDetectedCalls) . '</div></div></div></div>';
+$kpi .= '<div class="col-sm-4"><div class="panel panel-default"><div class="panel-body"><div class="text-muted">' . rex_escape($addon->i18n('statistics_google_campaigns_kpi_ads_campaigns')) . '</div><div style="font-size:28px;font-weight:700;line-height:1.2;">' . rex_escape((string) count($campaignIds)) . '</div></div></div></div>';
+$kpi .= '<div class="col-sm-4"><div class="panel panel-default"><div class="panel-body"><div class="text-muted">' . rex_escape($addon->i18n('statistics_google_campaigns_kpi_top_group')) . '</div><div style="font-size:15px;font-weight:700;line-height:1.3;word-break:break-word;">' . rex_escape($topGroupText) . '</div></div></div></div>';
 $kpi .= '</div>';
 
 $buttons = '<div style="margin-bottom:10px;">';
-$buttons .= '<a class="btn btn-primary" href="' . htmlspecialchars($allLink, ENT_QUOTES) . '">' . htmlspecialchars($addon->i18n('statistics_filter_all'), ENT_QUOTES) . '</a> ';
-$buttons .= '<a class="btn btn-primary" href="' . htmlspecialchars($onlyAdsLink, ENT_QUOTES) . '">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_only_ads'), ENT_QUOTES) . '</a>';
+$buttons .= '<a class="btn btn-primary" href="' . rex_escape($allLink) . '">' . rex_escape($addon->i18n('statistics_filter_all')) . '</a> ';
+$buttons .= '<a class="btn btn-primary" href="' . rex_escape($onlyAdsLink) . '">' . rex_escape($addon->i18n('statistics_google_campaigns_only_ads')) . '</a>';
 $buttons .= '</div>';
 
 $table = '<table class="table-bordered dt_order_second statistics_table table-striped table-hover table" data-page-length="30">';
 $table .= '<thead><tr>';
-$table .= '<th>' . htmlspecialchars($addon->i18n('statistics_google_campaigns_group'), ENT_QUOTES) . '</th>';
-$table .= '<th>' . htmlspecialchars($addon->i18n('statistics_google_campaigns_landing'), ENT_QUOTES) . '</th>';
-$table .= '<th>' . htmlspecialchars($addon->i18n('statistics_count'), ENT_QUOTES) . '</th>';
-$table .= '<th>' . htmlspecialchars($addon->i18n('statistics_google_campaigns_click_ids'), ENT_QUOTES) . '</th>';
-$table .= '<th>' . htmlspecialchars($addon->i18n('statistics_google_campaigns_params'), ENT_QUOTES) . '</th>';
+$table .= '<th>' . rex_escape($addon->i18n('statistics_google_campaigns_group')) . '</th>';
+$table .= '<th>' . rex_escape($addon->i18n('statistics_google_campaigns_landing')) . '</th>';
+$table .= '<th>' . rex_escape($addon->i18n('statistics_count')) . '</th>';
+$table .= '<th>' . rex_escape($addon->i18n('statistics_google_campaigns_click_ids')) . '</th>';
+$table .= '<th>' . rex_escape($addon->i18n('statistics_google_campaigns_params')) . '</th>';
 $table .= '</tr></thead><tbody>';
 
 foreach ($groups as $signature => $group) {
@@ -261,11 +261,11 @@ foreach ($groups as $signature => $group) {
     $paramsText = implode(', ', $paramKeys);
 
     $table .= '<tr>';
-    $table .= '<td><a href="' . htmlspecialchars($campaignDetailUrl, ENT_QUOTES) . '">' . htmlspecialchars((string) $group['campaign_label'], ENT_QUOTES) . '</a></td>';
-    $table .= '<td>' . htmlspecialchars((string) $group['landing_path'], ENT_QUOTES) . '</td>';
-    $table .= '<td data-sort="' . htmlspecialchars((string) $group['count'], ENT_QUOTES) . '">' . htmlspecialchars((string) $group['count'], ENT_QUOTES) . '</td>';
-    $table .= '<td data-sort="' . htmlspecialchars((string) count($group['click_ids']), ENT_QUOTES) . '">' . htmlspecialchars((string) count($group['click_ids']), ENT_QUOTES) . '</td>';
-    $table .= '<td title="' . htmlspecialchars($paramsText, ENT_QUOTES) . '">' . htmlspecialchars($paramsText, ENT_QUOTES) . '</td>';
+    $table .= '<td><a href="' . rex_escape($campaignDetailUrl) . '">' . rex_escape((string) $group['campaign_label']) . '</a></td>';
+    $table .= '<td>' . rex_escape((string) $group['landing_path']) . '</td>';
+    $table .= '<td data-sort="' . rex_escape((string) $group['count']) . '">' . rex_escape((string) $group['count']) . '</td>';
+    $table .= '<td data-sort="' . rex_escape((string) count($group['click_ids'])) . '">' . rex_escape((string) count($group['click_ids'])) . '</td>';
+    $table .= '<td title="' . rex_escape($paramsText) . '">' . rex_escape($paramsText) . '</td>';
     $table .= '</tr>';
 }
 
@@ -279,17 +279,17 @@ if ('' !== $requestCampaignKey) {
         $selected = $groups[$decodedSignature];
         usort($selected['urls'], static fn (array $a, array $b): int => ($b['count'] <=> $a['count']));
 
-        $detailBody = '<div style="margin-bottom:10px;"><strong>' . htmlspecialchars($selected['campaign_label'], ENT_QUOTES) . '</strong> - ' . htmlspecialchars($selected['landing_path'], ENT_QUOTES) . '</div>';
-        $detailBody .= '<p><a class="btn btn-default" href="https://ads.google.com/aw/campaigns" target="_blank" rel="noopener noreferrer">' . htmlspecialchars($addon->i18n('statistics_google_campaigns_open_ads'), ENT_QUOTES) . '</a></p>';
+        $detailBody = '<div style="margin-bottom:10px;"><strong>' . rex_escape($selected['campaign_label']) . '</strong> - ' . rex_escape($selected['landing_path']) . '</div>';
+        $detailBody .= '<p><a class="btn btn-default" href="https://ads.google.com/aw/campaigns" target="_blank" rel="noopener noreferrer">' . rex_escape($addon->i18n('statistics_google_campaigns_open_ads')) . '</a></p>';
         $detailBody .= '<table class="table table-striped table-hover table-bordered"><thead><tr>';
-        $detailBody .= '<th>' . htmlspecialchars($addon->i18n('statistics_url'), ENT_QUOTES) . '</th>';
-        $detailBody .= '<th>' . htmlspecialchars($addon->i18n('statistics_count'), ENT_QUOTES) . '</th>';
+        $detailBody .= '<th>' . rex_escape($addon->i18n('statistics_url')) . '</th>';
+        $detailBody .= '<th>' . rex_escape($addon->i18n('statistics_count')) . '</th>';
         $detailBody .= '</tr></thead><tbody>';
 
         foreach ($selected['urls'] as $urlEntry) {
             $detailBody .= '<tr>';
-            $detailBody .= '<td>' . htmlspecialchars((string) $urlEntry['url'], ENT_QUOTES) . '</td>';
-            $detailBody .= '<td data-sort="' . htmlspecialchars((string) $urlEntry['count'], ENT_QUOTES) . '">' . htmlspecialchars((string) $urlEntry['count'], ENT_QUOTES) . '</td>';
+            $detailBody .= '<td>' . rex_escape((string) $urlEntry['url']) . '</td>';
+            $detailBody .= '<td data-sort="' . rex_escape((string) $urlEntry['count']) . '">' . rex_escape((string) $urlEntry['count']) . '</td>';
             $detailBody .= '</tr>';
         }
 

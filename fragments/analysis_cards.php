@@ -32,11 +32,11 @@ $cards = [
             <button
                 type="button"
                 class="statistics-analysis-card"
-                data-statistics-focus-lazy="<?php echo htmlspecialchars($card['target'], ENT_QUOTES); ?>"
-                data-date-start="<?php echo htmlspecialchars((string) $this->getVar('date_start', ''), ENT_QUOTES); ?>"
-                data-date-end="<?php echo htmlspecialchars((string) $this->getVar('date_end', ''), ENT_QUOTES); ?>"
+                data-statistics-focus-lazy="<?php echo rex_escape($card['target']); ?>"
+                data-date-start="<?php echo rex_escape((string) $this->getVar('date_start', '')); ?>"
+                data-date-end="<?php echo rex_escape((string) $this->getVar('date_end', '')); ?>"
             >
-                <span class="statistics-analysis-card__icon"><i class="fa <?php echo htmlspecialchars($card['icon'], ENT_QUOTES); ?>" aria-hidden="true"></i></span>
+                <span class="statistics-analysis-card__icon"><i class="fa <?php echo rex_escape($card['icon']); ?>" aria-hidden="true"></i></span>
                 <span class="statistics-analysis-card__content">
                     <span class="statistics-analysis-card__title"><?php echo $card['title']; ?></span>
                     <span class="statistics-analysis-card__desc"><?php echo $card['description']; ?></span>

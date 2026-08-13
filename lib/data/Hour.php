@@ -69,11 +69,11 @@ class Hour
             $table = rex_view::info($addon->i18n('statistics_no_data'));
         } else {
             $table = '<table class="dt_order_second statistics_table table table-striped table-hover">';
-            $table .= '<thead><tr><th>' . htmlspecialchars($addon->i18n('statistics_name'), ENT_QUOTES) . '</th><th>' . htmlspecialchars($addon->i18n('statistics_count'), ENT_QUOTES) . '</th></tr></thead><tbody>';
+            $table .= '<thead><tr><th>' . rex_escape($addon->i18n('statistics_name')) . '</th><th>' . rex_escape($addon->i18n('statistics_count')) . '</th></tr></thead><tbody>';
             foreach ($rows as $row) {
                 $hour = str_pad($row['name'], 2, '0', STR_PAD_LEFT) . ' Uhr';
                 $count = (string) $row['count'];
-                $table .= '<tr><td data-sort="' . htmlspecialchars($row['name'], ENT_QUOTES) . '">' . htmlspecialchars($hour, ENT_QUOTES) . '</td><td data-sort="' . htmlspecialchars($count, ENT_QUOTES) . '">' . htmlspecialchars($count, ENT_QUOTES) . '</td></tr>';
+                $table .= '<tr><td data-sort="' . rex_escape($row['name']) . '">' . rex_escape($hour) . '</td><td data-sort="' . rex_escape($count) . '">' . rex_escape($count) . '</td></tr>';
             }
             $table .= '</tbody></table>';
         }

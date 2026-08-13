@@ -87,7 +87,7 @@ class StatsDashboard
      */
     public static function renderPageConfigScript(array $pageConfig): string
     {
-        return '<script type="application/json" id="statistics-page-config">' . json_encode($pageConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>';
+        return '<script type="application/json" id="statistics-page-config">' . json_encode($pageConfig, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . '</script>';
     }
 
     public static function renderTableLanguageConfigScript(): string
