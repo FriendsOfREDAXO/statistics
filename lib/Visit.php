@@ -573,13 +573,28 @@ class Visit
 
     public function getCountry(): void
     {
-        $cityDbReader = new Reader($this->addon->getDataPath("ip2geo.mmdb"));
+        $this->country = "Unbekannt";
+
+        $databasePath = $this->addon->getDataPath("ip2geo.mmdb");
+
+        // The geo database is optional: it is downloaded on demand and can be
+        // missing entirely. Without this guard the Reader constructor throws an
+        // uncaught InvalidArgumentException, which aborts persist() before any
+        // counter is written, so visits and device data are lost silently.
+        if (!is_readable($databasePath)) {
+            return;
+        }
+
         try {
+            $cityDbReader = new Reader($databasePath);
             $record = $cityDbReader->country($this->clientIPAddress);
             $this->country = (string) ($record->country->name ?? 'Unbekannt');
         } catch (\GeoIp2\Exception\AddressNotFoundException $e) {
             $this->country = "Unbekannt";
         } catch (\MaxMind\Db\Reader\InvalidDatabaseException $e) {
+            rex_logger::logException($e);
+        } catch (\Throwable $e) {
+            // A broken or truncated database must not cost us the whole visit.
             rex_logger::logException($e);
         }
     }
