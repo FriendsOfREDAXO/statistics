@@ -6,6 +6,12 @@ use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
 use Jaybizzle\CrawlerDetect\CrawlerDetect;
 
 
+// cronjob types must be registered in every environment (frontend, backend, script),
+// otherwise rex_cronjob::factory() rejects them with 'Class "…" not found'
+if (rex_addon::get('cronjob')->isAvailable() && !rex::isSafeMode()) {
+    rex_cronjob_manager::registerType('rex_statistics_hashremove_cronjob');
+    rex_cronjob_manager::registerType('rex_statistics_maintenance_cronjob');
+}
 
 if (rex::isBackend()) {
     $addon = rex_addon::get('statistics');
@@ -46,11 +52,6 @@ if (rex::isBackend()) {
         $assetVersion = rawurlencode((string) $addon->getVersion());
         rex_view::addCssFile($addon->getAssetsUrl('reports.css') . '?v=' . $assetVersion);
         rex_view::addJsFile($addon->getAssetsUrl('reports.js') . '?v=' . $assetVersion);
-    }
-
-    if (rex_addon::get('cronjob')->isAvailable() && !rex::isSafeMode()) {
-        rex_cronjob_manager::registerType('rex_statistics_hashremove_cronjob');
-        rex_cronjob_manager::registerType('rex_statistics_maintenance_cronjob');
     }
 
     $pagination_scroll = $addon->getConfig('statistics_scroll_pagination');
