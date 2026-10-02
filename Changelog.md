@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.7.5] - 02.10.2026
+
+-   Cronjobs „Statistik-Hashes löschen“ und „Wartung“ werden jetzt in allen Umgebungen registriert; in der Umgebung „Frontend“ scheiterten sie bisher mit `Class "…" not found` (#157)
+
+## [3.7.4] - 16.09.2026
+
+-   Seitenaufrufe gehen nicht mehr verloren, wenn die Geo-Datenbank fehlt (#156)
+
 ## [3.7.3] - 13.08.2026
 
 -   Mehrere XSS-Sicherheitslücken im Backend geschlossen: getrackte URLs werden in JSON-Script-Blöcken sicher kodiert und URL-/Domain-Ausgaben kontextgerecht escaped
