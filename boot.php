@@ -64,7 +64,8 @@ if (rex::isBackend()) {
 
 
 // set variable to check in EP whether the visit is coming from a logged-in user or not
-if (rex::isFrontend()) {
+// (not on the command line: cronjobs/console have no request object, rex::getRequest() would throw)
+if (rex::isFrontend() && 'cli' !== PHP_SAPI) {
     $addon = rex_addon::get('statistics');
     $ignore_backend_loggedin = $addon->getConfig('statistics_ignore_backend_loggedin');
     $identityMode = (string) $addon->getConfig('statistics_identity_mode', 'stateless');
@@ -133,7 +134,7 @@ if (rex::isFrontend()) {
 // do actions after content is delivered
 rex_extension::register('RESPONSE_SHUTDOWN', function () use ($statistics_has_backend_login, $token) {
 
-    if (rex::isFrontend()) {
+    if (rex::isFrontend() && 'cli' !== PHP_SAPI) {
 
         $addon = rex_addon::get('statistics');
         $trackingPaused = (bool) $addon->getConfig('statistics_pause_tracking_manual', false)
