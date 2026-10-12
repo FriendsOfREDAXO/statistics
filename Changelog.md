@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.7.6] - 12.10.2026
+
+-   Konsole und Cronjobs (CLI) brechen nicht mehr mit „The request object is not available in cli“ ab: Die Besucher-Erkennung (`rex::getRequest()->getClientIp()`) läuft nur noch bei echten Web-Aufrufen. Betroffen waren u. a. Cronjobs in der Umgebung „Frontend“ und Konsolenbefehle anderer AddOns, die das Frontend booten.
+
 ## [3.7.5] - 02.10.2026
 
 -   Cronjobs „Statistik-Hashes löschen“ und „Wartung“ werden jetzt in allen Umgebungen registriert; in der Umgebung „Frontend“ scheiterten sie bisher mit `Class "…" not found` (#157)
