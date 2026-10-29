@@ -134,6 +134,41 @@ class MediaRequest
      */
     public function save(): void
     {
+        // Media tracking runs in MEDIA_MANAGER_AFTER_SEND, i.e. after the file was already
+        // streamed to the client. For large files (e.g. video downloads / range requests) the
+        // transfer can outlive MySQL's wait_timeout, so the connection may be gone by the time
+        // this counter UPDATE runs ("MySQL server has gone away", SQLSTATE[HY000] 2006).
+        // One reconnect attempt covers that case; any remaining failure is swallowed so a counter
+        // that cannot be written never turns into log spam on an otherwise successful media request.
+        try {
+            $this->persist();
+        } catch (rex_sql_exception $e) {
+            if ($this->isConnectionLost($e)) {
+                try {
+                    // Force a fresh connection and retry once.
+                    rex_sql::factory()->setQuery('SELECT 1');
+                    $this->persist();
+                    return;
+                } catch (rex_sql_exception $retry) {
+                    // fall through – give up silently, see note above
+                    return;
+                }
+            }
+            // Non-connection errors are not expected here; keep them out of the log as well,
+            // since a failed media counter must not break or spam an already-delivered response.
+            return;
+        }
+    }
+
+
+    /**
+     * Writes the counter row: increment if it exists for today, otherwise insert.
+     *
+     * @return void
+     * @throws rex_sql_exception
+     */
+    private function persist(): void
+    {
         $sql = rex_sql::factory();
         $result = $sql->setQuery('UPDATE ' . rex::getTable('pagestats_media') . ' SET count = count + 1 WHERE url = :url AND date = :date', ['url' => $this->url, 'date' => $this->datetime_now->format('Y-m-d')]);
 
@@ -145,5 +180,21 @@ class MediaRequest
             $bot->setValue('count', 1);
             $bot->insert();
         }
+    }
+
+
+    /**
+     * Detects the "MySQL server has gone away" condition (connection dropped mid-request).
+     *
+     * @param rex_sql_exception $e
+     * @return bool
+     */
+    private function isConnectionLost(rex_sql_exception $e): bool
+    {
+        $message = $e->getMessage();
+
+        return str_contains($message, 'server has gone away')
+            || str_contains($message, '2006')
+            || str_contains($message, '2013'); // Lost connection to MySQL server during query
     }
 }
