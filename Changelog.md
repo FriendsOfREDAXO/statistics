@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.7.7] - 29.10.2026
+
+-   Media-Tracking bricht bei großen Dateien (z. B. Video-Downloads/Range-Requests) nicht mehr mit `MySQL server has gone away` ab: Der Zähl-UPDATE läuft nach dem Senden der Datei, wenn die DB-Verbindung durch `wait_timeout` oder Client-Abbruch bereits getrennt sein kann. Es wird jetzt einmal neu verbunden und andernfalls still verworfen, statt das System-Log zu fluten. Dadurch entfällt auch der Folgefehler `Cannot modify header information – headers already sent` (#161)
+-   Lazy-Block-API (`rex_api_statistics_lazy_block`) ist nur noch mit der Berechtigung `statistics[]` aufrufbar; nicht berechtigte Aufrufe werden mit „Permission denied“ abgewiesen (#160)
+
 ## [3.7.6] - 12.10.2026
 
 -   Konsole und Cronjobs (CLI) brechen nicht mehr mit „The request object is not available in cli“ ab: Die Besucher-Erkennung (`rex::getRequest()->getClientIp()`) läuft nur noch bei echten Web-Aufrufen. Betroffen waren u. a. Cronjobs in der Umgebung „Frontend“ und Konsolenbefehle anderer AddOns, die das Frontend booten.
